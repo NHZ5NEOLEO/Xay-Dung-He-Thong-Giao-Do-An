@@ -1,0 +1,831 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+
+<style>
+    .checkout-wrapper {
+        max-width: 1280px;
+        margin: 20px auto 70px;
+        padding: 0 15px;
+    }
+
+    .checkout-grid {
+        display: grid;
+        grid-template-columns: 1.15fr 0.85fr;
+        gap: 30px;
+    }
+
+    @media (max-width: 992px) {
+        .checkout-grid { grid-template-columns: 1fr; }
+    }
+
+    .checkout-card {
+        background: white;
+        border-radius: 24px;
+        padding: 30px;
+        border: 1px solid #f1f5f9;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+    }
+
+    .card-title-box {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 22px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .card-title-box h3 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 800;
+        color: #1e293b;
+    }
+
+    .form-group {
+        margin-bottom: 18px;
+    }
+
+    .form-group label {
+        display: block;
+        font-size: 12.5px;
+        font-weight: 700;
+        color: #475569;
+        text-transform: uppercase;
+        margin-bottom: 7px;
+        letter-spacing: 0.5px;
+    }
+
+    .shipping-method-box {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+
+    .shipping-option {
+        border: 2px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 16px;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        position: relative;
+    }
+
+    .shipping-option.selected {
+        border-color: #ff5722;
+        background: #fff7f5;
+        box-shadow: 0 4px 15px rgba(255, 87, 34, 0.15);
+    }
+
+    .shipping-option h4 {
+        margin: 0 0 5px 0;
+        font-size: 14.5px;
+        font-weight: 800;
+        color: #1e293b;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .shipping-option p {
+        margin: 0;
+        font-size: 12px;
+        color: #64748b;
+    }
+
+    .payment-option {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 14px;
+        border: 2px solid #e2e8f0;
+        border-radius: 14px;
+        margin-bottom: 10px;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+    .payment-option.selected {
+        border-color: #22c55e;
+        background: #f0fdf4;
+    }
+
+    /* Map container */
+    #leaflet-checkout-map {
+        width: 100%;
+        height: 380px;
+        border-radius: 18px;
+        border: 2px solid #e2e8f0;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+    }
+
+    /* GPS Button on map */
+    .btn-gps-locate {
+        background: white;
+        color: #0284c7;
+        border: 2px solid #0284c7;
+        padding: 8px 14px;
+        border-radius: 20px;
+        font-weight: 700;
+        font-size: 12px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        box-shadow: 0 4px 12px rgba(2, 132, 199, 0.2);
+        transition: 0.25s;
+    }
+
+    .btn-gps-locate:hover {
+        background: #0284c7;
+        color: white;
+    }
+
+    .trip-summary-box {
+        background: linear-gradient(135deg, #f8fafc, #edf2f7);
+        border-radius: 16px;
+        padding: 18px;
+        margin-top: 15px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .bill-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        font-size: 13.5px;
+        color: #64748b;
+    }
+
+    .bill-row b { color: #1e293b; }
+
+    .bill-total {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 15px;
+        margin-top: 15px;
+        border-top: 2px dashed #cbd5e1;
+    }
+
+    .total-amount {
+        font-size: 24px;
+        font-weight: 900;
+        color: #ff5722;
+    }
+
+    .btn-submit-order {
+        width: 100%;
+        padding: 16px;
+        border-radius: 16px;
+        background: linear-gradient(135deg, #ff5722 0%, #ff7043 100%);
+        color: white;
+        border: none;
+        font-weight: 900;
+        font-size: 16px;
+        cursor: pointer;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        box-shadow: 0 8px 25px rgba(255, 87, 34, 0.35);
+        transition: all 0.3s ease;
+        margin-top: 20px;
+    }
+
+    .btn-submit-order:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 30px rgba(255, 87, 34, 0.45);
+    }
+</style>
+
+<div class="checkout-wrapper">
+    <div style="margin-bottom: 25px;">
+        <span style="color: #ff5722; font-weight: 800; font-size: 12px; letter-spacing: 1px; text-transform: uppercase;">
+            <i class="fa-solid fa-cart-shopping"></i> CHECKOUT VẬN CHUYỂN
+        </span>
+        <h1 style="font-size: 28px; font-weight: 900; color: #1e293b; margin: 6px 0 0;">
+            Đặt Món và Tính Tiền Tuyến Đường Theo Khoảng Cách
+        </h1>
+    </div>
+
+    <form method="POST" action="{% url 'core:tao_don_hang_mon_an' %}" id="checkout-form">
+        {% csrf_token %}
+        <input type="hidden" name="cart_data" id="hidden_cart_data" value="[]">
+        <input type="hidden" name="lat_khach" id="lat_khach" value="10.7769">
+        <input type="hidden" name="lng_khach" id="lng_khach" value="106.7009">
+        <input type="hidden" name="khoang_cach_km" id="hidden_km" value="2.5">
+        <input type="hidden" name="phi_ship" id="hidden_phi_ship" value="15000">
+        <input type="hidden" name="phu_phi_hoa_toc" id="hidden_phu_phi" value="10000">
+        <input type="hidden" name="loai_giao_hang" id="loai_giao_hang" value="HOA_TOC">
+        <input type="hidden" name="phuong_thuc_thanh_toan" id="phuong_thuc_thanh_toan" value="QR_VIETQR">
+
+        <div class="checkout-grid">
+            <!-- CỘT BÊN TRÁI: THÔNG TIN KHÁCH HÀNG và PHƯƠNG THỨC -->
+            <div class="checkout-card">
+                <div class="card-title-box">
+                    <i class="fa-solid fa-address-card" style="color: #ff5722; font-size: 20px;"></i>
+                    <h3>1. Thông tin giao hàng và Mailbox</h3>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div class="form-group">
+                        <label for="ten_nguoi_nhan">Họ và tên người nhận *</label>
+                        <input type="text" name="ten_nguoi_nhan" id="ten_nguoi_nhan" class="form-control" required placeholder="VD: Nguyễn Văn An" value="Nguyễn Văn An" title="Họ và tên người nhận">
+                    </div>
+                    <div class="form-group">
+                        <label for="sdt_nguoi_nhan">Số điện thoại liên hệ *</label>
+                        <input type="tel" name="sdt_nguoi_nhan" id="sdt_nguoi_nhan" class="form-control" required placeholder="VD: 0901234567" value="0901234567" title="Số điện thoại liên hệ">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="email_nguoi_nhan">Email nhận hóa đơn và QR (Mailbox) *</label>
+                    <input type="email" name="email_nguoi_nhan" id="email_nguoi_nhan" class="form-control" required placeholder="khachhang_test@gmail.com" value="khachhang_test@gmail.com" title="Email nhận hóa đơn">
+                    <small style="color: #94a3b8; font-size: 11.5px; display: block; margin-top: 4px;">
+                        <i class="fa-solid fa-envelope-circle-check" style="color: #22c55e;"></i> Hệ thống sẽ gửi hóa đơn điện tử và xác nhận thanh toán trực tiếp về email này.
+                    </small>
+                </div>
+
+                <div class="form-group">
+                    <label for="kho_select">Bếp / Quán chế biến xuất phát *</label>
+                    <select name="kho_xuat_phat" id="kho_select" class="form-control" title="Chọn Bếp / Quán chế biến xuất phát" aria-label="Bếp / Quán chế biến xuất phát" onchange="onRestaurantChanged()">
+                        {% for k in ds_kho %}
+                            <option value="{{ k.id }}" data-lat="{{ k.lat }}" data-lng="{{ k.lng }}" data-name="{{ k.ten_kho }}" {% if forloop.first %}selected{% endif %}>
+                                🏪 {{ k.ten_kho }} ({{ k.dia_chi }})
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="dia_chi_nguoi_nhan">Địa chỉ nhận hàng chi tiết *</label>
+                    <input type="text" name="dia_chi_nguoi_nhan" id="dia_chi_nguoi_nhan" class="form-control" required placeholder="Nhập số nhà, tên đường, phường, quận..." value="12 Nguyễn Huệ, P. Bến Nghé, Quận 1, TP.HCM" title="Địa chỉ nhận hàng chi tiết">
+                </div>
+
+                <div class="card-title-box" style="margin-top: 30px;">
+                    <i class="fa-solid fa-truck-fast" style="color: #ff5722; font-size: 20px;"></i>
+                    <h3>2. Phương thức giao hàng</h3>
+                </div>
+
+                <div class="shipping-method-box">
+                    <div class="shipping-option selected" id="opt-hoatoc" onclick="selectShipping('HOA_TOC')">
+                        <h4><i class="fa-solid fa-bolt" style="color: #ff5722;"></i> GIAO HỎA TỐC</h4>
+                        <p>15 - 25 phút. Ưu tiên điều phối Shipper gần nhất và tuyến đường ngắn nhất.</p>
+                        <span style="display: inline-block; margin-top: 6px; font-weight: 800; color: #ff5722; font-size: 12px;">+10.000 đ</span>
+                    </div>
+
+                    <div class="shipping-option" id="opt-tieuchuan" onclick="selectShipping('TIEU_CHUAN')">
+                        <h4><i class="fa-solid fa-motorcycle" style="color: #0284c7;"></i> TIÊU CHUẨN</h4>
+                        <p>30 - 45 phút. Ghép tuyến thông thường theo giờ cao điểm.</p>
+                        <span style="display: inline-block; margin-top: 6px; font-weight: 800; color: #0284c7; font-size: 12px;">Tiết kiệm</span>
+                    </div>
+                </div>
+
+                <div class="card-title-box">
+                    <i class="fa-solid fa-credit-card" style="color: #ff5722; font-size: 20px;"></i>
+                    <h3>3. Phương thức thanh toán TMĐT</h3>
+                </div>
+
+                <div class="payment-option selected" id="pay-vietqr" onclick="selectPayment('QR_VIETQR')">
+                    <i class="fa-solid fa-qrcode" style="font-size: 24px; color: #0284c7;"></i>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 800; color: #1e293b; font-size: 14px;">Quét Mã QR Ngân Hàng (VietQR Tự Động)</div>
+                        <small style="color: #64748b;">Hỗ trợ tất cả ngân hàng MB, Vietcombank, Techcombank, BIDV, v.v.</small>
+                    </div>
+                    <span style="background: #e0f2fe; color: #0284c7; padding: 3px 8px; border-radius: 8px; font-size: 11px; font-weight: 800;">Khuyên dùng</span>
+                </div>
+
+                <div class="payment-option" id="pay-momo" onclick="selectPayment('MOMO')">
+                    <i class="fa-solid fa-wallet" style="font-size: 24px; color: #ec4899;"></i>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 800; color: #1e293b; font-size: 14px;">Ví Điện Tử MoMo</div>
+                        <small style="color: #64748b;">Thanh toán siêu tốc qua ứng dụng MoMo</small>
+                    </div>
+                </div>
+
+                <div class="payment-option" id="pay-cod" onclick="selectPayment('COD')">
+                    <i class="fa-solid fa-money-bill-wave" style="font-size: 24px; color: #16a34a;"></i>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 800; color: #1e293b; font-size: 14px;">Tiền mặt khi nhận hàng (COD)</div>
+                        <small style="color: #64748b;">Thanh toán trực tiếp cho Shipper khi giao đến nơi</small>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top: 20px;">
+                    <label>Ghi chú cho bếp và tài xế</label>
+                    <textarea name="ghi_chu" class="form-control" rows="2" placeholder="VD: Giao lên lầu 3, ít cay, nhiều đá..."></textarea>
+                </div>
+            </div>
+
+            <!-- CỘT BÊN PHẢI: BẢN ĐỒ LEAFLET GPS và TÍNH CƯỚC THEO KM -->
+            <div>
+                <div class="checkout-card" style="margin-bottom: 25px;">
+                    <div class="card-title-box" style="justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <i class="fa-solid fa-map-location-dot" style="color: #0284c7; font-size: 20px;"></i>
+                            <h3>Bản đồ Lộ trình và Định vị GPS</h3>
+                        </div>
+                        <button type="button" class="btn-gps-locate" onclick="getMyGPSLocation()">
+                            <i class="fa-solid fa-location-crosshairs"></i> Vị trí GPS của tôi
+                        </button>
+                    </div>
+
+                    <div style="position: relative; margin-bottom: 12px;">
+                        <input type="text" id="address-search-box" class="form-control" placeholder="🔍 Tìm địa chỉ giao hàng trên bản đồ..." style="border-radius: 20px; padding-left: 36px;">
+                        <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #94a3b8;"></i>
+                    </div>
+
+                    <div id="leaflet-checkout-map"></div>
+
+                    <div class="trip-summary-box">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <span style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 800;">Khoảng cách đường đi:</span>
+                                <div style="font-size: 18px; font-weight: 900; color: #0284c7;" id="display-distance">Đang tính...</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <span style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 800;">Thời gian dự kiến:</span>
+                                <div style="font-size: 18px; font-weight: 900; color: #ff5722;" id="display-duration">Đang tính...</div>
+                            </div>
+                        </div>
+                        <small style="color: #94a3b8; font-size: 11px; display: block; margin-top: 6px;">
+                            * Cước phí tự động: 15.000đ (2km đầu) + 5.000đ/km tiếp theo.
+                        </small>
+                    </div>
+                </div>
+
+                <!-- TÓM TẮT HÓA ĐƠN và VOUCHER -->
+                <div class="checkout-card">
+                    <div class="card-title-box">
+                        <i class="fa-solid fa-receipt" style="color: #ff5722; font-size: 20px;"></i>
+                        <h3>Tóm tắt hóa đơn thanh toán</h3>
+                    </div>
+
+                    <div id="checkout-cart-summary" style="margin-bottom: 15px; max-height: 180px; overflow-y: auto;">
+                        <!-- Danh sách món render từ JS -->
+                    </div>
+
+                    <!-- Ô NHẬP MÃ GIẢM GIÁ ADS & KHO VOUCHER -->
+                    <div style="display: flex; gap: 8px; margin-bottom: 15px;">
+                        <input type="text" id="voucher-input" name="ma_voucher" placeholder="Mã giảm giá (VD: FREESHIP0D, HOATOC50)" class="form-control" style="text-transform: uppercase; font-weight: 700; flex: 1;">
+                        <button type="button" onclick="applyVoucher()" style="border: none; background: #ff5722; color: white; padding: 0 16px; border-radius: 10px; font-weight: 700; font-size: 13px; cursor: pointer; white-space: nowrap;">
+                            Áp dụng
+                        </button>
+                        <button type="button" onclick="openVoucherWalletModal()" style="border: 1px solid #fed7aa; background: #fff7ed; color: #ea580c; padding: 0 14px; border-radius: 10px; font-weight: 700; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap;">
+                            <i class="fa-solid fa-ticket"></i> Kho
+                        </button>
+                    </div>
+                    <div id="voucher-notice" style="font-size: 12px; color: #16a34a; font-weight: 700; margin-bottom: 12px; display: none;"></div>
+
+                    <div class="bill-row">
+                        <span>Tiền món ăn:</span>
+                        <b id="bill-food-total">0 đ</b>
+                    </div>
+                    <div class="bill-row">
+                        <span>Phí vận chuyển (theo KM):</span>
+                        <b id="bill-shipping-fee">15.000 đ</b>
+                    </div>
+                    <div class="bill-row" id="row-express">
+                        <span>Phụ phí hỏa tốc 15P:</span>
+                        <b id="bill-express-fee">+10.000 đ</b>
+                    </div>
+                    <div class="bill-row" style="color: #16a34a;">
+                        <span>Giảm giá khuyến mãi:</span>
+                        <b id="bill-discount" style="color: #16a34a;">-0 đ</b>
+                    </div>
+
+                    <div class="bill-total">
+                        <div>
+                            <div style="font-size: 13px; color: #64748b; font-weight: 700;">TỔNG THANH TOÁN:</div>
+                            <small style="color: #94a3b8; font-size: 11px;">Đã bao gồm VAT và Cước vận chuyển</small>
+                        </div>
+                        <div class="total-amount" id="bill-final-total">0 đ</div>
+                    </div>
+
+                    <div id="distance-alert-box" style="display: none; margin-top: 15px; border-radius: 14px; padding: 14px 16px; font-size: 13px; line-height: 1.5;"></div>
+
+                    <button type="submit" class="btn-submit-order" id="btn-submit-order">
+                        <i class="fa-solid fa-lock"></i> XÁC NHẬN ĐẶT MÓN và LẤY MÃ QR
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+
+<script>
+    const KHO_DATA = JSON.parse('{{ kho_json|escapejs }}');
+    const VOUCHERS = JSON.parse('{{ vouchers_json|escapejs }}');
+
+    let currentLat = 10.7769;
+    let currentLng = 106.7009;
+    let currentKm = 2.5;
+    let foodSubtotal = 0;
+    let discountAmount = 0;
+    let isExpress = true;
+
+    var map = null;
+    var routingControl = null;
+    var customerMarker = null;
+    var restaurantMarker = null;
+
+    document.addEventListener("DOMContentLoaded", function() {
+        initCheckoutCart();
+        initLeafletMap();
+    });
+
+    function initCheckoutCart() {
+        let cart = getCart();
+        // Nếu giỏ hàng trống, tạo món mặc định để trải nghiệm
+        if (cart.length === 0) {
+            cart = [{
+                id: 1,
+                name: 'Cơm Sườn Bì Chả Đặc Biệt',
+                price: 48000,
+                img: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=800&auto=format&fit=crop&q=60',
+                quantity: 1
+            }];
+            saveCart(cart);
+        }
+
+        document.getElementById('hidden_cart_data').value = JSON.stringify(cart);
+
+        foodSubtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        document.getElementById('bill-food-total').innerText = formatVND(foodSubtotal);
+
+        const summaryBox = document.getElementById('checkout-cart-summary');
+        summaryBox.innerHTML = cart.map(item => `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 13px;">
+                <span style="color: #334155;"><b>${item.quantity}x</b> ${item.name}</span>
+                <span style="font-weight: 700; color: #1e293b;">${formatVND(item.price * item.quantity)}</span>
+            </div>
+        `).join('');
+
+        const savedVoucher = sessionStorage.getItem('selected_voucher');
+        if (savedVoucher) {
+            const vInput = document.getElementById('voucher-input');
+            if (vInput) {
+                vInput.value = savedVoucher;
+                applyVoucher();
+            } else {
+                recalculateBill();
+            }
+        } else {
+            recalculateBill();
+        }
+    }
+
+    function initLeafletMap() {
+        const khoSelect = document.getElementById('kho_select');
+        const selectedOpt = khoSelect.options[khoSelect.selectedIndex];
+        let originLat = parseFloat(selectedOpt.dataset.lat || 10.7721);
+        let originLng = parseFloat(selectedOpt.dataset.lng || 106.6983);
+
+        map = L.map('leaflet-checkout-map').setView([originLat, originLng], 14);
+
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Marker quán ăn
+        const restaurantIcon = L.divIcon({
+            html: '<div style="background: #ff5722; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; border: 3px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.3); font-size: 14px;"><i class="fa-solid fa-store"></i></div>',
+            className: 'custom-icon',
+            iconSize: [32, 32],
+            iconAnchor: [16, 16]
+        });
+
+        // Marker khách
+        const customerIcon = L.divIcon({
+            html: '<div style="background: #22c55e; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; border: 3px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.3); font-size: 14px;"><i class="fa-solid fa-location-dot"></i></div>',
+            className: 'custom-icon',
+            iconSize: [32, 32],
+            iconAnchor: [16, 16]
+        });
+
+        restaurantMarker = L.marker([originLat, originLng], {icon: restaurantIcon}).addTo(map).bindPopup("<b>Bếp / Quán xuất phát</b>");
+        customerMarker = L.marker([currentLat, currentLng], {icon: customerIcon, draggable: true}).addTo(map).bindPopup("<b>Điểm nhận món của bạn</b>");
+
+        updateRoute(originLat, originLng, currentLat, currentLng);
+
+        // Kéo thả marker khách để cập nhật tọa độ
+        customerMarker.on('dragend', function(e) {
+            const pos = e.target.getLatLng();
+            onCustomerCoordsChanged(pos.lat, pos.lng);
+        });
+
+        // Click bản đồ để di chuyển vị trí giao
+        map.on('click', function(e) {
+            customerMarker.setLatLng(e.latlng);
+            onCustomerCoordsChanged(e.latlng.lat, e.latlng.lng);
+        });
+    }
+
+    function onRestaurantChanged() {
+        const khoSelect = document.getElementById('kho_select');
+        const selectedOpt = khoSelect.options[khoSelect.selectedIndex];
+        let originLat = parseFloat(selectedOpt.dataset.lat);
+        let originLng = parseFloat(selectedOpt.dataset.lng);
+        restaurantMarker.setLatLng([originLat, originLng]);
+        updateRoute(originLat, originLng, currentLat, currentLng);
+    }
+
+    function onCustomerCoordsChanged(lat, lng) {
+        currentLat = lat;
+        currentLng = lng;
+        document.getElementById('lat_khach').value = lat.toFixed(6);
+        document.getElementById('lng_khach').value = lng.toFixed(6);
+
+        const khoSelect = document.getElementById('kho_select');
+        const selectedOpt = khoSelect.options[khoSelect.selectedIndex];
+        let originLat = parseFloat(selectedOpt.dataset.lat);
+        let originLng = parseFloat(selectedOpt.dataset.lng);
+
+        updateRoute(originLat, originLng, lat, lng);
+
+        // Reverse geocode lấy địa chỉ tự động
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.display_name) {
+                    document.getElementById('dia_chi_nguoi_nhan').value = data.display_name;
+                }
+            })
+            .catch(() => {});
+    }
+
+    function updateRoute(startLat, startLng, endLat, endLng) {
+        if (routingControl) map.removeControl(routingControl);
+
+        routingControl = L.Routing.control({
+            waypoints: [L.latLng(startLat, startLng), L.latLng(endLat, endLng)],
+            routeWhileDragging: false,
+            addWaypoints: false,
+            draggableWaypoints: false,
+            lineOptions: {
+                styles: [{color: '#ff5722', weight: 6, opacity: 0.85}]
+            },
+            show: false,
+            createMarker: function() { return null; }
+        }).addTo(map);
+
+        routingControl.on('routesfound', function(e) {
+            const routes = e.routes;
+            const summary = routes[0].summary;
+            currentKm = parseFloat((summary.totalDistance / 1000).toFixed(1));
+            const durationMin = Math.round((summary.totalTime / 60) * 1.3);
+
+            document.getElementById('display-distance').innerText = currentKm + " km";
+            document.getElementById('display-duration').innerText = durationMin + " phút";
+            document.getElementById('hidden_km').value = currentKm;
+
+            recalculateBill();
+        });
+    }
+
+    // ==========================================
+    // 📍 ĐỊNH VỊ GPS THỰC TẾ (HTML5 GEOLOCATION API)
+    // ==========================================
+    function getMyGPSLocation() {
+        if (!navigator.geolocation) {
+            alert("Trình duyệt của bạn không hỗ trợ định vị GPS!");
+            return;
+        }
+
+        const btn = document.querySelector('.btn-gps-locate');
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang dò sóng GPS...';
+
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                btn.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> Vị trí GPS của tôi';
+                showToast("📍 Đã tìm thấy vị trí GPS chính xác của bạn!");
+
+                customerMarker.setLatLng([lat, lng]);
+                map.setView([lat, lng], 15);
+                onCustomerCoordsChanged(lat, lng);
+            },
+            function(err) {
+                btn.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> Vị trí GPS của tôi';
+                alert("Không thể lấy vị trí GPS! Hãy cấp quyền truy cập vị trí cho trình duyệt.");
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+    }
+
+    function selectShipping(type) {
+        isExpress = (type === 'HOA_TOC');
+        document.getElementById('loai_giao_hang').value = type;
+        document.getElementById('opt-hoatoc').classList.toggle('selected', isExpress);
+        document.getElementById('opt-tieuchuan').classList.toggle('selected', !isExpress);
+        document.getElementById('row-express').style.display = isExpress ? 'flex' : 'none';
+        recalculateBill();
+    }
+
+    function selectPayment(method) {
+        document.getElementById('phuong_thuc_thanh_toan').value = method;
+        document.getElementById('pay-vietqr').classList.toggle('selected', method === 'QR_VIETQR');
+        document.getElementById('pay-momo').classList.toggle('selected', method === 'MOMO');
+        document.getElementById('pay-cod').classList.toggle('selected', method === 'COD');
+    }
+
+    function calculateHaversine(lat1, lon1, lat2, lon2) {
+        const R = 6371; // bán kính Trái Đất theo km
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                  Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c;
+    }
+
+    function autoSwitchToShop(shopId) {
+        const khoSelect = document.getElementById('kho_select');
+        khoSelect.value = shopId;
+        onRestaurantChanged();
+        showToast("🏪 Đã tự động chuyển sang quán/bếp đối tác gần nhất!");
+    }
+
+    function recalculateBill() {
+        let baseFee = 15000;
+        let kmFee = currentKm <= 2 ? baseFee : (baseFee + Math.round((currentKm - 2) * 5000));
+        kmFee = Math.round(kmFee / 1000) * 1000;
+
+        const currentVoucherInput = (document.getElementById('voucher-input')?.value || '').trim().toUpperCase();
+        const isSànFreeship = (foodSubtotal >= 150000);
+        let actualShippingFee = kmFee;
+        let shippingDiscount = 0;
+
+        if (isSànFreeship) {
+            actualShippingFee = 0;
+            shippingDiscount = kmFee;
+        } else if (currentVoucherInput.includes('FREESHIP')) {
+            shippingDiscount = Math.min(kmFee, discountAmount);
+            actualShippingFee = Math.max(0, kmFee - shippingDiscount);
+        }
+
+        let foodDiscount = currentVoucherInput.includes('FREESHIP') ? 0 : discountAmount;
+        let expressFee = isExpress ? 10000 : 0;
+        let finalTotal = Math.max(0, foodSubtotal - foodDiscount + actualShippingFee + expressFee);
+
+        document.getElementById('hidden_phi_ship').value = actualShippingFee;
+        document.getElementById('hidden_phu_phi').value = expressFee;
+
+        const shipElem = document.getElementById('bill-shipping-fee');
+        if (isSànFreeship || actualShippingFee === 0) {
+            shipElem.innerHTML = `<span style="text-decoration: line-through; color: #94a3b8; font-size: 11.5px; margin-right: 4px;">${formatVND(kmFee)}</span><span style="color: #16a34a; font-weight: 800;">0 đ (Freeship 🎉)</span>`;
+        } else if (shippingDiscount > 0) {
+            shipElem.innerHTML = `<span style="text-decoration: line-through; color: #94a3b8; font-size: 11.5px; margin-right: 4px;">${formatVND(kmFee)}</span><span style="color: #16a34a; font-weight: 800;">${formatVND(actualShippingFee)}</span>`;
+        } else {
+            shipElem.innerText = formatVND(kmFee);
+        }
+
+        let displayedDiscount = foodDiscount + shippingDiscount;
+        document.getElementById('bill-express-fee').innerText = '+' + formatVND(expressFee);
+        document.getElementById('bill-discount').innerText = '-' + formatVND(displayedDiscount);
+        document.getElementById('bill-final-total').innerText = formatVND(finalTotal);
+
+        // ==========================================
+        // 🚨 KIỂM TRA BÁN KÍNH GIAO ĐỒ ĂN HỎA TỐC (MAX 30 KM)
+        // ==========================================
+        const maxDistanceKm = 30.0;
+        const submitBtn = document.getElementById('btn-submit-order');
+        const distAlert = document.getElementById('distance-alert-box');
+
+        if (currentKm > maxDistanceKm) {
+            // Tìm xem có quán nào trong hệ thống gần khách hơn trong phạm vi <= 30km không
+            let closestShop = null;
+            let minD = 999999;
+            if (typeof KHO_DATA !== 'undefined' && Array.isArray(KHO_DATA)) {
+                KHO_DATA.forEach(k => {
+                    if (k.lat && k.lng) {
+                        let d = calculateHaversine(currentLat, currentLng, parseFloat(k.lat), parseFloat(k.lng));
+                        if (d < minD) {
+                            minD = d;
+                            closestShop = k;
+                        }
+                    }
+                });
+            }
+
+            if (closestShop && minD <= maxDistanceKm) {
+                distAlert.style.display = 'block';
+                distAlert.style.background = '#fffbeb';
+                distAlert.style.border = '2px solid #fcd34d';
+                distAlert.style.color = '#92400e';
+                distAlert.innerHTML = `
+                    <div style="font-weight: 800; display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 14px;">
+                        <i class="fa-solid fa-triangle-exclamation" style="color: #f59e0b; font-size: 18px;"></i>
+                        VƯỢT BÁN KÍNH GIAO HÀNG (${currentKm} km > ${maxDistanceKm} km)
+                    </div>
+                    <div style="font-size: 12.5px; color: #78350f;">
+                        Quán xuất phát hiện tại cách bạn quá xa (<b>${currentKm} km</b>). Để đảm bảo đồ ăn hỏa tốc nóng giòn và tiền ship hợp lý, hệ thống đề xuất chuyển sang quán đối tác gần bạn hơn: <b>${closestShop.ten_kho}</b> (~${minD.toFixed(1)} km).
+                    </div>
+                    <button type="button" onclick="autoSwitchToShop(${closestShop.id})" style="margin-top: 10px; width: 100%; background: #f59e0b; color: white; border: none; padding: 10px 14px; border-radius: 10px; font-weight: 800; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);">
+                        <i class="fa-solid fa-location-arrow"></i> Chuyển Đặt Tại: ${closestShop.ten_kho} (~${minD.toFixed(1)} km)
+                    </button>
+                `;
+                submitBtn.disabled = true;
+                submitBtn.style.opacity = '0.5';
+                submitBtn.style.cursor = 'not-allowed';
+            } else {
+                distAlert.style.display = 'block';
+                distAlert.style.background = '#fef2f2';
+                distAlert.style.border = '2px solid #fecaca';
+                distAlert.style.color = '#b91c1c';
+                distAlert.innerHTML = `
+                    <div style="font-weight: 800; display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 14px;">
+                        <i class="fa-solid fa-ban" style="color: #ef4444; font-size: 18px;"></i>
+                        KHÔNG THỂ GIAO HÀNG HỎA TỐC (${currentKm} km > ${maxDistanceKm} km)
+                    </div>
+                    <div style="font-size: 12.5px; color: #7f1d1d;">
+                        Đề tài của chúng tôi là <b>Giao hàng đồ ăn trực tuyến (Online Food Delivery)</b>. Xe máy giao hỏa tốc chỉ hỗ trợ tối đa <b>${maxDistanceKm} km</b>. Đơn hàng liên tỉnh (như mua từ Hà Nội giao TP.HCM) không khả thi vì tiền ship phi lý và đồ ăn không thể bảo quản an toàn. Vui lòng chọn địa chỉ gần hơn!
+                    </div>
+                `;
+                submitBtn.disabled = true;
+                submitBtn.style.opacity = '0.5';
+                submitBtn.style.cursor = 'not-allowed';
+            }
+        } else {
+            distAlert.style.display = 'none';
+            submitBtn.disabled = false;
+            submitBtn.style.opacity = '1';
+            submitBtn.style.cursor = 'pointer';
+        }
+    }
+
+    function applyVoucher() {
+        const input = document.getElementById('voucher-input').value.trim().toUpperCase();
+        const notice = document.getElementById('voucher-notice');
+        
+        if (!input) {
+            discountAmount = 0;
+            notice.style.display = 'none';
+            recalculateBill();
+            return;
+        }
+
+        const voucherRules = {
+            'HOATOC50': { percent: 50, minOrder: 80000, maxDiscount: 40000, type: 'HOA_TOC', label: 'Đặt Món Hỏa Tốc 50%' },
+            'FREESHIP0D': { percent: 30, minOrder: 100000, maxDiscount: 30000, type: 'FREESHIP', label: 'Freeship Mọi Nẻo Đường' },
+            'GONGCHA29K': { percent: 20, minOrder: 60000, maxDiscount: 25000, type: 'QUAN', label: 'Tiệc Trà Sữa Gong Cha' },
+            'B2BSALE': { percent: 15, minOrder: 150000, maxDiscount: 50000, type: 'B2B', label: 'Festival Ẩm Thực B2B' },
+        };
+
+        const rule = voucherRules[input] || (typeof VOUCHERS !== 'undefined' ? VOUCHERS.find(v => v.ma_voucher.toUpperCase() === input) : null);
+
+        if (rule) {
+            const minOrder = rule.minOrder || (rule.giam_gia_phan_tram >= 20 ? 60000 : 50000);
+            const percent = rule.percent || rule.giam_gia_phan_tram;
+            const maxDiscount = rule.maxDiscount || 50000;
+
+            if (foodSubtotal < minOrder) {
+                discountAmount = 0;
+                notice.style.display = 'block';
+                notice.style.color = '#d97706';
+                const missing = minOrder - foodSubtotal;
+                notice.innerHTML = `⚠️ <b>Chưa đủ điều kiện:</b> Mã <b>${input}</b> yêu cầu đơn tối thiểu <b>${formatVND(minOrder)}</b>. Mua thêm <b>${formatVND(missing)}</b> để áp dụng!`;
+                recalculateBill();
+                return;
+            }
+
+            let baseFee = 15000;
+            let kmFee = currentKm <= 2 ? baseFee : (baseFee + Math.round((currentKm - 2) * 5000));
+            kmFee = Math.round(kmFee / 1000) * 1000;
+
+            if (input.includes('FREESHIP')) {
+                const shippingSaving = Math.min(kmFee, maxDiscount);
+                discountAmount = shippingSaving;
+                notice.style.display = 'block';
+                notice.style.color = '#16a34a';
+                notice.innerHTML = `✅ <b>Áp dụng thành công:</b> Miễn phí vận chuyển (Tiết kiệm <b>-${formatVND(shippingSaving)}</b>)`;
+            } else {
+                discountAmount = Math.min(maxDiscount, Math.round(foodSubtotal * (percent / 100)));
+                notice.style.display = 'block';
+                notice.style.color = '#16a34a';
+                notice.innerHTML = `✅ <b>Đã áp dụng mã "${input}":</b> Giảm ${percent}% (Tiết kiệm <b>-${formatVND(discountAmount)}</b>)`;
+            }
+            sessionStorage.setItem('selected_voucher', input);
+            recalculateBill();
+        } else {
+            discountAmount = 0;
+            notice.style.display = 'block';
+            notice.style.color = '#ef4444';
+            notice.innerHTML = `❌ Mã giảm giá <b>"${input}"</b> không tồn tại hoặc đã hết hạn sử dụng!`;
+            recalculateBill();
+        }
+    }
+</script>
+{% endblock %}

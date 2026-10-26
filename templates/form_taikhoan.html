@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+    body { font-family: 'Poppins', sans-serif; background-color: #f4f6f9; }
+
+    /* Bọc form ở giữa màn hình */
+    .form-wrapper { max-width: 900px; margin: 40px auto; padding: 0 15px;}
+    .card-box {
+        background: white; border-radius: 20px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.06); overflow: hidden;
+    }
+
+    /* HEADER FORM GRADIENT (Tông Xanh Lá - Bảo mật) */
+    .form-header {
+        background: linear-gradient(135deg, #2dce89 0%, #2b8a3e 100%);
+        padding: 30px 40px; color: white;
+    }
+    .form-header h2 { margin: 0; font-size: 24px; font-weight: 700; display: flex; align-items: center; gap: 12px; }
+    .form-header p { margin: 8px 0 0 0; font-size: 14px; opacity: 0.9; }
+
+    .form-body { padding: 40px; }
+
+    /* KHUNG LƯU Ý (ALERT) NÂNG CẤP */
+    .info-alert {
+        background: #f0f9ff; border: 1px solid #bae6fd; border-left: 4px solid #0ea5e9;
+        padding: 18px 20px; border-radius: 12px; margin-bottom: 35px;
+        color: #0369a1; font-size: 14px; line-height: 1.6;
+    }
+    .info-alert a { color: #0284c7; font-weight: 700; text-decoration: none; border-bottom: 1px dashed #0284c7; transition: 0.2s; }
+    .info-alert a:hover { color: #0369a1; border-bottom-style: solid; }
+
+    /* NHÃN DÁN (LABEL) */
+    .form-label { 
+        display: block; font-weight: 600; color: #475569; margin-bottom: 8px; 
+        font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; 
+    }
+
+    /* BẮT LỖI CÁC Ô INPUT DJANGO (Gồm cả ô Password) */
+    .django-field input[type="text"], 
+    .django-field input[type="password"],
+    .django-field input[type="email"], 
+    .django-field select {
+        width: 100%; padding: 14px 18px; border: 2px solid #e2e8f0;
+        border-radius: 12px; font-size: 14px; color: #1e293b;
+        background: #f8fafc; outline: none; transition: all 0.3s ease;
+        font-family: 'Poppins', sans-serif; box-sizing: border-box;
+    }
+    .django-field input:focus, .django-field select:focus {
+        border-color: #2dce89; background: #ffffff; box-shadow: 0 0 0 4px rgba(45, 206, 137, 0.15);
+    }
+
+    /* CHECKBOX (Dành cho is_staff / is_active) */
+    .django-field:has(input[type="checkbox"]) {
+        display: flex; flex-direction: row-reverse; justify-content: flex-end; align-items: center; gap: 15px; margin-top: 10px;
+        background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0;
+    }
+    .django-field:has(input[type="checkbox"]) label { margin-bottom: 0; cursor: pointer; color: #1e293b; font-weight: 600; }
+    .django-field input[type="checkbox"] { width: 22px; height: 22px; cursor: pointer; accent-color: #2dce89; }
+
+    /* HELP TEXT (Văn bản hướng dẫn password của Django) */
+    .helptext { display: block; font-size: 12px; color: #94a3b8; font-style: italic; margin-top: 10px; line-height: 1.5; }
+    .helptext ul { padding-left: 20px; margin-top: 5px; margin-bottom: 0; }
+
+    /* NÚT ACTION */
+    .form-actions {
+        display: flex; justify-content: flex-end; align-items: center; gap: 15px;
+        margin-top: 40px; padding-top: 25px; border-top: 1px solid #e2e8f0;
+    }
+    .btn-back { 
+        padding: 14px 28px; border-radius: 12px; font-weight: 600; color: #64748b;
+        background: #f1f5f9; text-decoration: none; transition: 0.3s; display: inline-flex; align-items: center; gap: 8px;
+    }
+    .btn-back:hover { background: #e2e8f0; color: #0f172a; }
+    .btn-submit {
+        padding: 14px 28px; border-radius: 12px; font-weight: 600; color: white;
+        background: linear-gradient(135deg, #2dce89 0%, #2b8a3e 100%);
+        border: none; cursor: pointer; transition: 0.3s;
+        box-shadow: 0 4px 15px rgba(45, 206, 137, 0.3); font-family: 'Poppins', sans-serif; font-size: 15px;
+        display: inline-flex; align-items: center; gap: 8px;
+    }
+    .btn-submit:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(45, 206, 137, 0.4); }
+</style>
+
+<div class="form-wrapper">
+    <div class="card-box">
+        <div class="form-header">
+            <h2><i class="fa-solid fa-shield-halved"></i> {{ title|default:"Cấp Tài Khoản Mới" }}</h2>
+            <p>Thiết lập thông tin đăng nhập và cấp quyền truy cập hệ thống cho nhân viên.</p>
+        </div>
+
+        <div class="form-body">
+            
+            <div class="info-alert">
+                <div style="display: flex; gap: 12px;">
+                    <i class="fa-solid fa-circle-info" style="font-size: 20px; margin-top: 2px;"></i>
+                    <div>
+                        <b>Lưu ý quan trọng:</b><br>
+                        Khu vực này chỉ dùng để tạo/sửa <b>Tên đăng nhập (Username)</b> và <b>Mật khẩu</b>.<br>
+                        👉 Để đổi tên hiển thị, cập nhật số điện thoại hay biển số xe của Shipper, vui lòng sang mục <a href="{% url 'core:quan_ly_tai_xe' %}">Quản Lý Tài Xế</a>.
+                    </div>
+                </div>
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 25px;">
+                    {% for field in form %}
+                        {% if field.name == 'is_staff' %}
+                            <div class="role-selector-container" style="grid-column: 1 / -1; margin-top: 10px;">
+                                <label style="font-size: 13px; font-weight: 600; color: #475569; text-transform: uppercase; margin-bottom: 12px; display: block;">Vai trò tài khoản</label>
+                                
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                                    <label class="role-card" onclick="setRole('admin')" style="cursor: pointer; margin:0;">
+                                        <input type="radio" name="fake_role" id="role_admin" style="display:none;" {% if field.value %}checked{% endif %}>
+                                        {% if field.value %}
+                                        <div class="role-content" style="border: 2px solid #5e72e4; background: #f0f2ff; padding: 15px 10px; border-radius: 12px; text-align: center; transition: 0.3s; height: 100%;">
+                                            <i class="fa-solid fa-user-shield mb-2" style="color: #5e72e4; font-size: 24px; margin-bottom: 10px;"></i>
+                                            <div style="font-weight: bold; font-size: 14px; color: #5e72e4; margin-bottom: 5px;">Quản trị viên</div>
+                                            <small class="text-muted" style="font-size: 11.5px; color: #8898aa;">Toàn quyền hệ thống</small>
+                                        </div>
+                                        {% else %}
+                                        <div class="role-content" style="border: 2px solid #e2e8f0; background: transparent; padding: 15px 10px; border-radius: 12px; text-align: center; transition: 0.3s; height: 100%;">
+                                            <i class="fa-solid fa-user-shield mb-2" style="color: #f5365c; font-size: 24px; margin-bottom: 10px;"></i>
+                                            <div style="font-weight: bold; font-size: 14px; color: #32325d; margin-bottom: 5px;">Quản trị viên</div>
+                                            <small class="text-muted" style="font-size: 11.5px; color: #8898aa;">Toàn quyền hệ thống</small>
+                                        </div>
+                                        {% endif %}
+                                    </label>
+
+                                    <label class="role-card" onclick="setRole('partner')" style="cursor: pointer; margin:0;">
+                                        <input type="radio" name="fake_role" id="role_partner" style="display:none;" {% if not field.value %}checked{% endif %}>
+                                        {% if not field.value %}
+                                        <div class="role-content" style="border: 2px solid #5e72e4; background: #f0f2ff; padding: 15px 10px; border-radius: 12px; text-align: center; transition: 0.3s; height: 100%;">
+                                            <i class="fa-solid fa-handshake mb-2" style="color: #5e72e4; font-size: 24px; margin-bottom: 10px;"></i>
+                                            <div style="font-weight: bold; font-size: 14px; color: #5e72e4; margin-bottom: 5px;">Đối Tác (B2B)</div>
+                                            <small class="text-muted" style="font-size: 11.5px; color: #8898aa;">Đẩy vận đơn vào kho</small>
+                                        </div>
+                                        {% else %}
+                                        <div class="role-content" style="border: 2px solid #e2e8f0; background: transparent; padding: 15px 10px; border-radius: 12px; text-align: center; transition: 0.3s; height: 100%;">
+                                            <i class="fa-solid fa-handshake mb-2" style="color: #0ea5e9; font-size: 24px; margin-bottom: 10px;"></i>
+                                            <div style="font-weight: bold; font-size: 14px; color: #32325d; margin-bottom: 5px;">Đối Tác (B2B)</div>
+                                            <small class="text-muted" style="font-size: 11.5px; color: #8898aa;">Đẩy vận đơn vào kho</small>
+                                        </div>
+                                        {% endif %}
+                                    </label>
+
+                                    <label class="role-card" onclick="setRole('shipper')" style="cursor: pointer; margin:0;">
+                                        <input type="radio" name="fake_role" id="role_shipper" style="display:none;">
+                                        <div class="role-content" style="border: 2px solid #e2e8f0; padding: 15px 10px; border-radius: 12px; text-align: center; transition: 0.3s; height: 100%;">
+                                            <i class="fa-solid fa-motorcycle mb-2" style="color: #fb6340; font-size: 24px; margin-bottom: 10px;"></i>
+                                            <div style="font-weight: bold; font-size: 14px; color: #32325d; margin-bottom: 5px;">Tài Xế (Shipper)</div>
+                                            <small class="text-muted" style="font-size: 11.5px; color: #8898aa;">Giao hàng trên App</small>
+                                        </div>
+                                    </label>
+                                </div>
+
+                                {% if field.value %}
+                                <div id="role-hint" style="margin-top: 20px; padding: 15px; background: #fef2f2; color: #e11d48; border-radius: 8px; font-size: 13px; line-height: 1.5;">
+                                    <i class="fa-solid fa-shield-halved"></i> <b>Quản trị viên:</b> Có toàn quyền xem Dashboard, Bản đồ GIS và Quản lý kho.
+                                </div>
+                                {% else %}
+                                <div id="role-hint" style="margin-top: 20px; padding: 15px; background: #e0f2fe; color: #0284c7; border-radius: 8px; font-size: 13px; line-height: 1.5;">
+                                    <i class="fa-solid fa-circle-info"></i> <b>Đối tác B2B:</b> Mặc định dùng cho Shopee, TikTok... để tạo đơn.
+                                </div>
+                                {% endif %}
+
+                                <div style="display: none;">{{ field }}</div>
+                            </div>
+
+                            <script>
+                                function setRole(role) {
+                                    // Reset giao diện
+                                    document.querySelectorAll('.role-content').forEach(el => {
+                                        el.style.borderColor = '#e2e8f0';
+                                        el.style.background = 'transparent';
+                                        el.querySelector('div').style.color = '#32325d';
+                                        if(el.parentElement.querySelector('input').id === 'role_admin') el.querySelector('i').style.color = '#f5365c';
+                                        if(el.parentElement.querySelector('input').id === 'role_partner') el.querySelector('i').style.color = '#0ea5e9';
+                                        if(el.parentElement.querySelector('input').id === 'role_shipper') el.querySelector('i').style.color = '#fb6340';
+                                    });
+                                    
+                                    const realCheckbox = document.querySelector('input[name="is_staff"]');
+                                    const hint = document.getElementById('role-hint');
+                                    const selectedContent = document.querySelector('#role_' + role).nextElementSibling;
+                                    
+                                    // Bật sáng mục được chọn
+                                    selectedContent.style.borderColor = '#5e72e4';
+                                    selectedContent.style.background = '#f0f2ff';
+                                    selectedContent.querySelector('div').style.color = '#5e72e4';
+                                    selectedContent.querySelector('i').style.color = '#5e72e4';
+
+                                    // Check/Uncheck logic
+                                    if(role === 'admin') {
+                                        if(realCheckbox) realCheckbox.checked = true;
+                                        hint.innerHTML = '<i class="fa-solid fa-shield-halved"></i> <b>Quản trị viên:</b> Có toàn quyền xem Dashboard, Bản đồ GIS và Quản lý kho.';
+                                        hint.style.background = '#fef2f2'; hint.style.color = '#e11d48';
+                                    } else if (role === 'partner') {
+                                        if(realCheckbox) realCheckbox.checked = false;
+                                        hint.innerHTML = '<i class="fa-solid fa-circle-info"></i> <b>Đối tác B2B:</b> Mặc định dùng cho Shopee, TikTok... để tạo đơn.';
+                                        hint.style.background = '#e0f2fe'; hint.style.color = '#0284c7';
+                                    } else {
+                                        if(realCheckbox) realCheckbox.checked = false;
+                                        hint.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> <b>Tài xế:</b> Tạo xong, bạn <u>phải sang mục Quản lý Tài xế</u> để gắn biển số xe vào tài khoản này.';
+                                        hint.style.background = '#fef9c3'; hint.style.color = '#ca8a04';
+                                    }
+                                }
+                            </script>
+
+                        {% else %}
+                            <div class="django-field">
+                                <label class="form-label">{{ field.label }}</label>
+                                {{ field }}
+                                {% if field.help_text %}
+                                    <span class="helptext">
+                                        {% if field.name == 'username' %}
+                                            Bắt buộc. Tối đa 150 ký tự. Chỉ bao gồm chữ cái, chữ số và các ký tự @/./+/-/_
+                                        {% else %}
+                                            {{ field.help_text|safe }}
+                                        {% endif %}
+                                    </span>
+                                {% endif %}
+                                {% if field.errors %}
+                                    <span style="color: #f5365c; font-size: 13px; margin-top: 8px; display: block; font-weight: 500;">
+                                        <i class="fa-solid fa-circle-exclamation"></i> {{ field.errors.0 }}
+                                    </span>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+
+                <div class="form-actions">
+                    <a href="{% url back_url %}" class="btn-back"><i class="fa-solid fa-arrow-left"></i> Quay lại</a>
+                    <button type="submit" class="btn-submit"><i class="fa-solid fa-user-check"></i> Lưu Tài Khoản</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

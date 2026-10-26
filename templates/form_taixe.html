@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block content %}
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+    body { font-family: 'Poppins', sans-serif; background-color: #f4f6f9; }
+
+    /* Bọc form ở giữa màn hình, tạo khung đổ bóng xịn xò */
+    .form-wrapper { 
+        max-width: 900px; margin: 40px auto; 
+        background: #ffffff; border-radius: 20px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.06); overflow: hidden; 
+    }
+    
+    /* Header Gradient tông Xanh Cyan của bạn */
+    .form-header {
+        background: linear-gradient(135deg, #11cdef 0%, #1171ef 100%);
+        padding: 30px 40px; color: white;
+    }
+    .form-header h2 { margin: 0; font-size: 24px; font-weight: 700; display: flex; align-items: center; gap: 12px; }
+    .form-header p { margin: 8px 0 0 0; font-size: 14px; opacity: 0.9; }
+
+    .form-body { padding: 40px; }
+
+    /* Nhãn dán (Label) hiện đại */
+    .form-label { 
+        display: block; font-weight: 600; color: #475569; margin-bottom: 8px; 
+        font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; 
+    }
+
+    /* Bắt các ô Input/Select do Django tự sinh ra để làm đẹp */
+    .django-field input[type="text"], 
+    .django-field input[type="number"], 
+    .django-field input[type="email"], 
+    .django-field input[type="password"], 
+    .django-field select, 
+    .django-field textarea {
+        width: 100%; padding: 14px 18px; border: 2px solid #e2e8f0;
+        border-radius: 12px; font-size: 14px; color: #1e293b;
+        background: #f8fafc; outline: none; transition: all 0.3s ease;
+        font-family: 'Poppins', sans-serif; box-sizing: border-box;
+    }
+
+    /* Hiệu ứng phát sáng khi bấm vào ô nhập liệu */
+    .django-field input:focus, 
+    .django-field select:focus, 
+    .django-field textarea:focus {
+        border-color: #11cdef; background: #ffffff;
+        box-shadow: 0 0 0 4px rgba(17, 205, 239, 0.15);
+    }
+
+    /* Căn chỉnh riêng cho Checkbox (VD: Chấm công đang online) */
+    .django-field:has(input[type="checkbox"]) {
+        display: flex; flex-direction: row-reverse; justify-content: flex-end; align-items: center; gap: 15px; margin-top: 15px;
+    }
+    .django-field:has(input[type="checkbox"]) label { margin-bottom: 0; cursor: pointer; }
+    .django-field input[type="checkbox"] {
+        width: 24px; height: 24px; cursor: pointer; accent-color: #1171ef;
+    }
+
+    /* Nút bấm ở cuối form */
+    .form-actions {
+        display: flex; justify-content: flex-end; align-items: center; gap: 15px;
+        margin-top: 35px; padding-top: 25px; border-top: 2px solid #f1f5f9;
+    }
+
+    .btn-back { 
+        background: #f1f5f9; color: #475569; padding: 14px 28px; border-radius: 12px; 
+        text-decoration: none; font-weight: 600; transition: 0.3s; 
+        display: inline-flex; align-items: center; gap: 8px;
+    }
+    .btn-back:hover { background: #e2e8f0; color: #1e293b; }
+
+    .btn-submit {
+        padding: 14px 28px; border-radius: 12px; font-weight: 600; color: white;
+        background: linear-gradient(135deg, #11cdef 0%, #1171ef 100%);
+        border: none; cursor: pointer; transition: 0.3s;
+        box-shadow: 0 4px 15px rgba(17, 205, 239, 0.3); 
+        display: inline-flex; align-items: center; gap: 8px; font-family: 'Poppins', sans-serif; font-size: 15px;
+    }
+    .btn-submit:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(17, 205, 239, 0.4); }
+</style>
+
+<div class="form-wrapper">
+    <div class="form-header">
+        <h2><i class="fa-solid fa-id-card-clip"></i> {{ title }}</h2>
+        <p>Vui lòng điền đầy đủ và chính xác thông tin vào các trường bên dưới.</p>
+    </div>
+
+    <div class="form-body">
+        <form method="post">
+            {% csrf_token %}
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 25px;">
+                {% for field in form %}
+                    <div class="django-field">
+                        <label class="form-label">{{ field.label }}</label>
+                        {{ field }}
+                        
+                        {% if field.errors %}
+                            <span style="color: #f5365c; font-size: 12px; margin-top: 8px; display: block; font-weight: 500;">
+                                <i class="fa-solid fa-circle-exclamation"></i> {{ field.errors.0 }}
+                            </span>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+
+            <div class="form-actions">
+                <a href="{% url 'core:quan_ly_tai_xe' %}" class="btn-back">
+                    <i class="fa-solid fa-arrow-left"></i> Quay lại
+                </a>
+                <button type="submit" class="btn-submit">
+                    <i class="fa-solid fa-floppy-disk"></i> Lưu Dữ Liệu
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

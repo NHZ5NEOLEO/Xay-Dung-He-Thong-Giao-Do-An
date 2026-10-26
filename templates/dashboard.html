@@ -1,0 +1,801 @@
+{% extends "base.html" %}
+{% load static currency_filters %}
+
+{% block title %}Dashboard Thống Kê & Phân Tích Logistics TMĐT - FoodDelivery{% endblock %}
+
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+    .dashboard-page-wrapper {
+        max-width: 1400px;
+        margin: 25px auto 70px;
+        padding: 0 20px;
+    }
+
+    /* Header Banner */
+    .dashboard-header-banner {
+        background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 60%, #1e293b 100%);
+        border-radius: 24px;
+        padding: 35px 40px;
+        color: white;
+        margin-bottom: 30px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 15px 35px rgba(15, 23, 42, 0.12);
+    }
+
+    .header-glow-bg {
+        position: absolute;
+        top: -60px;
+        right: -60px;
+        width: 320px;
+        height: 320px;
+        background: radial-gradient(circle, rgba(255, 87, 34, 0.3) 0%, transparent 70%);
+        filter: blur(40px);
+        pointer-events: none;
+    }
+
+    .dashboard-header-flex {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 20px;
+        position: relative;
+        z-index: 2;
+    }
+
+    .header-tagline {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(255, 87, 34, 0.2);
+        color: #ff7043;
+        border: 1px solid rgba(255, 87, 34, 0.4);
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 11.5px;
+        font-weight: 800;
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+        margin-bottom: 10px;
+    }
+
+    .header-title {
+        font-size: 28px;
+        font-weight: 900;
+        letter-spacing: -0.5px;
+        margin: 0 0 6px 0;
+        color: #ffffff;
+    }
+
+    .header-desc {
+        color: #94a3b8;
+        font-size: 14px;
+        margin: 0;
+        max-width: 650px;
+        line-height: 1.5;
+    }
+
+    .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .btn-dash-action {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 18px;
+        border-radius: 12px;
+        font-size: 13.5px;
+        font-weight: 700;
+        text-decoration: none;
+        transition: all 0.25s ease;
+        cursor: pointer;
+        border: none;
+    }
+
+    .btn-dash-primary {
+        background: linear-gradient(135deg, #ff5722 0%, #ff7043 100%);
+        color: white;
+        box-shadow: 0 4px 14px rgba(255, 87, 34, 0.35);
+    }
+    .btn-dash-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(255, 87, 34, 0.45);
+        color: white;
+    }
+
+    .btn-dash-outline {
+        background: rgba(255, 255, 255, 0.1);
+        color: #e2e8f0;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .btn-dash-outline:hover {
+        background: rgba(255, 255, 255, 0.18);
+        color: white;
+    }
+
+    /* KPI Cards Grid */
+    .kpi-grid-6 {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        gap: 18px;
+        margin-bottom: 30px;
+    }
+
+    .kpi-stat-card {
+        background: white;
+        border-radius: 18px;
+        padding: 22px 20px;
+        box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05);
+        border: 1px solid #f1f5f9;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        transition: all 0.25s ease;
+    }
+
+    .kpi-stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+        border-color: #fdba74;
+    }
+
+    .kpi-icon-box {
+        width: 52px;
+        height: 52px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        flex-shrink: 0;
+    }
+
+    .bg-gmv { background: #fff7ed; color: #ff5722; }
+    .bg-san { background: #eef2ff; color: #4f46e5; }
+    .bg-ads { background: #fdf4ff; color: #c026d3; }
+    .bg-shipper { background: #f0fdf4; color: #16a34a; }
+    .bg-orders { background: #ecfeff; color: #0891b2; }
+    .bg-express { background: #fef2f2; color: #dc2626; }
+
+    .kpi-stat-info h5 {
+        font-size: 12px;
+        font-weight: 700;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin: 0 0 4px 0;
+    }
+
+    .kpi-stat-info h3 {
+        font-size: 20px;
+        font-weight: 900;
+        color: #0f172a;
+        margin: 0 0 2px 0;
+        line-height: 1.2;
+    }
+
+    .kpi-stat-info span.trend-pill {
+        font-size: 11px;
+        font-weight: 700;
+        color: #16a34a;
+    }
+
+    /* Charts Row */
+    .dashboard-charts-row {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 22px;
+        margin-bottom: 30px;
+    }
+
+    .chart-panel-card {
+        background: white;
+        border-radius: 20px;
+        padding: 26px;
+        box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05);
+        border: 1px solid #f1f5f9;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .panel-title {
+        font-size: 16px;
+        font-weight: 800;
+        color: #1e293b;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 0;
+    }
+
+    .chart-container-inner {
+        position: relative;
+        flex: 1;
+        min-height: 300px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Two Columns Section: Orders and Shippers */
+    .dashboard-tables-row {
+        display: grid;
+        grid-template-columns: 1.6fr 1fr;
+        gap: 22px;
+        margin-bottom: 35px;
+    }
+
+    .dash-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0 6px;
+    }
+
+    .dash-table th {
+        font-size: 11.5px;
+        font-weight: 800;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 10px 12px;
+        text-align: left;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .dash-table td {
+        background: #f8fafc;
+        padding: 12px 14px;
+        font-size: 13px;
+        color: #1e293b;
+        vertical-align: middle;
+        transition: background 0.2s;
+    }
+
+    .dash-table tr:hover td {
+        background: #f1f5f9;
+    }
+
+    .dash-table td:first-child { border-radius: 10px 0 0 10px; }
+    .dash-table td:last-child { border-radius: 0 10px 10px 0; }
+
+    /* Shipper List Cards */
+    .shipper-rank-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 14px;
+        border-radius: 12px;
+        background: #f8fafc;
+        margin-bottom: 10px;
+        transition: all 0.2s;
+    }
+
+    .shipper-rank-item:hover {
+        background: #fff7ed;
+        transform: translateX(4px);
+    }
+
+    .shipper-rank-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .shipper-rank-num {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        background: #e2e8f0;
+        color: #334155;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 12px;
+    }
+
+    .rank-top-1 { background: #fef08a; color: #854d0e; }
+    .rank-top-2 { background: #e2e8f0; color: #475569; }
+    .rank-top-3 { background: #fed7aa; color: #9a3412; }
+
+    /* Quick Shortcuts Grid */
+    .shortcuts-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 15px;
+    }
+
+    .shortcut-card {
+        background: white;
+        border: 1px solid #f1f5f9;
+        border-radius: 16px;
+        padding: 18px;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+        transition: all 0.25s ease;
+    }
+
+    .shortcut-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+        border-color: #fed7aa;
+    }
+
+    .shortcut-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        flex-shrink: 0;
+    }
+
+    .shortcut-title {
+        font-size: 13.5px;
+        font-weight: 800;
+        color: #1e293b;
+    }
+
+    .shortcut-desc {
+        font-size: 11.5px;
+        color: #94a3b8;
+    }
+
+    @media (max-width: 992px) {
+        .dashboard-charts-row, .dashboard-tables-row {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="dashboard-page-wrapper">
+
+    <!-- 1. HEADER BANNER THỜI THƯỢNG -->
+    <div class="dashboard-header-banner">
+        <div class="header-glow-bg"></div>
+        <div class="dashboard-header-flex">
+            <div>
+                <span class="header-tagline">
+                    <i class="fa-solid fa-chart-line"></i> Báo Cáo Điều Hành Real-time
+                </span>
+                <h1 class="header-title">
+                    Dashboard Quản Trị & Phân Tích Logistics TMĐT
+                </h1>
+                <p class="header-desc">
+                    Hệ thống kiểm soát doanh thu tự động, kết nối trực tiếp với 5 bếp trung tâm, mạng lưới định vị tài xế GIS và xử lý đơn hàng hỏa tốc trong 15 phút.
+                </p>
+            </div>
+
+            <div class="header-actions">
+                <a href="{% url 'core:export_excel' %}" class="btn-dash-action btn-dash-primary" title="Xuất dữ liệu Excel">
+                    <i class="fa-solid fa-file-excel"></i> Xuất Báo Cáo Excel
+                </a>
+                <a href="{% url 'core:ban_do_chung' %}" class="btn-dash-action btn-dash-outline" title="Bản đồ GIS thời gian thực">
+                    <i class="fa-solid fa-earth-americas"></i> Bản Đồ GIS Live
+                </a>
+                <button type="button" onclick="location.reload()" class="btn-dash-action btn-dash-outline" title="Làm mới số liệu">
+                    <i class="fa-solid fa-rotate"></i> Làm mới
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. LƯỚI 6 THẺ KPI TÀI CHÍNH VÀ VẬN HÀNH -->
+    <div class="kpi-grid-6">
+        <!-- 1. GMV -->
+        <div class="kpi-stat-card">
+            <div class="kpi-icon-box bg-gmv">
+                <i class="fa-solid fa-sack-dollar"></i>
+            </div>
+            <div class="kpi-stat-info">
+                <h5>Tổng GMV Bán Món</h5>
+                <h3>{{ stats.tong_gmv|dinh_dang_tien }}đ</h3>
+                <span class="trend-pill"><i class="fa-solid fa-arrow-trend-up"></i> +18.5% tuần này</span>
+            </div>
+        </div>
+
+        <!-- 2. Hoa hồng sàn -->
+        <div class="kpi-stat-card">
+            <div class="kpi-icon-box bg-san">
+                <i class="fa-solid fa-building-columns"></i>
+            </div>
+            <div class="kpi-stat-info">
+                <h5>Hoa Hồng Sàn (15%)</h5>
+                <h3>{{ stats.hoa_hong_san|dinh_dang_tien }}đ</h3>
+                <span class="trend-pill"><i class="fa-solid fa-circle-check"></i> Doanh thu thực nhận</span>
+            </div>
+        </div>
+
+        <!-- 3. Doanh thu Ads -->
+        <div class="kpi-stat-card">
+            <div class="kpi-icon-box bg-ads">
+                <i class="fa-solid fa-rectangle-ad"></i>
+            </div>
+            <div class="kpi-stat-info">
+                <h5>Quảng Cáo & Ads</h5>
+                <h3>{{ stats.doanh_thu_ads|dinh_dang_tien }}đ</h3>
+                <span class="trend-pill"><i class="fa-solid fa-bullhorn"></i> 4 Đối tác tài trợ</span>
+            </div>
+        </div>
+
+        <!-- 4. Lương Shipper -->
+        <div class="kpi-stat-card">
+            <div class="kpi-icon-box bg-shipper">
+                <i class="fa-solid fa-motorcycle"></i>
+            </div>
+            <div class="kpi-stat-info">
+                <h5>Thu Nhập Shipper</h5>
+                <h3>{{ stats.tong_doanh_thu_shipper|dinh_dang_tien }}đ</h3>
+                <span class="trend-pill"><i class="fa-solid fa-user-check"></i> {{ stats.tai_xe_online }}/{{ stats.so_tai_xe }} tài xế online</span>
+            </div>
+        </div>
+
+        <!-- 5. Tổng Vận Đơn -->
+        <div class="kpi-stat-card">
+            <div class="kpi-icon-box bg-orders">
+                <i class="fa-solid fa-box-archive"></i>
+            </div>
+            <div class="kpi-stat-info">
+                <h5>Tổng Số Vận Đơn</h5>
+                <h3>{{ stats.tong_don }} <span style="font-size: 14px; font-weight: 600; color: #64748b;">đơn</span></h3>
+                <span style="font-size: 11px; font-weight: 700; color: #ea580c;">
+                    <i class="fa-solid fa-spinner fa-spin"></i> Đang giao: {{ stats.don_dang_giao }}
+                </span>
+            </div>
+        </div>
+
+        <!-- 6. Tỉ lệ hỏa tốc -->
+        <div class="kpi-stat-card">
+            <div class="kpi-icon-box bg-express">
+                <i class="fa-solid fa-bolt"></i>
+            </div>
+            <div class="kpi-stat-info">
+                <h5>Chuẩn Hỏa Tốc 15P</h5>
+                <h3>98.6%</h3>
+                <span class="trend-pill"><i class="fa-solid fa-clock"></i> TB: 14.2 phút / đơn</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. BIỂU ĐỒ TĂNG TRƯỞNG & PHÂN BỔ TRẠNG THÁI -->
+    <div class="dashboard-charts-row">
+        <!-- Chart 1: Doanh thu 7 ngày -->
+        <div class="chart-panel-card">
+            <div class="panel-header">
+                <h4 class="panel-title">
+                    <i class="fa-solid fa-chart-area" style="color: #ff5722;"></i>
+                    Tăng Trưởng Doanh Thu GMV 7 Ngày Gần Nhất
+                </h4>
+                <span style="font-size: 12px; font-weight: 700; color: #64748b; background: #f8fafc; padding: 4px 10px; border-radius: 8px;">
+                    Dữ liệu cập nhật tự động
+                </span>
+            </div>
+            <div class="chart-container-inner">
+                <canvas id="growthChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Chart 2: Trạng thái đơn -->
+        <div class="chart-panel-card">
+            <div class="panel-header">
+                <h4 class="panel-title">
+                    <i class="fa-solid fa-chart-pie" style="color: #6366f1;"></i>
+                    Phân Bổ Trạng Thái Đơn Hàng
+                </h4>
+            </div>
+            <div class="chart-container-inner">
+                <canvas id="donutStatusChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. DANH SÁCH ĐƠN HÀNG MỚI & BẢNG XẾP HẠNG SHIPPER -->
+    <div class="dashboard-tables-row">
+        
+        <!-- Bảng đơn mới nhất -->
+        <div class="chart-panel-card">
+            <div class="panel-header">
+                <h4 class="panel-title">
+                    <i class="fa-solid fa-receipt" style="color: #ff5722;"></i>
+                    Vận Đơn Mới Nhất Trên Hệ Thống
+                </h4>
+                <a href="{% url 'core:quan_ly_don_hang' %}" style="font-size: 12.5px; font-weight: 700; color: #ff5722; text-decoration: none;">
+                    Quản lý tất cả &rarr;
+                </a>
+            </div>
+
+            <div style="overflow-x: auto;">
+                <table class="dash-table">
+                    <thead>
+                        <tr>
+                            <th>Mã Đơn</th>
+                            <th>Người Nhận</th>
+                            <th>Quán / Bếp</th>
+                            <th>Loại Giao</th>
+                            <th style="text-align: right;">Tổng Tiền</th>
+                            <th>Trạng Thái</th>
+                            <th style="text-align: center;">Lộ Trình</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for don in don_hangs_moi %}
+                        <tr>
+                            <td><b>#{{ don.ma_don }}</b></td>
+                            <td>
+                                <b>{{ don.ten_nguoi_nhan }}</b>
+                                <small style="display: block; color: #94a3b8; font-size: 11px;">{{ don.sdt_nguoi_nhan }}</small>
+                            </td>
+                            <td>{{ don.kho_xuat_phat.ten_kho|truncatechars:18 }}</td>
+                            <td>
+                                {% if don.loai_giao_hang == 'HOA_TOC' %}
+                                <span style="background: #fff7ed; color: #ea580c; font-weight: 800; font-size: 10.5px; padding: 3px 8px; border-radius: 6px;">
+                                    ⚡ 15P
+                                </span>
+                                {% else %}
+                                <span style="background: #f1f5f9; color: #475569; font-weight: 600; font-size: 10.5px; padding: 3px 8px; border-radius: 6px;">
+                                    🛵 Tiêu chuẩn
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: right; font-weight: 800; color: #ff5722;">
+                                {{ don.tong_tien|dinh_dang_tien }}đ
+                            </td>
+                            <td>
+                                <span style="font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px; 
+                                    {% if don.trang_thai == 'ĐÃ GIAO THÀNH CÔNG' %}background: #dcfce7; color: #15803d;
+                                    {% elif don.trang_thai == 'ĐANG VẬN CHUYỂN' %}background: #e0f2fe; color: #0284c7;
+                                    {% else %}background: #fef3c7; color: #b45309;{% endif %}">
+                                    {{ don.trang_thai }}
+                                </span>
+                            </td>
+                            <td style="text-align: center;">
+                                <a href="{% url 'core:chi_tiet' don.ma_don %}" style="display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; background: #e0f2fe; color: #0284c7; border-radius: 8px; text-decoration: none;" title="Xem lộ trình GIS">
+                                    <i class="fa-solid fa-map-location-dot"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" style="text-align: center; color: #94a3b8; padding: 30px;">
+                                Chưa có đơn hàng nào trên hệ thống.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Bảng xếp hạng Shipper -->
+        <div class="chart-panel-card">
+            <div class="panel-header">
+                <h4 class="panel-title">
+                    <i class="fa-solid fa-trophy" style="color: #eab308;"></i>
+                    Top Shipper Hoạt Động Xuất Sắc
+                </h4>
+                <a href="{% url 'core:quan_ly_tai_xe' %}" style="font-size: 12.5px; font-weight: 700; color: #ff5722; text-decoration: none;">
+                    Đội xe &rarr;
+                </a>
+            </div>
+
+            <div class="shipper-list-wrapper">
+                {% for tx in top_tai_xe %}
+                <div class="shipper-rank-item">
+                    <div class="shipper-rank-info">
+                        <div class="shipper-rank-num {% if forloop.counter == 1 %}rank-top-1{% elif forloop.counter == 2 %}rank-top-2{% elif forloop.counter == 3 %}rank-top-3{% endif %}">
+                            {{ forloop.counter }}
+                        </div>
+                        <div>
+                            <div style="font-weight: 800; font-size: 13.5px; color: #1e293b;">{{ tx.ten_tai_xe }}</div>
+                            <div style="font-size: 11.5px; color: #64748b;">
+                                {{ tx.bien_so }} • Ca {{ tx.get_ca_lam_viec_display }}
+                            </div>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-weight: 900; color: #16a34a; font-size: 14px;">
+                            {{ tx.doanh_thu_tich_luy|dinh_dang_tien }}đ
+                        </div>
+                        <div style="font-size: 11px; color: #64748b;">
+                            {{ tx.tong_don_thang_nay }} đơn
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <p style="text-align: center; color: #94a3b8; padding: 20px;">Chưa có dữ liệu tài xế.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. TRUNG TÂM LỐI TẮT ĐIỀU HÀNH HỆ THỐNG -->
+    <div style="margin-bottom: 20px;">
+        <h4 style="font-size: 17px; font-weight: 800; color: #1e293b; margin: 0 0 16px 0; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-cubes" style="color: #ff5722;"></i> Lối Tắt Điều Hành & Nghiệp Vụ Chính
+        </h4>
+        <div class="shortcuts-grid">
+            <a href="{% url 'core:quan_ly_don_hang' %}" class="shortcut-card">
+                <div class="shortcut-icon" style="background: #fff7ed; color: #ff5722;">
+                    <i class="fa-solid fa-receipt"></i>
+                </div>
+                <div>
+                    <div class="shortcut-title">Quản Lý Đơn Hàng</div>
+                    <div class="shortcut-desc">Điều phối & duyệt đơn</div>
+                </div>
+            </a>
+
+            <a href="{% url 'core:quan_ly_kho' %}" class="shortcut-card">
+                <div class="shortcut-icon" style="background: #eef2ff; color: #4f46e5;">
+                    <i class="fa-solid fa-store"></i>
+                </div>
+                <div>
+                    <div class="shortcut-title">Quán & Bếp Trung Tâm</div>
+                    <div class="shortcut-desc">5 Chi nhánh liên kết</div>
+                </div>
+            </a>
+
+            <a href="{% url 'core:quan_ly_tai_xe' %}" class="shortcut-card">
+                <div class="shortcut-icon" style="background: #f0fdf4; color: #16a34a;">
+                    <i class="fa-solid fa-users-gear"></i>
+                </div>
+                <div>
+                    <div class="shortcut-title">Đội Ngũ Shipper</div>
+                    <div class="shortcut-desc">Phân ca & tính thu nhập</div>
+                </div>
+            </a>
+
+            <a href="{% url 'core:ban_do_chung' %}" class="shortcut-card">
+                <div class="shortcut-icon" style="background: #ecfeff; color: #0891b2;">
+                    <i class="fa-solid fa-earth-americas"></i>
+                </div>
+                <div>
+                    <div class="shortcut-title">Bản Đồ GIS Live</div>
+                    <div class="shortcut-desc">Định vị GPS thời gian thực</div>
+                </div>
+            </a>
+
+            <a href="{% url 'core:app_shipper' %}" class="shortcut-card">
+                <div class="shortcut-icon" style="background: #fdf4ff; color: #c026d3;">
+                    <i class="fa-solid fa-motorcycle"></i>
+                </div>
+                <div>
+                    <div class="shortcut-title">App Shipper Mobile</div>
+                    <div class="shortcut-desc">Giả lập nhận đơn giao</div>
+                </div>
+            </a>
+
+            <a href="{% url 'core:partner_demo' %}" class="shortcut-card">
+                <div class="shortcut-icon" style="background: #eff6ff; color: #2563eb;">
+                    <i class="fa-solid fa-handshake"></i>
+                </div>
+                <div>
+                    <div class="shortcut-title">Cổng Đối Tác B2B</div>
+                    <div class="shortcut-desc">API đẩy đơn tự động</div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+</div>
+
+<!-- SCRIPT BIỂU ĐỒ CHART.JS -->
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // 1. Biểu đồ tăng trưởng doanh thu 7 ngày (Gradient Line)
+        const ctxGrowth = document.getElementById('growthChart');
+        if (ctxGrowth) {
+            const labelsNgay = {{ labels_ngay|safe }};
+            const dataDoanhThu = {{ data_doanh_thu_7ngay|safe }};
+
+            const ctx = ctxGrowth.getContext('2d');
+            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+            gradient.addColorStop(0, 'rgba(255, 87, 34, 0.45)');
+            gradient.addColorStop(1, 'rgba(255, 87, 34, 0.0)');
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labelsNgay,
+                    datasets: [{
+                        label: 'Doanh thu GMV (đ)',
+                        data: dataDoanhThu,
+                        borderColor: '#ff5722',
+                        backgroundColor: gradient,
+                        borderWidth: 3,
+                        pointBackgroundColor: '#ff5722',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 5,
+                        pointHoverRadius: 7,
+                        fill: true,
+                        tension: 0.38
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return ' Doanh thu: ' + formatVND(context.parsed.y);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(val) {
+                                    return formatVND(val);
+                                }
+                            },
+                            grid: { color: '#f1f5f9' }
+                        },
+                        x: {
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 2. Biểu đồ Donut trạng thái đơn hàng
+        const ctxDonut = document.getElementById('donutStatusChart');
+        if (ctxDonut) {
+            const labelsStatus = {{ labels_trang_thai|safe }};
+            const dataStatus = {{ data_trang_thai|safe }};
+
+            new Chart(ctxDonut.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: labelsStatus,
+                    datasets: [{
+                        data: dataStatus,
+                        backgroundColor: [
+                            '#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#64748b'
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                boxWidth: 12,
+                                font: { size: 11.5, family: 'Be Vietnam Pro' }
+                            }
+                        }
+                    },
+                    cutout: '68%'
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

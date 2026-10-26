@@ -1,0 +1,2019 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <meta name="referrer" content="no-referrer-when-downgrade">
+    
+    <title>{% block title %}FoodDelivery - Nền tảng Đặt Món Trực Tuyến và Điều Phối Giao Hàng Hỏa Tốc{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* --- RESET và GLOBAL STYLES --- */
+       /* 1. RESET CHUẨN */
+* { 
+    margin: 0; 
+    padding: 0; 
+    box-sizing: border-box; 
+}
+
+/* 2. CHỈ ÉP FONT CHO CHỮ, CHỪA ICON RA */
+body, input, select, textarea, button, .nav-link, .nav-brand, .page-title {
+    font-family: 'Be Vietnam Pro', sans-serif !important;
+}
+
+/* 3. BẢO VỆ ICON KHÔNG BỊ MẤT */
+.fa, .fas, .far, .fab, .fa-solid, .fa-regular, .fa-brands {
+    font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands" !important;
+    font-weight: 900 !important;
+}
+
+        /* --- NAVBAR STYLING (CHỐNG TRÀN DÒNG) --- */
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            height: 70px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2%; 
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            border-bottom: 1px solid #eee;
+        }
+
+        .nav-brand {
+            font-size: 20px; 
+            font-weight: 700; 
+            color: #333;
+            text-decoration: none; 
+            display: flex; 
+            align-items: center; 
+            gap: 8px;
+            margin-right: 15px; 
+        }
+        
+        .nav-brand i { 
+            color: #5e72e4; 
+            font-size: 24px; 
+        }
+
+        .nav-links {
+            display: flex; 
+            gap: 8px; 
+            list-style: none; 
+            align-items: center;
+            flex-wrap: nowrap; /* Bắt buộc menu nằm trên 1 hàng duy nhất */
+        }
+
+        .nav-item a {
+            text-decoration: none; 
+            color: #525f7f;
+            font-weight: 500; 
+            font-size: 13px; 
+            transition: all 0.3s ease; 
+            display: flex; 
+            align-items: center; 
+            gap: 5px;
+            padding: 8px 12px; 
+            border-radius: 8px;
+            white-space: nowrap; /* Ngăn chữ bị rớt xuống dòng */
+        }
+
+        .nav-item a:hover { 
+            color: #5e72e4; 
+            background-color: #f6f9fc;
+            transform: translateY(-2px); 
+        }
+
+        /* --- UI UPGRADES (CARDS và FORMS) --- */
+        
+        /* Hiệu ứng đổ bóng cho các khối nội dung */
+        .card-box {
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            padding: 30px;
+            border: 1px solid rgba(0,0,0,0.03);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .card-box:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
+        }
+
+        /* Tự động làm đẹp tất cả Input/Select/Textarea từ Django */
+        input[type="text"], 
+        input[type="password"], 
+        input[type="number"], 
+        input[type="email"], 
+        input[type="tel"],
+        select, 
+        textarea,
+        .form-control {
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 10px 15px;
+            font-size: 14px;
+            transition: all 0.3s;
+            background-color: #f8fafc;
+            color: #334155;
+            outline: none;
+            font-family: inherit;
+        }
+
+        input:focus, 
+        select:focus, 
+        textarea:focus,
+        .form-control:focus {
+            border-color: #5e72e4;
+            background-color: #ffffff;
+            box-shadow: 0 0 0 4px rgba(94, 114, 228, 0.15);
+        }
+
+        /* Chỉ ép chiều rộng 100% khi nằm trong form nhập liệu (tránh làm hỏng ô lọc) */
+        .form-wrapper input, 
+        .form-wrapper select, 
+        .form-wrapper textarea {
+            width: 100%;
+            margin-top: 5px;
+        }
+
+        /* Nút bấm Gradient */
+        .btn-primary, 
+        .btn-submit {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            border: none;
+            border-radius: 10px;
+            padding: 12px 25px;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            color: white;
+            transition: all 0.3s;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .btn-primary:hover, 
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+            color: white;
+        }
+
+        /* --- SELECT2 CUSTOM STYLING --- */
+        .select2-container--default .select2-selection--single {
+            height: 46px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            background-color: #f8fafc;
+            display: flex;
+            align-items: center;
+        }
+        
+        .select2-container--default .select2-selection--single:focus {
+            border-color: #5e72e4;
+        }
+        
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            color: #334155;
+            font-weight: 500;
+            padding-left: 15px;
+        }
+        
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 44px;
+            right: 10px;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 25px;
+            color: #8898aa;
+            font-size: 13px;
+            margin-top: 50px;
+            border-top: 1px solid #eee;
+        }
+        /* --- DROPDOWN STYLING --- */
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-menu {
+    display: none; /* Ẩn menu khi chưa hover */
+    position: absolute;
+    background-color: #ffffff;
+    min-width: 220px;
+    box-shadow: 0 15px 35px rgba(50,50,93,0.1), 0 5px 15px rgba(0,0,0,0.07);
+    border-radius: 12px;
+    padding: 12px 0;
+    z-index: 1001;
+    top: 100%;
+    left: 0;
+    border: 1px solid #f1f5f9;
+    list-style: none;
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Hiện menu khi di chuột vào nút cha */
+.dropdown:hover .dropdown-menu {
+    display: block;
+}
+
+.dropdown-item {
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #525f7f;
+    text-decoration: none;
+    font-size: 13.5px;
+    font-weight: 500;
+    transition: 0.2s;
+}
+
+.dropdown-item:hover {
+    background-color: #f6f9fc;
+    color: #5e72e4;
+    padding-left: 25px; /* Hiệu ứng đẩy nhẹ khi hover */
+}
+
+.dropdown-item i {
+    width: 20px;
+    text-align: center;
+}
+
+/* ==========================================================================
+   MOBILE BOTTOM NAVIGATION BAR (CHUẨN APP GRAB / SHOPEEFOOD)
+   ========================================================================== */
+.mobile-bottom-nav {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    body {
+        padding-bottom: 74px !important;
+    }
+
+    .mobile-bottom-nav {
+        display: flex;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 64px;
+        background: rgba(255, 255, 255, 0.96);
+        -webkit-backdrop-filter: blur(16px);
+        backdrop-filter: blur(16px);
+        border-top: 1px solid #e2e8f0;
+        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+        z-index: 9997;
+        justify-content: space-around;
+        align-items: center;
+        padding: 0 4px;
+    }
+
+    .mobile-nav-item {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        text-decoration: none;
+        color: #64748b;
+        font-size: 11px;
+        font-weight: 700;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 6px 0;
+        transition: all 0.2s ease;
+    }
+
+    .mobile-nav-item i {
+        font-size: 19px;
+        transition: transform 0.2s;
+    }
+
+    .mobile-nav-item.active {
+        color: #ff5722 !important;
+    }
+
+    .mobile-nav-item.active i {
+        transform: scale(1.15);
+    }
+
+    .mobile-cart-icon-wrapper {
+        position: relative;
+        display: inline-block;
+    }
+
+    .mobile-cart-badge {
+        position: absolute;
+        top: -6px;
+        right: -10px;
+        background: #ff5722;
+        color: white;
+        font-size: 10px;
+        font-weight: 900;
+        border-radius: 999px;
+        min-width: 17px;
+        height: 17px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid white;
+        padding: 0 3px;
+    }
+
+    .navbar .nav-links .nav-item:not(:has(.btn-cart-nav)):not(:has(#notificationBell)):not(:has(a[href*="logout"])) {
+        display: none !important;
+    }
+}
+
+/* ==========================================================================
+   HỘP THÔNG BÁO NỔI (TOAST / FLOATING ALERTS) - DESIGN CHUYÊN NGHIỆP
+   ========================================================================== */
+.toast-container-root {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    pointer-events: none;
+    max-width: 400px;
+    width: calc(100% - 32px);
+}
+
+.app-toast {
+    position: relative;
+    pointer-events: auto;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    background: rgba(255, 255, 255, 0.98);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+    padding: 16px 18px 18px;
+    border-radius: 16px;
+    box-shadow: 0 12px 35px rgba(15, 23, 42, 0.12), 0 2px 8px rgba(0, 0, 0, 0.04);
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+    animation: toastSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    transition: all 0.3s ease;
+}
+
+.app-toast.toast-hiding {
+    animation: toastSlideOut 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes toastSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(110%) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+}
+
+@keyframes toastSlideOut {
+    from {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+        max-height: 120px;
+        margin-bottom: 0;
+    }
+    to {
+        opacity: 0;
+        transform: translateX(110%) scale(0.9);
+        max-height: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+        margin-bottom: -12px;
+    }
+}
+
+.toast-icon-box {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+/* Success */
+.toast-success {
+    border-left: 4px solid #10b981;
+}
+.toast-success .toast-icon-box {
+    background: #ecfdf5;
+    color: #10b981;
+}
+
+/* Cart / Food */
+.toast-cart {
+    border-left: 4px solid #ff5722;
+}
+.toast-cart .toast-icon-box {
+    background: #fff7ed;
+    color: #ff5722;
+}
+
+/* Info */
+.toast-info {
+    border-left: 4px solid #0284c7;
+}
+.toast-info .toast-icon-box {
+    background: #f0f9ff;
+    color: #0284c7;
+}
+
+/* Warning */
+.toast-warning {
+    border-left: 4px solid #f59e0b;
+}
+.toast-warning .toast-icon-box {
+    background: #fffbeb;
+    color: #f59e0b;
+}
+
+/* Error */
+.toast-error {
+    border-left: 4px solid #ef4444;
+}
+.toast-error .toast-icon-box {
+    background: #fef2f2;
+    color: #ef4444;
+}
+
+.toast-content-box {
+    flex: 1;
+    min-width: 0;
+}
+
+.toast-header-text {
+    font-size: 14px;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 3px;
+    line-height: 1.3;
+}
+
+.toast-body-text {
+    font-size: 13px;
+    color: #475569;
+    line-height: 1.45;
+    word-break: break-word;
+}
+
+.toast-close-btn {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    font-size: 14px;
+    padding: 0;
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.2s;
+    margin-left: 4px;
+}
+
+.toast-close-btn:hover {
+    color: #0f172a;
+}
+
+.toast-progress-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: rgba(226, 232, 240, 0.6);
+}
+
+.toast-progress-fill {
+    height: 100%;
+    width: 100%;
+    transition: width linear;
+}
+
+.toast-success .toast-progress-fill { background: #10b981; }
+.toast-cart .toast-progress-fill { background: #ff5722; }
+.toast-info .toast-progress-fill { background: #0284c7; }
+.toast-warning .toast-progress-fill { background: #f59e0b; }
+.toast-error .toast-progress-fill { background: #ef4444; }
+
+@media (max-width: 768px) {
+    .toast-container-root {
+        top: 14px;
+        right: 12px;
+        left: 12px;
+        max-width: none;
+        width: auto;
+    }
+}
+
+/* ==========================================================================
+   CHUÔNG THÔNG BÁO VÀ DROPDOWN ĐƠN HÀNG MỚI (PREMIUM NOTIFICATION BELL)
+   ========================================================================== */
+.noti-dropdown-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+.btn-noti-bell {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: #f8fafc;
+    border: 1.5px solid #e2e8f0;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 0;
+}
+
+.btn-noti-bell:hover {
+    background: #f1f5f9;
+    color: #4f46e5;
+    border-color: #c7d2fe;
+    transform: translateY(-1px);
+}
+
+.btn-noti-bell i {
+    font-size: 18px;
+}
+
+.noti-count-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #ef4444;
+    color: #ffffff;
+    border-radius: 999px;
+    min-width: 19px;
+    height: 19px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 900;
+    border: 2px solid #ffffff;
+    box-shadow: 0 2px 6px rgba(239, 68, 68, 0.45);
+    padding: 0 4px;
+    animation: notiBadgePulse 2s infinite;
+}
+
+@keyframes notiBadgePulse {
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+    70% { transform: scale(1.08); box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+.noti-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 12px);
+    right: 0;
+    width: 360px;
+    max-width: 90vw;
+    background: #ffffff;
+    border-radius: 18px;
+    box-shadow: 0 16px 45px rgba(15, 23, 42, 0.16), 0 4px 12px rgba(0, 0, 0, 0.05);
+    border: 1.5px solid #e2e8f0;
+    overflow: hidden;
+    z-index: 9999;
+    display: none;
+    animation: notiSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes notiSlideUp {
+    from { opacity: 0; transform: translateY(12px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.noti-dropdown-header {
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.noti-dropdown-title {
+    font-size: 14px;
+    font-weight: 800;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.noti-dropdown-pill {
+    background: rgba(255, 255, 255, 0.22);
+    color: #ffffff;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 800;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(4px);
+    white-space: nowrap;
+}
+
+.noti-orders-scroll {
+    max-height: 320px;
+    overflow-y: auto;
+    padding: 4px 0;
+}
+
+.noti-orders-scroll::-webkit-scrollbar {
+    width: 6px;
+}
+.noti-orders-scroll::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+}
+
+.noti-order-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 18px;
+    text-decoration: none;
+    border-bottom: 1px solid #f1f5f9;
+    transition: background 0.2s ease;
+}
+
+.noti-order-item:hover {
+    background: #f8fafc;
+}
+
+.noti-item-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+    flex-shrink: 0;
+}
+
+.noti-item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.noti-item-title {
+    font-size: 13.5px;
+    font-weight: 800;
+    color: #4f46e5;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.noti-item-sub {
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.noti-item-arrow {
+    font-size: 11px;
+    color: #cbd5e1;
+    margin-left: auto;
+    flex-shrink: 0;
+    transition: transform 0.2s;
+}
+
+.noti-order-item:hover .noti-item-arrow {
+    color: #4f46e5;
+    transform: translateX(3px);
+}
+
+.noti-dropdown-footer {
+    padding: 11px 16px;
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    text-align: center;
+}
+
+.noti-footer-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    color: #4f46e5;
+    font-size: 13px;
+    font-weight: 800;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.noti-footer-link:hover {
+    color: #3730a3;
+}
+    </style>
+</head>
+
+<body>
+
+<nav class="navbar">
+        <a href="{% url 'core:home' %}" class="nav-brand">
+            <i class="fa-solid fa-burger" style="color: #ff5722; font-size: 26px;"></i>
+            Food<span style="color: #ff5722;">Delivery</span>
+        </a>
+
+        <div class="nav-links">
+            <div class="nav-item"><a href="{% url 'core:home' %}"><i class="fa-solid fa-house"></i> Trang chủ</a></div>
+            <div class="nav-item"><a href="{% url 'core:thuc_don' %}" style="color: #ff5722; font-weight: 700;"><i class="fa-solid fa-utensils"></i> Thực đơn món</a></div>
+            <div class="nav-item"><a href="{% url 'core:lich_su_don_hang' %}"><i class="fa-solid fa-clock-rotate-left"></i> Đơn của tôi</a></div>
+            <div class="nav-item"><a href="{% url 'core:ban_do_chung' %}"><i class="fa-solid fa-earth-americas"></i> Bản đồ GIS</a></div>
+
+            <!-- NÚT GIỎ HÀNG TOÀN CỤC VỚI BADGE SỐ LƯỢNG -->
+            <div class="nav-item">
+                <button type="button" onclick="toggleCartDrawer()" class="btn-cart-nav" style="background: linear-gradient(135deg, #ff5722, #ff7043); color: white; border: none; padding: 8px 16px; border-radius: 20px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(255, 87, 34, 0.3); transition: 0.3s;" title="Giỏ hàng" aria-label="Giỏ hàng">
+                    <i class="fa-solid fa-cart-shopping"></i>
+                    <span>Giỏ hàng</span>
+                    <span id="nav-cart-count" style="background: white; color: #ff5722; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 900;">0</span>
+                </button>
+            </div>
+
+            {% if user.is_authenticated %}
+                {% if user.is_staff %}
+                    <div style="border-left: 2px solid #eee; height: 30px; margin: 0 5px;"></div>
+                    
+                    <div class="nav-item noti-dropdown-wrapper">
+                        <button type="button" class="btn-noti-bell" id="notificationBell" title="Thông báo đơn hàng mới" aria-label="Thông báo đơn hàng mới">
+                            <i class="fa-solid fa-bell"></i>
+                            <span id="order-count-badge" class="noti-count-badge" style="display: none;">0</span>
+                        </button>
+                        <div class="noti-dropdown-menu" id="notification-list">
+                            <div class="noti-dropdown-header">
+                                <div class="noti-dropdown-title">
+                                    <i class="fa-solid fa-bolt" style="color: #fde047;"></i> Thông Báo Đơn Mới
+                                </div>
+                                <span id="order-count-text" class="noti-dropdown-pill">0 đơn mới</span>
+                            </div>
+                            <div id="new-orders-container" class="noti-orders-scroll">
+                                <div style="text-align: center; padding: 25px 15px; color: #94a3b8; font-size: 13px;">
+                                    <i class="fa-solid fa-spinner fa-spin" style="margin-right: 6px;"></i> Đang tải danh sách đơn...
+                                </div>
+                            </div>
+                            <div class="noti-dropdown-footer">
+                                <a href="{% url 'core:quan_ly_don_hang' %}" class="noti-footer-link">
+                                    <i class="fa-solid fa-receipt"></i> Xem tất cả vận đơn <i class="fa-solid fa-arrow-right" style="font-size: 11px;"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="nav-item">
+                        <a href="{% url 'core:admin_dashboard' %}" style="background: linear-gradient(135deg, #1e293b, #0f172a); color: white; border: 1.5px solid #334155; font-weight: 800; padding: 7px 16px; border-radius: 20px; display: flex; align-items: center; gap: 7px; text-decoration: none; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2); transition: all 0.25s ease;" title="Truy cập Bảng Điều Khiển Quản Trị Logistics Pro">
+                            <i class="fa-solid fa-chart-pie" style="color: #38bdf8;"></i>
+                            <span>Admin Dashboard</span>
+                        </a>
+                    </div>
+                {% endif %}
+
+                {% if user.taixe %}
+                    <div style="border-left: 2px solid #eee; height: 30px; margin: 0 5px;"></div>
+                    <div class="nav-item">
+                        <a href="{% url 'core:app_shipper' %}" style="background: #ecfdf5; color: #047857; border: 1.5px solid #a7f3d0; font-weight: 800; padding: 7px 14px; border-radius: 12px; display: flex; align-items: center; gap: 7px; text-decoration: none; box-shadow: 0 2px 6px rgba(16, 185, 129, 0.15);" title="Vào Ứng Dụng Nhận Đơn Shipper">
+                            <i class="fa-solid fa-motorcycle" style="font-size: 15px; color: #10b981;"></i>
+                            <span>Vào App Shipper</span>
+                            <span style="display: inline-block; width: 8px; height: 8px; background: #10b981; border-radius: 50%; box-shadow: 0 0 0 2px #d1fae5;"></span>
+                        </a>
+                    </div>
+                {% endif %}
+
+                {% if user.cac_quan_an.exists %}
+                    <div style="border-left: 2px solid #eee; height: 30px; margin: 0 5px;"></div>
+                    <div class="nav-item">
+                        <a href="{% url 'core:partner_dashboard' %}" style="background: #fff7ed; color: #ea580c; border: 1.5px solid #fed7aa; font-weight: 800; padding: 7px 14px; border-radius: 12px; display: flex; align-items: center; gap: 7px; text-decoration: none; box-shadow: 0 2px 6px rgba(234, 88, 12, 0.15);" title="Vào Cổng Quản Trị Đối Tác B2B">
+                            <i class="fa-solid fa-store" style="font-size: 15px; color: #ea580c;"></i>
+                            <span>Cổng Quán Ăn B2B</span>
+                            <span style="display: inline-block; width: 8px; height: 8px; background: #ea580c; border-radius: 50%;"></span>
+                        </a>
+                    </div>
+                {% endif %}
+
+                <div class="nav-item" style="margin-left: 5px;">
+                    <a href="{% url 'core:logout' %}" style="background: #fee2e2; color: #dc2626; font-weight: bold; padding: 8px 12px; border-radius: 8px;">
+                        <i class="fa-solid fa-right-from-bracket"></i> Thoát ({{ user.username }})
+                    </a>
+                </div>
+            {% else %}
+                <div class="nav-item"><a href="{% url 'core:login' %}" style="background: #e0f2fe; color: #0284c7; font-weight: bold; padding: 8px 14px; border-radius: 8px;"><i class="fa-solid fa-user-lock"></i> Đăng nhập</a></div>
+                <div class="nav-item"><a href="{% url 'core:dang_ky' %}" style="background: #fff7ed; color: #ea580c; font-weight: bold; padding: 8px 14px; border-radius: 8px;"><i class="fa-solid fa-user-plus"></i> Đăng ký</a></div>
+            {% endif %}
+        </div>
+    </nav>
+
+    <!-- DRAWER GIỎ HÀNG TOÀN CỤC (SLIDE-OVER CART) -->
+    <div id="cart-drawer-backdrop" onclick="toggleCartDrawer()" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 9998; -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); transition: 0.3s;"></div>
+    
+    <div id="cart-drawer" style="position: fixed; top: 0; right: -450px; width: 420px; max-width: 90vw; height: 100vh; background: white; z-index: 9999; box-shadow: -10px 0 30px rgba(0,0,0,0.15); display: flex; flex-direction: column; transition: right 0.35s cubic-bezier(0.16, 1, 0.3, 1);">
+        <div style="padding: 20px 25px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; background: #fffaf8;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-bag-shopping" style="color: #ff5722; font-size: 22px;"></i>
+                <h3 style="margin: 0; font-size: 18px; font-weight: 800; color: #1e293b;">Giỏ Món Của Bạn</h3>
+            </div>
+            <button onclick="toggleCartDrawer()" title="Đóng giỏ hàng" aria-label="Đóng giỏ hàng" style="border: none; background: #f1f5f9; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; color: #64748b; font-size: 16px;">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <!-- THANH GỢI Ý TIẾN TRÌNH FREESHIP -->
+        <div id="cart-freeship-box" style="padding: 12px 20px; background: linear-gradient(135deg, #fff7ed, #ffedd5); border-bottom: 1px solid #fed7aa;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 12px;">
+                <span id="cart-freeship-text" style="font-weight: 700; color: #c2410c;">
+                    <i class="fa-solid fa-truck-fast"></i> Mua thêm <strong id="cart-freeship-diff">150.000đ</strong> để được FREESHIP
+                </span>
+                <span id="cart-freeship-badge" style="font-size: 11px; font-weight: 900; background: #ea580c; color: white; padding: 2px 7px; border-radius: 999px;">0%</span>
+            </div>
+            <div style="height: 6px; background: rgba(0,0,0,0.06); border-radius: 999px; overflow: hidden;">
+                <div id="cart-freeship-fill" style="height: 100%; width: 0%; background: linear-gradient(90deg, #ff5722, #10b981); border-radius: 999px; transition: width 0.3s ease;"></div>
+            </div>
+        </div>
+
+        <div id="cart-items-container" style="flex: 1; overflow-y: auto; padding: 20px;">
+            <!-- Render các món trong giỏ hàng bằng JS -->
+        </div>
+
+        <div style="padding: 20px 25px; border-top: 1px solid #f1f5f9; background: #f8fafc;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; color: #64748b;">
+                <span>Tổng tiền món:</span>
+                <strong id="cart-subtotal" style="color: #1e293b; font-size: 16px;">0 đ</strong>
+            </div>
+
+            <!-- KHO VOUCHER & MÃ ƯU ĐÃI -->
+            <div style="margin-bottom: 14px; background: #ffffff; border: 1.5px dashed #cbd5e1; border-radius: 14px; padding: 12px 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span style="font-size: 12.5px; font-weight: 800; color: #1e293b; display: flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-ticket" style="color: #ff5722;"></i> Ưu Đãi & Voucher
+                    </span>
+                    <button type="button" onclick="openVoucherWalletModal()" style="background: none; border: none; color: #0284c7; font-size: 12px; font-weight: 800; cursor: pointer; padding: 0; display: inline-flex; align-items: center; gap: 3px;">
+                        Kho voucher <i class="fa-solid fa-chevron-right" style="font-size: 9px;"></i>
+                    </button>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="cart-voucher-input" placeholder="Mã voucher..." style="flex: 1; padding: 8px 10px; border-radius: 10px; border: 1.5px solid #e2e8f0; font-size: 12.5px; text-transform: uppercase; font-weight: 800; outline: none;">
+                    <button type="button" onclick="applyCartVoucher()" style="background: #0f172a; color: white; border: none; border-radius: 10px; padding: 8px 14px; font-size: 12px; font-weight: 800; cursor: pointer;">Áp dụng</button>
+                </div>
+                <div id="cart-voucher-applied-msg" style="display: none; margin-top: 6px; font-size: 12px; color: #10b981; font-weight: 700;">
+                    <i class="fa-solid fa-circle-check"></i> <span id="cart-voucher-applied-text">Đã áp dụng mã thành công</span>
+                </div>
+            </div>
+
+            <div style="font-size: 12px; color: #94a3b8; margin-bottom: 15px; display: flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-bolt" style="color: #ff5722;"></i>
+                Phí vận chuyển sẽ được tính tự động theo khoảng cách tại Checkout
+            </div>
+            <a href="{% url 'core:checkout' %}" id="btn-to-checkout" style="display: block; width: 100%; text-align: center; padding: 14px; border-radius: 12px; background: linear-gradient(135deg, #ff5722, #ff7043); color: white; text-decoration: none; font-weight: 800; font-size: 15px; box-shadow: 0 6px 20px rgba(255, 87, 34, 0.35); transition: 0.3s;">
+                <i class="fa-solid fa-arrow-right-to-bracket" style="margin-right: 8px;"></i>
+                Tiến Hành Đặt Món và Tính Lộ Trình
+            </a>
+        </div>
+    </div>
+
+    <!-- MODAL KHO VOUCHER KHẢ DỤNG -->
+    <div id="voucher-wallet-modal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); z-index: 99999; align-items: center; justify-content: center; padding: 16px; overflow: hidden;" onclick="closeVoucherWalletModal(event)">
+        <div style="background: #ffffff; width: 100%; max-width: 620px; max-height: 90vh; border-radius: 24px; box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35); overflow: hidden; animation: modalZoomIn 0.25s ease-out; display: flex; flex-direction: column; margin: auto;" onclick="event.stopPropagation()">
+            <!-- HEADER -->
+            <div style="background: linear-gradient(135deg, #ff5722, #ea580c); color: white; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 40px; height: 40px; border-radius: 12px; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                        <i class="fa-solid fa-ticket-simple"></i>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 18px; font-weight: 800; color: white; letter-spacing: -0.3px;">Kho Voucher & Ưu Đãi</h3>
+                        <div style="font-size: 12px; opacity: 0.92; margin-top: 2px;">Chọn mã giảm giá để áp dụng cho đơn hàng của bạn</div>
+                    </div>
+                </div>
+                <button type="button" onclick="closeVoucherWalletModalDirect()" style="background: rgba(255, 255, 255, 0.2); border: none; color: white; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 15px; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.35)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- THANH TÌM KIẾM / NHẬP MÃ NHANH -->
+            <div style="padding: 14px 22px; background: #fff7ed; border-bottom: 1px solid #fed7aa; display: flex; gap: 10px; align-items: center; flex-shrink: 0;">
+                <div style="position: relative; flex: 1;">
+                    <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 13px;"></i>
+                    <input type="text" id="wallet-quick-voucher-input" placeholder="Nhập mã voucher (VD: HOATOC50, FREESHIP0D)..." style="width: 100%; padding: 10px 14px 10px 38px; border-radius: 10px; border: 1.5px solid #fed7aa; font-size: 13px; font-weight: 700; text-transform: uppercase; outline: none; background: white; box-sizing: border-box; transition: border-color 0.2s;" onfocus="this.style.borderColor='#ff5722'" onblur="this.style.borderColor='#fed7aa'">
+                </div>
+                <button type="button" onclick="applyQuickInputVoucher()" style="background: linear-gradient(135deg, #ff5722, #ea580c); color: white; border: none; padding: 10px 22px; border-radius: 10px; font-size: 13px; font-weight: 800; cursor: pointer; white-space: nowrap; box-shadow: 0 3px 10px rgba(234, 88, 12, 0.3); transition: transform 0.15s ease;" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform='translateY(0)'">
+                    Áp Dụng
+                </button>
+            </div>
+
+            <!-- DANH SÁCH VOUCHER DẠNG CUỘN (TỰ DO CUỘN, KHÔNG BỊ ÉP CHIỀU CAO) -->
+            <div id="voucher-wallet-list" style="padding: 18px 22px 28px; overflow-y: auto; flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 16px; box-sizing: border-box;">
+                <div style="text-align: center; padding: 40px 20px; color: #94a3b8;">
+                    <i class="fa-solid fa-spinner fa-spin" style="font-size: 26px; color: #ea580c; margin-bottom: 10px; display: block;"></i>
+                    Đang tải kho voucher khả dụng...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HỘP THÔNG BÁO NỔI TOAST / ALERT CAO CẤP TOÀN CỤC (TOP-RIGHT) -->
+    <div id="toast-notification-container" class="toast-container-root" aria-live="polite"></div>
+
+    <!-- TỰ ĐỘNG HIỂN THỊ THÔNG BÁO TỪ DJANGO MESSAGES QUA TOAST NỔI -->
+    {% if messages %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            {% for message in messages %}
+                (function() {
+                    let type = 'info';
+                    let title = 'Thông báo hệ thống';
+                    {% if 'success' in message.tags %}
+                        type = 'success';
+                        title = 'Thành công';
+                    {% elif 'error' in message.tags %}
+                        type = 'error';
+                        title = 'Có lỗi xảy ra';
+                    {% elif 'warning' in message.tags %}
+                        type = 'warning';
+                        title = 'Cảnh báo';
+                    {% endif %}
+                    setTimeout(function() {
+                        if (typeof showToast === 'function') {
+                            showToast("{{ message|escapejs }}", type, title);
+                        }
+                    }, {{ forloop.counter0 }} * 400 + 200);
+                })();
+            {% endfor %}
+        });
+    </script>
+    {% endif %}
+
+
+    <main style="min-height: 80vh; padding: 20px;">
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <style>
+        /* Hiệu ứng nhịp đập cho số thông báo đỏ */
+        
+.pulse-animation {
+    animation: pulse-red 2s infinite;
+}
+
+@keyframes pulse-red {
+    0% { transform: translate(-50%, -50%) scale(1); box-shadow: 0 0 0 0 rgba(245, 54, 92, 0.7); }
+    70% { transform: translate(-50%, -50%) scale(1.1); box-shadow: 0 0 0 10px rgba(245, 54, 92, 0); }
+    100% { transform: translate(-50%, -50%) scale(1); box-shadow: 0 0 0 0 rgba(245, 54, 92, 0); }
+}
+
+/* Hiệu ứng khi di chuột vào từng đơn hàng trong danh sách */
+#new-orders-container .notification-item {
+    padding: 15px 20px;
+    border-bottom: 1px solid #f1f5f9;
+    transition: 0.2s;
+    text-decoration: none;
+    display: block;
+}
+
+#new-orders-container .notification-item:hover {
+    background-color: #f8f9fe;
+    border-left: 4px solid #5e72e4;
+}
+
+#notification-list::-webkit-scrollbar { width: 5px; }
+#notification-list::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+
+/* Custom scrollbar và hiệu ứng thẻ Voucher Wallet */
+#voucher-wallet-list::-webkit-scrollbar { width: 6px; }
+#voucher-wallet-list::-webkit-scrollbar-track { background: #fff7ed; border-radius: 10px; }
+#voucher-wallet-list::-webkit-scrollbar-thumb { background: #fed7aa; border-radius: 10px; }
+#voucher-wallet-list::-webkit-scrollbar-thumb:hover { background: #ea580c; }
+
+.voucher-ticket-card {
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+}
+.voucher-ticket-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(234, 88, 12, 0.22) !important;
+}
+    .main-footer {
+        background-color: #ffffff;
+        border-top: 1px solid #e5e7eb;
+        padding: 80px 0 30px;
+        margin-top: 100px;
+        font-family: 'Poppins', sans-serif;
+    }
+
+    .footer-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 20px;
+        display: flex;
+        justify-content: space-between;
+        gap: 30px;
+        flex-wrap: wrap; /* Tự xuống hàng trên mobile */
+    }
+
+    .footer-col {
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .footer-col h4 {
+        color: #1e293b;
+        font-size: 13px;
+        font-weight: 700;
+        text-transform: uppercase;
+        margin-bottom: 25px;
+        letter-spacing: 1px;
+    }
+
+    .footer-col ul {
+        list-style: none;
+        padding: 0;
+    }
+
+    .footer-col ul li {
+        margin-bottom: 12px;
+    }
+
+    .footer-col ul li a {
+        color: #64748b;
+        text-decoration: none;
+        font-size: 13.5px;
+        transition: all 0.3s ease;
+    }
+
+    .footer-col ul li a:hover {
+        color: #5e72e4;
+        padding-left: 8px;
+    }
+
+    /* Icon thanh toán và mạng xã hội */
+    .payment-grid, .social-flex {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+    }
+
+    .social-flex a {
+        width: 35px;
+        height: 35px;
+        background: #f1f5f9;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #64748b;
+        transition: 0.3s;
+    }
+
+    .social-flex a:hover {
+        background: #5e72e4;
+        color: white;
+        transform: translateY(-3px);
+    }
+
+    /* Tải ứng dụng phong cách AppStore/PlayStore */
+    .download-box {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+    }
+
+    .qr-code {
+        padding: 5px;
+        background: white;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        border-radius: 8px;
+    }
+
+    .app-links img {
+        height: 25px;
+        display: block;
+        margin-bottom: 8px;
+        cursor: pointer;
+    }
+
+    /* Bottom Bar và Chứng nhận */
+    .bottom-bar {
+        border-top: 1px solid #f1f5f9;
+        margin-top: 60px;
+        padding-top: 40px;
+        text-align: center;
+    }
+
+    .country-list {
+        color: #94a3b8;
+        font-size: 13px;
+        margin-bottom: 20px;
+    }
+
+    .certified-group {
+        display: flex;
+        justify-content: center;
+        gap: 25px;
+        margin-bottom: 20px;
+    }
+
+    .bct-logo {
+        border: 2px solid #ef4444;
+        color: #ef4444;
+        padding: 5px 15px;
+        border-radius: 6px;
+        font-weight: 800;
+        font-size: 11px;
+        text-transform: uppercase;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .copyright {
+        color: #cbd5e1;
+        font-size: 12px;
+    }
+
+    /* ẨN KHI IN PDF ĐỂ BẢN IN SẠCH SẼ */
+    @media print { .main-footer { display: none !important; } }
+</style>
+
+<style>
+    .main-footer {
+        background-color: #ffffff;
+        border-top: 1px solid #eef2f7;
+        padding: 80px 0 40px;
+        margin-top: 100px;
+        font-family: 'Poppins', sans-serif;
+    }
+
+    .footer-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 20px;
+        display: flex;
+        justify-content: space-between;
+        gap: 40px;
+        flex-wrap: wrap;
+    }
+
+    .footer-col {
+        flex: 1;
+        min-width: 220px;
+    }
+
+    .footer-col h4 {
+        color: #1e293b;
+        font-size: 14px;
+        font-weight: 700;
+        text-transform: uppercase;
+        margin-bottom: 25px;
+        letter-spacing: 1px;
+        position: relative;
+    }
+
+    /* Thêm gạch chân nhỏ dưới tiêu đề cho sang */
+    .footer-col h4::after {
+        content: '';
+        position: absolute;
+        bottom: -8px;
+        left: 0;
+        width: 30px;
+        height: 2px;
+        background: #5e72e4;
+    }
+
+    .footer-col ul {
+        list-style: none;
+        padding: 0;
+    }
+
+    .footer-col ul li {
+        margin-bottom: 12px;
+    }
+
+    .footer-col ul li a {
+        color: #64748b;
+        text-decoration: none;
+        font-size: 13.5px;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    /* Hiệu ứng gạch chân khi hover link */
+    .footer-col ul li a::after {
+        content: '';
+        position: absolute;
+        width: 0;
+        height: 1px;
+        bottom: -2px;
+        left: 0;
+        background-color: #5e72e4;
+        transition: width 0.3s ease;
+    }
+
+    .footer-col ul li a:hover {
+        color: #5e72e4;
+    }
+
+    .footer-col ul li a:hover::after {
+        width: 100%;
+    }
+
+    /* Icon thanh toán */
+    .payment-grid {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 25px;
+    }
+
+    .payment-grid i {
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+        transition: 0.3s;
+    }
+    
+    .payment-grid i:hover { transform: translateY(-3px); }
+
+    /* Mạng xã hội */
+    .social-flex {
+        display: flex;
+        gap: 12px;
+    }
+
+    .social-flex a {
+        width: 38px;
+        height: 38px;
+        background: #f8fafc;
+        border-radius: 10px; /* Bo góc kiểu hiện đại */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #64748b;
+        transition: all 0.3s;
+        border: 1px solid #e2e8f0;
+    }
+
+    .social-flex a:hover {
+        background: #5e72e4;
+        color: white;
+        border-color: #5e72e4;
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(94, 114, 228, 0.3);
+    }
+
+    /* QR và App Download */
+    .download-box {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        background: #f8fafc;
+        padding: 15px;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .qr-code i {
+        font-size: 55px;
+        color: #1e293b;
+    }
+
+    .app-links img {
+        height: 28px;
+        display: block;
+        margin-bottom: 8px;
+        transition: 0.3s;
+        cursor: pointer;
+    }
+    
+    .app-links img:hover { opacity: 0.8; transform: scale(1.05); }
+
+    /* Bottom Section */
+    .bottom-bar {
+        border-top: 1px solid #f1f5f9;
+        margin-top: 60px;
+        padding-top: 40px;
+        text-align: center;
+        background: #fcfdfe;
+    }
+
+    .country-list {
+        color: #94a3b8;
+        font-size: 13px;
+        margin-bottom: 25px;
+        word-spacing: 5px;
+    }
+
+    .certified-group {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        margin-bottom: 25px;
+    }
+
+    .bct-logo {
+        background: #fef2f2;
+        border: 1.5px solid #ef4444;
+        color: #ef4444;
+        padding: 6px 15px;
+        border-radius: 8px;
+        font-weight: 800;
+        font-size: 10px;
+        text-transform: uppercase;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 2px 10px rgba(239, 68, 68, 0.1);
+    }
+
+    .copyright {
+        color: #94a3b8;
+        font-size: 12.5px;
+        line-height: 1.6;
+    }
+
+    @media print { .main-footer { display: none !important; } }
+</style>
+
+<footer class="main-footer">
+    <div class="footer-container">
+       <div class="footer-col">
+            <h4>Hỗ trợ đối tác</h4>
+            <ul>
+                <li><a href="{% url 'core:home' %}">Trung Tâm Trợ Giúp</a></li>
+                <li><a href="{% url 'core:partner_demo' %}">Cổng Đối Tác B2B Demo</a></li>
+                <li><a href="{% url 'core:app_shipper' %}" target="_blank">Dành Cho Tài Xế (App Shipper)</a></li>
+                <li><a href="{% url 'core:ban_do_chung' %}">Bản Đồ Điều Phối GIS</a></li>
+                <li><a href="{% url 'core:toi_uu' %}">Thuật Toán Tuyến Hỏa Tốc</a></li>
+            </ul>
+        </div>
+
+        <div class="footer-col">
+            <h4>Về Logistics Pro</h4>
+            <ul>
+                <li><a href="{% url 'core:home' %}">Giới Thiệu Hệ Thống</a></li>
+                <li><a href="{% url 'core:quan_ly_kho' %}">Mạng Lưới Kho Bãi</a></li>
+                <li><a href="{% url 'core:quan_ly_tai_xe' %}">Đội Ngũ Tài Xế</a></li>
+                <li><a href="{% url 'core:toi_uu' %}">Công Nghệ Tối Ưu</a></li>
+                <li><a href="javascript:void(0)" title="Vui lòng xem trong hợp đồng hợp tác">Chính Sách Bảo Mật</a></li>
+            </ul>
+        </div>
+
+        <div class="footer-col">
+            <h4>Đối tác và Thanh toán</h4>
+            <div class="payment-grid">
+                <i class="fa-brands fa-cc-visa" style="font-size: 28px; color: #1a1f71;" title="Visa Card"></i>
+                <i class="fa-brands fa-cc-mastercard" style="font-size: 28px; color: #eb001b;" title="MasterCard"></i>
+                <i class="fa-brands fa-cc-jcb" style="font-size: 28px; color: #006eb7;" title="JCB Card"></i>
+                <i class="fa-solid fa-wallet" style="font-size: 28px; color: #2dce89;" title="E-Wallet"></i>
+            </div>
+            <h4 style="margin-top: 30px;">Hãng vận chuyển</h4>
+            <ul>
+                <li><a href="https://giaohangtietkiem.vn" target="_blank" rel="noopener noreferrer">Giao Hàng Tiết Kiệm</a></li>
+                <li><a href="https://ghn.vn" target="_blank" rel="noopener noreferrer">Giao Hàng Nhanh</a></li>
+                <li><a href="https://viettelpost.com.vn" target="_blank" rel="noopener noreferrer">Viettel Post</a></li>
+            </ul>
+        </div>
+
+        <div class="footer-col">
+            <h4>Theo dõi và Ứng dụng</h4>
+            <div class="social-flex">
+                <a href="https://www.facebook.com/Giaohangtietkiem.vn" target="_blank" rel="noopener noreferrer" title="Facebook GHTK" aria-label="Facebook GHTK"><i class="fa-brands fa-facebook-f"></i></a>
+                <a href="https://www.instagram.com/giaohangtietkiem/" target="_blank" rel="noopener noreferrer" title="Instagram GHTK" aria-label="Instagram GHTK"><i class="fa-brands fa-instagram"></i></a>
+                <a href="https://www.linkedin.com/company/giaohangtietkiem" target="_blank" rel="noopener noreferrer" title="LinkedIn GHTK" aria-label="LinkedIn GHTK"><i class="fa-brands fa-linkedin-in"></i></a>
+                <a href="https://www.youtube.com/@giaohangtietkiemofficial" target="_blank" rel="noopener noreferrer" title="YouTube GHTK" aria-label="YouTube GHTK"><i class="fa-brands fa-youtube"></i></a>
+            </div>
+            <h4 style="margin-top: 30px;">Tải app Shipper</h4>
+            <div class="download-box">
+                <div class="qr-code">
+                    <i class="fa-solid fa-qrcode" title="Quét mã tải App"></i>
+                </div>
+                <div class="app-links">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg" alt="App Store">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" alt="Google Play">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bottom-bar">
+        <div class="country-list">
+            Quốc gia và Khu vực: <b>Việt Nam</b> | Singapore | Indonesia | Thái Lan | Malaysia | Brazil | Mexico
+        </div>
+        <div class="certified-group">
+            <div class="bct-logo"><i class="fa-solid fa-certificate"></i> Đã đăng ký bộ công thương</div>
+            <div class="bct-logo"><i class="fa-solid fa-circle-check"></i> Đã thông báo bộ công thương</div>
+        </div>
+        <div class="copyright">
+            <p>&copy; 2026 <b>Logistics Pro Management</b>. All Rights Reserved.</p>
+            <p style="margin-top: 10px;">Phát triển bởi <b>Tan Nguyen</b> và <b>MSI Team</b>. Địa chỉ: Tòa nhà MSI Tower, Quận 1, TP. Hồ Chí Minh.</p>
+        </div>
+    </div>
+</footer>
+
+    <!-- THANH BOTTOM NAVIGATION BAR CHUẨN APP CHO MOBILE (FEATURE 3) -->
+    <nav class="mobile-bottom-nav" aria-label="Mobile Bottom Navigation">
+        <a href="{% url 'core:home' %}" class="mobile-nav-item {% if request.path == '/' %}active{% endif %}">
+            <i class="fa-solid fa-house"></i>
+            <span>Trang chủ</span>
+        </a>
+        <a href="{% url 'core:thuc_don' %}" class="mobile-nav-item {% if 'thuc-don' in request.path or 'menu' in request.path %}active{% endif %}">
+            <i class="fa-solid fa-utensils"></i>
+            <span>Thực đơn</span>
+        </a>
+        <a href="{% url 'core:lich_su_don_hang' %}" class="mobile-nav-item {% if 'don-hang-cua-toi' in request.path or 'my-orders' in request.path %}active{% endif %}">
+            <i class="fa-solid fa-receipt"></i>
+            <span>Đơn của tôi</span>
+        </a>
+        <button type="button" onclick="toggleCartDrawer()" class="mobile-nav-item mobile-cart-btn" aria-label="Mở giỏ hàng">
+            <div class="mobile-cart-icon-wrapper">
+                <i class="fa-solid fa-bag-shopping"></i>
+                <span id="mobile-cart-count" class="mobile-cart-badge">0</span>
+            </div>
+            <span>Giỏ hàng</span>
+        </button>
+        {% if user.is_authenticated and user.is_staff %}
+        <a href="{% url 'core:admin_dashboard' %}" class="mobile-nav-item {% if 'admin' in request.path or 'dashboard' in request.path %}active{% endif %}">
+            <i class="fa-solid fa-chart-pie"></i>
+            <span>Quản trị</span>
+        </a>
+        {% elif user.is_authenticated and user.taixe %}
+        <a href="{% url 'core:app_shipper' %}" class="mobile-nav-item {% if 'shipper' in request.path %}active{% endif %}" style="color: #10b981;">
+            <i class="fa-solid fa-motorcycle"></i>
+            <span>App Shipper</span>
+        </a>
+        {% elif user.is_authenticated %}
+        <a href="{% url 'core:logout' %}" class="mobile-nav-item" title="Đăng xuất">
+            <i class="fa-solid fa-user-check"></i>
+            <span>{{ user.username|truncatechars:7 }}</span>
+        </a>
+        {% else %}
+        <a href="{% url 'core:login' %}" class="mobile-nav-item {% if 'login' in request.path %}active{% endif %}">
+            <i class="fa-solid fa-user"></i>
+            <span>Tài khoản</span>
+        </a>
+        {% endif %}
+    </nav>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            $('.form-wrapper select').select2({
+                width: '100%',
+                placeholder: "--- Chọn một mục ---",
+                allowClear: true
+            });
+            initCartUI();
+        });
+
+        // ==========================================
+        // 🛒 HỆ THỐNG QUẢN LÝ GIỎ HÀNG TMĐT (REACTIVE CART ENGINE)
+        // ==========================================
+        const CART_STORAGE_KEY = 'fooddelivery_cart_v1';
+
+        function formatVND(amount) {
+            if (amount === undefined || amount === null || isNaN(amount)) return "0đ";
+            return Math.round(Number(amount)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") + "đ";
+        }
+
+        function getCart() {
+            try {
+                return JSON.parse(localStorage.getItem(CART_STORAGE_KEY)) || [];
+            } catch(e) {
+                return [];
+            }
+        }
+
+        function saveCart(cart) {
+            localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+            initCartUI();
+        }
+
+        function addToCart(id, name, price, img, kho_id, kho_name) {
+            let cart = getCart();
+            let existing = cart.find(item => item.id == id);
+            if (existing) {
+                existing.quantity += 1;
+            } else {
+                cart.push({
+                    id: id,
+                    name: name,
+                    price: parseFloat(price),
+                    img: img,
+                    quantity: 1,
+                    kho_id: kho_id || 1,
+                    kho_name: kho_name || 'Bếp trung tâm'
+                });
+            }
+            saveCart(cart);
+            showToast(`Đã thêm <b>${name}</b> vào giỏ (${formatVND(price)})`, 'cart', 'Đã thêm món ngon');
+        }
+
+        function updateCartQuantity(id, delta) {
+            let cart = getCart();
+            let item = cart.find(i => i.id == id);
+            if (item) {
+                item.quantity += delta;
+                if (item.quantity <= 0) {
+                    cart = cart.filter(i => i.id != id);
+                }
+            }
+            saveCart(cart);
+        }
+
+        function removeFromCart(id) {
+            let cart = getCart().filter(i => i.id != id);
+            saveCart(cart);
+            showToast("Đã xóa món khỏi giỏ hàng", "info", "Cập nhật giỏ hàng");
+        }
+
+        function initCartUI() {
+            const cart = getCart();
+            const totalCount = cart.reduce((sum, i) => sum + i.quantity, 0);
+            const subtotal = cart.reduce((sum, i) => sum + (i.price * i.quantity), 0);
+
+            // Cập nhật badge trên navbar và mobile bottom nav
+            const badge = document.getElementById('nav-cart-count');
+            if (badge) badge.innerText = totalCount;
+            const mobileBadge = document.getElementById('mobile-cart-count');
+            if (mobileBadge) mobileBadge.innerText = totalCount;
+
+            // Cập nhật Drawer
+            const container = document.getElementById('cart-items-container');
+            const subtotalEl = document.getElementById('cart-subtotal');
+            if (subtotalEl) subtotalEl.innerText = formatVND(subtotal);
+
+            // Cập nhật thanh Freeship
+            const freeshipThreshold = 150000;
+            const diff = freeshipThreshold - subtotal;
+            const freeshipText = document.getElementById('cart-freeship-text');
+            const freeshipDiff = document.getElementById('cart-freeship-diff');
+            const freeshipBadge = document.getElementById('cart-freeship-badge');
+            const freeshipFill = document.getElementById('cart-freeship-fill');
+
+            if (freeshipFill) {
+                if (subtotal <= 0) {
+                    freeshipFill.style.width = '0%';
+                    if (freeshipBadge) {
+                        freeshipBadge.innerText = '0%';
+                        freeshipBadge.style.background = '#ea580c';
+                    }
+                    if (freeshipDiff) freeshipDiff.innerText = formatVND(freeshipThreshold);
+                    if (freeshipText) freeshipText.innerHTML = `<i class="fa-solid fa-truck-fast"></i> Mua thêm <strong>${formatVND(freeshipThreshold)}</strong> để được FREESHIP`;
+                } else if (subtotal >= freeshipThreshold) {
+                    freeshipFill.style.width = '100%';
+                    freeshipFill.style.background = 'linear-gradient(90deg, #10b981, #059669)';
+                    if (freeshipBadge) {
+                        freeshipBadge.innerText = 'FREESHIP';
+                        freeshipBadge.style.background = '#10b981';
+                    }
+                    if (freeshipText) freeshipText.innerHTML = `🎉 <strong>Chúc mừng!</strong> Bạn đã đủ điều kiện <strong>FREESHIP 100%</strong>`;
+                } else {
+                    const percent = Math.min(100, Math.round((subtotal / freeshipThreshold) * 100));
+                    freeshipFill.style.width = percent + '%';
+                    freeshipFill.style.background = 'linear-gradient(90deg, #ff5722, #10b981)';
+                    if (freeshipBadge) {
+                        freeshipBadge.innerText = percent + '%';
+                        freeshipBadge.style.background = '#ea580c';
+                    }
+                    if (freeshipDiff) freeshipDiff.innerText = formatVND(diff);
+                    if (freeshipText) freeshipText.innerHTML = `<i class="fa-solid fa-truck-fast"></i> Mua thêm <strong>${formatVND(diff)}</strong> để được FREESHIP`;
+                }
+            }
+
+            if (container) {
+                if (cart.length === 0) {
+                    container.innerHTML = `
+                        <div style="text-align: center; padding: 60px 20px; color: #94a3b8;">
+                            <i class="fa-solid fa-basket-shopping" style="font-size: 55px; color: #cbd5e1; margin-bottom: 15px;"></i>
+                            <h4 style="color: #64748b; font-size: 16px; margin-bottom: 8px;">Giỏ hàng còn trống</h4>
+                            <p style="font-size: 13px; margin: 0;">Hãy chọn món ngon từ Thực đơn để đặt món nhé!</p>
+                            <a href="/thuc-don/" onclick="toggleCartDrawer()" style="display: inline-block; margin-top: 15px; padding: 8px 18px; border-radius: 20px; background: #fff2ed; color: #ff5722; text-decoration: none; font-weight: 700; font-size: 13px;">
+                                <i class="fa-solid fa-utensils"></i> Xem Thực Đơn
+                            </a>
+                        </div>
+                    `;
+                    const btnCheckout = document.getElementById('btn-to-checkout');
+                    if (btnCheckout) {
+                        btnCheckout.style.opacity = '0.5';
+                        btnCheckout.style.pointerEvents = 'none';
+                    }
+                } else {
+                    const btnCheckout = document.getElementById('btn-to-checkout');
+                    if (btnCheckout) {
+                        btnCheckout.style.opacity = '1';
+                        btnCheckout.style.pointerEvents = 'auto';
+                    }
+                    container.innerHTML = cart.map(item => `
+                        <div style="display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid #f1f5f9; align-items: center;">
+                            <img src="${item.img}" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&auto=format&fit=crop&q=60';" style="width: 58px; height: 58px; border-radius: 10px; object-fit: cover; border: 1px solid #e2e8f0;">
+                            <div style="flex: 1; min-width: 0;">
+                                <div style="font-weight: 700; font-size: 13.5px; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.name}</div>
+                                <div style="color: #ff5722; font-weight: 800; font-size: 13px; margin: 2px 0;">${formatVND(item.price)}</div>
+                                <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+                                    <button onclick="updateCartQuantity(${item.id}, -1)" style="border: 1px solid #cbd5e1; background: #f8fafc; width: 22px; height: 22px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: bold;">-</button>
+                                    <span style="font-size: 12px; font-weight: 700; min-width: 15px; text-align: center;">${item.quantity}</span>
+                                    <button onclick="updateCartQuantity(${item.id}, 1)" style="border: 1px solid #cbd5e1; background: #f8fafc; width: 22px; height: 22px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: bold;">+</button>
+                                </div>
+                            </div>
+                            <button onclick="removeFromCart(${item.id})" style="border: none; background: transparent; color: #94a3b8; cursor: pointer; padding: 5px; font-size: 14px;" title="Xóa món">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    `).join('');
+                }
+            }
+        }
+
+        function toggleCartDrawer() {
+            const drawer = document.getElementById('cart-drawer');
+            const backdrop = document.getElementById('cart-drawer-backdrop');
+            if (!drawer || !backdrop) return;
+            const isOpen = drawer.style.right === '0px';
+            if (isOpen) {
+                drawer.style.right = '-450px';
+                backdrop.style.display = 'none';
+            } else {
+                initCartUI();
+                drawer.style.right = '0px';
+                backdrop.style.display = 'block';
+            }
+        }
+
+        // ==========================================
+        // 🎟️ KHO VOUCHER & QUẢN LÝ MÃ GIẢM GIÁ (VOUCHER WALLET)
+        // ==========================================
+        let cachedVouchers = [];
+
+        function openVoucherWalletModal() {
+            const modal = document.getElementById('voucher-wallet-modal');
+            const list = document.getElementById('voucher-wallet-list');
+            if (!modal || !list) return;
+
+            modal.style.display = 'flex';
+
+            if (cachedVouchers.length > 0) {
+                renderVouchersList(cachedVouchers);
+            } else {
+                fetch('/api/vouchers/')
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            cachedVouchers = data.vouchers;
+                            renderVouchersList(cachedVouchers);
+                        }
+                    })
+                    .catch(err => {
+                        list.innerHTML = `<div style="text-align:center;color:#ef4444;padding:20px;">Không thể tải danh sách voucher!</div>`;
+                    });
+            }
+        }
+
+        function renderVouchersList(vouchers) {
+            const list = document.getElementById('voucher-wallet-list');
+            if (!list) return;
+
+            if (vouchers.length === 0) {
+                list.innerHTML = `<div style="text-align:center;color:#94a3b8;padding:35px 20px;">
+                    <i class="fa-solid fa-ticket" style="font-size: 32px; color: #cbd5e1; margin-bottom: 8px; display: block;"></i>
+                    Hiện chưa có voucher khả dụng
+                </div>`;
+                return;
+            }
+
+            list.innerHTML = vouchers.map(v => `
+                <div class="voucher-ticket-card" style="display: flex; background: #ffffff; border: 1.5px solid #fed7aa; border-radius: 18px; box-shadow: 0 4px 16px rgba(254, 215, 170, 0.28); position: relative; width: 100%; box-sizing: border-box; flex-shrink: 0; min-height: fit-content; margin-bottom: 2px;">
+                    <!-- VẾ TRÁI: CUỐNG VÉ -->
+                    <div style="background: linear-gradient(145deg, #ff5722 0%, #ea580c 100%); color: white; padding: 18px 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 108px; width: 108px; text-align: center; position: relative; flex-shrink: 0; border-top-left-radius: 16px; border-bottom-left-radius: 16px; border-right: 1.5px dashed rgba(255,255,255,0.45);">
+                        <span style="font-size: 26px; font-weight: 900; line-height: 1; letter-spacing: -0.5px;">${v.giam_gia_phan_tram}%</span>
+                        <span style="font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 5px; background: rgba(0,0,0,0.22); padding: 3px 7px; border-radius: 5px; white-space: nowrap;">${v.tag_type || 'GIẢM GIÁ'}</span>
+                        <span style="font-size: 9.5px; opacity: 0.95; margin-top: 6px; font-weight: 600;">Tối đa ${(v.max_discount/1000).toFixed(0)}k</span>
+
+                        <!-- RĂNG CƯA / LỖ KHUYẾT CUỐNG VÉ TRÊN VÀ DƯỚI -->
+                        <div style="position: absolute; right: -8px; top: -8px; width: 16px; height: 16px; background: #ffffff; border-radius: 50%; z-index: 2; border: 1.5px solid #fed7aa; border-top-color: transparent;"></div>
+                        <div style="position: absolute; right: -8px; bottom: -8px; width: 16px; height: 16px; background: #ffffff; border-radius: 50%; z-index: 2; border: 1.5px solid #fed7aa; border-bottom-color: transparent;"></div>
+                    </div>
+
+                    <!-- VẾ PHẢI: THÔNG TIN CHI TIẾT & ĐIỀU KIỆN -->
+                    <div style="flex: 1; min-width: 0; padding: 14px 16px 14px 18px; display: flex; flex-direction: column; justify-content: space-between; gap: 8px; background: #ffffff; border-top-right-radius: 16px; border-bottom-right-radius: 16px; box-sizing: border-box;">
+                        <div>
+                            <div style="font-weight: 800; font-size: 14px; color: #0f172a; line-height: 1.35; margin-bottom: 3px;">${v.tieu_de}</div>
+                            <div style="font-size: 11.5px; color: #64748b; line-height: 1.4;">${v.mo_ta}</div>
+                        </div>
+
+                        <!-- CHIPS ĐIỀU KIỆN & THỜI HẠN -->
+                        <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px;">
+                            <span style="font-size: 11px; color: #c2410c; background: #fff7ed; border: 1px solid #fed7aa; padding: 3px 8px; border-radius: 6px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
+                                <i class="fa-solid fa-basket-shopping" style="font-size: 9.5px;"></i> ${v.dieu_kien}
+                            </span>
+                            <span style="font-size: 11px; color: #475569; background: #f8fafc; border: 1px solid #e2e8f0; padding: 3px 8px; border-radius: 6px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                                <i class="fa-regular fa-clock" style="font-size: 9.5px; color: #64748b;"></i> ${v.hsd || 'HSD: 31/10/2026'}
+                            </span>
+                        </div>
+
+                        <!-- THANH TIẾN ĐỘ SỬ DỤNG -->
+                        <div style="display: flex; align-items: center; gap: 8px; margin-top: 2px;">
+                            <div style="flex: 1; height: 6px; background: #f1f5f9; border-radius: 10px; overflow: hidden;">
+                                <div style="width: ${v.da_dung_phan_tram || 60}%; height: 100%; background: linear-gradient(90deg, #f59e0b, #ef4444); border-radius: 10px;"></div>
+                            </div>
+                            <span style="font-size: 10.5px; color: #64748b; font-weight: 700; white-space: nowrap;">Đã dùng ${v.da_dung_phan_tram || 60}%</span>
+                        </div>
+
+                        <!-- CHÂN VÉ: MÃ VOUCHER RÕ RÀNG & NÚT ÁP DỤNG (HOÀN TOÀN KHÔNG BỊ CHE KHUẤT) -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1.5px dashed #fed7aa; padding-top: 10px; margin-top: 6px; gap: 10px; flex-wrap: wrap;">
+                            <div style="display: inline-flex; align-items: center; gap: 6px;">
+                                <span style="font-family: 'Courier New', Courier, monospace; font-size: 13.5px; font-weight: 900; background: #fff7ed; color: #ea580c; border: 1.5px dashed #f97316; padding: 4px 10px; border-radius: 8px; letter-spacing: 0.8px; user-select: all; display: inline-block;">
+                                    ${v.ma_voucher}
+                                </span>
+                                <button type="button" onclick="copyVoucherCode('${v.ma_voucher}')" title="Sao chép mã" style="background: #f8fafc; border: 1px solid #cbd5e1; color: #475569; cursor: pointer; padding: 5px 9px; border-radius: 6px; font-size: 11.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; transition: 0.2s;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f8fafc'">
+                                    <i class="fa-regular fa-copy"></i> Copy
+                                </button>
+                            </div>
+                            <button type="button" onclick="selectVoucher('${v.ma_voucher}', ${v.giam_gia_phan_tram}, ${v.min_order || 0}, ${v.max_discount || 0})" style="background: linear-gradient(135deg, #ff5722 0%, #ea580c 100%); color: white; border: none; padding: 8px 18px; border-radius: 10px; font-size: 12.5px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 12px rgba(234, 88, 12, 0.35); display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; transition: transform 0.15s ease;" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform='translateY(0)'">
+                                <i class="fa-solid fa-check"></i> Áp Dụng Ngay
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function copyVoucherCode(code) {
+            navigator.clipboard.writeText(code).then(() => {
+                showToast(`Đã sao chép mã "${code}" vào bộ nhớ tạm!`, 'success', 'Sao chép thành công');
+            }).catch(() => {
+                showToast(`Mã voucher: ${code}`, 'info', 'Mã Voucher');
+            });
+        }
+
+        function applyQuickInputVoucher() {
+            const input = document.getElementById('wallet-quick-voucher-input');
+            if (!input) return;
+            const code = input.value.trim().toUpperCase();
+            if (!code) {
+                showToast("Vui lòng nhập mã voucher!", "warning", "Lưu ý");
+                return;
+            }
+
+            if (cachedVouchers.length > 0) {
+                const found = cachedVouchers.find(v => v.ma_voucher.toUpperCase() === code);
+                if (found) {
+                    selectVoucher(found.ma_voucher, found.giam_gia_phan_tram, found.min_order, found.max_discount);
+                } else {
+                    showToast(`Mã "${code}" không tồn tại hoặc đã hết hạn!`, 'error', 'Mã không hợp lệ');
+                }
+            } else {
+                selectVoucher(code, 20, 50000, 30000);
+            }
+        }
+
+        function closeVoucherWalletModal(e) {
+            if (e.target.id === 'voucher-wallet-modal') {
+                document.getElementById('voucher-wallet-modal').style.display = 'none';
+            }
+        }
+
+        function closeVoucherWalletModalDirect() {
+            document.getElementById('voucher-wallet-modal').style.display = 'none';
+        }
+
+        function selectVoucher(code, percent, minOrder, maxDiscount) {
+            // Kiểm tra nếu đang ở trang checkout
+            const checkoutInput = document.getElementById('voucher-input');
+            if (checkoutInput) {
+                checkoutInput.value = code;
+                if (typeof applyVoucher === 'function') {
+                    applyVoucher();
+                }
+            }
+
+            const input = document.getElementById('cart-voucher-input');
+            if (input) input.value = code;
+
+            const msgBox = document.getElementById('cart-voucher-applied-msg');
+            const msgText = document.getElementById('cart-voucher-applied-text');
+            if (msgBox && msgText) {
+                msgBox.style.display = 'block';
+                msgText.innerText = `Đã chọn mã ${code} (Giảm ${percent}%)`;
+            }
+
+            sessionStorage.setItem('selected_voucher', code);
+            closeVoucherWalletModalDirect();
+            showToast(`Đã chọn mã "${code}" thành công!`, 'cart', 'Áp dụng Voucher');
+        }
+
+        function applyCartVoucher() {
+            const input = document.getElementById('cart-voucher-input');
+            if (!input) return;
+            const code = input.value.trim().toUpperCase();
+            if (!code) {
+                showToast("Vui lòng nhập mã voucher!", "warning", "Lưu ý");
+                return;
+            }
+
+            fetch('/api/vouchers/')
+                .then(res => res.json())
+                .then(data => {
+                    const found = data.vouchers.find(v => v.ma_voucher.toUpperCase() === code);
+                    if (found) {
+                        selectVoucher(found.ma_voucher, found.giam_gia_phan_tram);
+                    } else {
+                        showToast(`Mã "${code}" không hợp lệ hoặc đã hết hạn!`, 'error', 'Mã không đúng');
+                    }
+                })
+                .catch(() => {
+                    selectVoucher(code, 20);
+                });
+        }
+
+        function showToast(message, type = 'success', title = '', duration = 3500) {
+            const container = document.getElementById('toast-notification-container');
+            if (!container) return;
+
+            let iconClass = 'fa-solid fa-circle-check';
+            let defaultTitle = 'Thành công';
+
+            if (type === 'cart') {
+                iconClass = 'fa-solid fa-bag-shopping';
+                defaultTitle = 'Giỏ hàng đã cập nhật';
+            } else if (type === 'info') {
+                iconClass = 'fa-solid fa-circle-info';
+                defaultTitle = 'Thông báo';
+            } else if (type === 'warning') {
+                iconClass = 'fa-solid fa-triangle-exclamation';
+                defaultTitle = 'Lưu ý';
+            } else if (type === 'error') {
+                iconClass = 'fa-solid fa-circle-xmark';
+                defaultTitle = 'Có lỗi xảy ra';
+            }
+
+            const toastTitle = title || defaultTitle;
+
+            const toast = document.createElement('div');
+            toast.className = `app-toast toast-${type}`;
+            toast.innerHTML = `
+                <div class="toast-icon-box">
+                    <i class="${iconClass}"></i>
+                </div>
+                <div class="toast-content-box">
+                    <div class="toast-header-text">${toastTitle}</div>
+                    <div class="toast-body-text">${message}</div>
+                </div>
+                <button type="button" class="toast-close-btn" aria-label="Đóng thông báo">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+                <div class="toast-progress-bar">
+                    <div class="toast-progress-fill"></div>
+                </div>
+            `;
+
+            container.appendChild(toast);
+
+            const progressFill = toast.querySelector('.toast-progress-fill');
+            if (progressFill) {
+                progressFill.style.transition = `width ${duration}ms linear`;
+                progressFill.offsetHeight; // Reflow
+                progressFill.style.width = '0%';
+            }
+
+            let isDismissed = false;
+            const dismiss = () => {
+                if (isDismissed) return;
+                isDismissed = true;
+                toast.classList.add('toast-hiding');
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 300);
+            };
+
+            let timer = setTimeout(dismiss, duration);
+
+            toast.addEventListener('mouseenter', () => {
+                clearTimeout(timer);
+                if (progressFill) {
+                    progressFill.style.transition = 'none';
+                }
+            });
+
+            toast.addEventListener('mouseleave', () => {
+                timer = setTimeout(dismiss, 1500);
+            });
+
+            const closeBtn = toast.querySelector('.toast-close-btn');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    clearTimeout(timer);
+                    dismiss();
+                });
+            }
+        }
+
+        // ==========================================
+        // 🔔 THÔNG BÁO ĐƠN MỚI CHO ADMIN (MẮT THẦN)
+        // ==========================================
+        function refreshNotifications() {
+            fetch('/api/check-new-orders/')
+                .then(res => res.json())
+                .then(data => {
+                    const badge = document.getElementById('order-count-badge');
+                    const container = document.getElementById('new-orders-container');
+                    const countText = document.getElementById('order-count-text');
+
+                    if (!badge) return;
+
+                    if (data.count > 0) {
+                        badge.innerText = data.count;
+                        badge.style.display = 'flex';
+                        if (countText) countText.innerText = `${data.count} đơn mới`;
+                        if (container) {
+                            container.innerHTML = data.orders.map(order => `
+                                <a href="/quan-ly-don-hang/?q=${order.ma_don}" class="noti-order-item">
+                                    <div class="noti-item-dot"></div>
+                                    <div class="noti-item-info">
+                                        <div class="noti-item-title">Đơn hàng #${order.ma_don}</div>
+                                        <div class="noti-item-sub">Khách: <b>${order.khach}</b> • ${order.ngay}</div>
+                                    </div>
+                                    <i class="fa-solid fa-chevron-right noti-item-arrow"></i>
+                                </a>
+                            `).join('');
+                        }
+                    } else {
+                        badge.style.display = 'none';
+                        if (countText) countText.innerText = '0 đơn mới';
+                        if (container) {
+                            container.innerHTML = `
+                                <div style="text-align: center; padding: 32px 16px; color: #94a3b8;">
+                                    <i class="fa-solid fa-bell-slash" style="font-size: 28px; color: #cbd5e1; margin-bottom: 8px; display: block;"></i>
+                                    <span style="font-size: 13px; font-weight: 600;">Hiện không có đơn mới nào</span>
+                                </div>
+                            `;
+                        }
+                    }
+                })
+                .catch(() => {});
+        }
+        refreshNotifications(); // Tự động load ngay khi mở trang
+        setInterval(refreshNotifications, 15000);
+
+        // Click để mở / đóng danh sách thông báo đơn mới
+        document.addEventListener('DOMContentLoaded', function() {
+            const bell = document.getElementById('notificationBell');
+            const menu = document.getElementById('notification-list');
+            if (bell && menu) {
+                bell.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const isShown = menu.style.display === 'block';
+                    menu.style.display = isShown ? 'none' : 'block';
+                });
+
+                document.addEventListener('click', function(e) {
+                    if (!bell.contains(e.target) && !menu.contains(e.target)) {
+                        menu.style.display = 'none';
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

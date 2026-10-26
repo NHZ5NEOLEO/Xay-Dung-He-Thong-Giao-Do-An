@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="dashboard-container" style="padding: 20px;">
+    <div class="card-box" style="background: white; border-radius: 20px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.05);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+            <h2 style="margin: 0; font-size: 24px; font-weight: 800; color: #1e293b;">
+                <i class="fa-solid fa-clock-rotate-left" style="color: #5e72e4;"></i> Nhật ký luân chuyển Kho
+            </h2>
+            <a href="{% url 'core:them_lich_su' %}" style="background: linear-gradient(135deg, #5e72e4 0%, #825ee4 100%); color: white; padding: 12px 25px; border-radius: 12px; text-decoration: none; font-weight: 700; transition: 0.3s; box-shadow: 0 4px 15px rgba(94, 114, 228, 0.3);">
+                <i class="fa-solid fa-plus"></i> Thêm nhật ký mới
+            </a>
+        </div>
+
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                <thead>
+                    <tr style="text-align: left; border-bottom: 2px solid #f1f5f9;">
+                        <th style="padding: 15px; color: #64748b; font-size: 13px; text-transform: uppercase;">Thời gian</th>
+                        <th style="padding: 15px; color: #64748b; font-size: 13px; text-transform: uppercase;">Mã Đơn</th>
+                        <th style="padding: 15px; color: #64748b; font-size: 13px; text-transform: uppercase;">Vị trí kho</th>
+                        <th style="padding: 15px; color: #64748b; font-size: 13px; text-transform: uppercase;">Hành động</th>
+                        <th style="padding: 15px; color: #64748b; font-size: 13px; text-transform: uppercase;">Ghi chú</th>
+                        <th style="padding: 15px; text-align: center; color: #64748b; font-size: 13px; text-transform: uppercase;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in ds_lich_su %}
+                    <tr style="border-bottom: 1px solid #f1f5f9; transition: 0.2s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                        <td style="padding: 15px;"><small style="color: #94a3b8; font-weight: 600;">{{ log.thoi_gian|date:"H:i - d/m/Y" }}</small></td>
+                        <td style="padding: 15px;"><b style="color: #5e72e4;">#{{ log.don_hang.ma_don }}</b></td>
+                        <td style="padding: 15px;"><i class="fa-solid fa-warehouse" style="color: #94a3b8; margin-right: 5px;"></i> {{ log.kho.ten_kho }}</td>
+                        <td style="padding: 15px;">
+                            <span style="background: #e0e7ff; color: #4338ca; padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 700;">
+                                {{ log.trang_thai_buoc }}
+                            </span>
+                        </td>
+                        <td style="padding: 15px; color: #64748b; font-size: 13px;">{{ log.ghi_chu }}</td>
+                        <td style="padding: 15px; text-align: center;">
+                            <a href="{% url 'core:xoa_lich_su' log.id %}" onclick="return confirm('Bạn có chắc muốn xóa dòng nhật ký này không?')" style="color: #f5365c; font-size: 18px; transition: 0.3s;">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 50px; color: #94a3b8;">
+                            <i class="fa-solid fa-box-open" style="font-size: 40px; margin-bottom: 15px; display: block;"></i>
+                            Chưa có dữ liệu luân chuyển nào được ghi nhận.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

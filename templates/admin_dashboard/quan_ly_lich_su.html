@@ -1,0 +1,563 @@
+{% extends "admin_dashboard/admin_base.html" %}
+{% load static currency_filters %}
+
+{% block title %}Nhật Ký Luân Chuyển Kho & Vận Chuyển - Logistics Pro Admin{% endblock %}
+
+{% block page_title %}Nhật Ký Luân Chuyển Kho & Vận Chuyển{% endblock %}
+
+{% block breadcrumb %}
+<span class="sep">/</span>
+<a href="{% url 'core:quan_ly_lich_su' %}" style="color: var(--admin-primary); text-decoration: none; font-weight: 600;">Nhật Ký Luân Chuyển</a>
+{% endblock %}
+
+{% block admin_content %}
+<!-- ==============================================================================
+     1. KPI THỐNG KÊ LUÂN CHUYỂN KHO & ĐIỀU PHỐI
+     ============================================================================== -->
+<div class="admin-kpi-grid" style="margin-bottom: 24px;">
+    <!-- KPI 1: Tổng lượt luân chuyển -->
+    <div class="admin-kpi-card">
+        <div class="admin-kpi-header">
+            <div>
+                <div class="admin-kpi-title">Tổng Lượt Luân Chuyển</div>
+                <div class="admin-kpi-value">{{ stats.tong_lich_su }}</div>
+            </div>
+            <div class="admin-kpi-icon-box admin-kpi-icon-blue">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+            </div>
+        </div>
+        <div class="admin-kpi-footer">
+            <span class="admin-kpi-subtext">Toàn bộ mốc hành trình đã ghi nhận</span>
+        </div>
+    </div>
+
+    <!-- KPI 2: Sự kiện hôm nay -->
+    <div class="admin-kpi-card">
+        <div class="admin-kpi-header">
+            <div>
+                <div class="admin-kpi-title">Sự Kiện Hôm Nay</div>
+                <div class="admin-kpi-value" style="color: #2563eb;">{{ stats.today_lich_su }}</div>
+            </div>
+            <div class="admin-kpi-icon-box admin-kpi-icon-purple">
+                <i class="fa-solid fa-bolt"></i>
+            </div>
+        </div>
+        <div class="admin-kpi-footer">
+            <span class="admin-kpi-subtext">Cập nhật luân chuyển trong ngày</span>
+        </div>
+    </div>
+
+    <!-- KPI 3: Điểm kho / Bếp vận hành -->
+    <div class="admin-kpi-card">
+        <div class="admin-kpi-header">
+            <div>
+                <div class="admin-kpi-title">Điểm Kho / Bếp Vận Hành</div>
+                <div class="admin-kpi-value" style="color: #059669;">{{ stats.tong_kho }}</div>
+            </div>
+            <div class="admin-kpi-icon-box admin-kpi-icon-green">
+                <i class="fa-solid fa-warehouse"></i>
+            </div>
+        </div>
+        <div class="admin-kpi-footer">
+            <span class="admin-kpi-subtext">Cơ sở tiếp nhận & xuất món</span>
+        </div>
+    </div>
+
+    <!-- KPI 4: Đơn đang vận chuyển -->
+    <div class="admin-kpi-card">
+        <div class="admin-kpi-header">
+            <div>
+                <div class="admin-kpi-title">Đơn Đang Vận Chuyển</div>
+                <div class="admin-kpi-value" style="color: #d97706;">{{ stats.don_dang_giao }}</div>
+            </div>
+            <div class="admin-kpi-icon-box admin-kpi-icon-amber">
+                <i class="fa-solid fa-truck-fast"></i>
+            </div>
+        </div>
+        <div class="admin-kpi-footer">
+            <span class="admin-kpi-subtext">Đơn hàng đang trên đường giao</span>
+        </div>
+    </div>
+</div>
+
+<!-- ==============================================================================
+     2. THANH CÔNG CỤ TÌM KIẾM, LỌC & NÚT THÊM NHẬT KÝ
+     ============================================================================== -->
+<div class="admin-card" style="margin-bottom: 24px;">
+    <div style="padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+        <form method="GET" action="{% url 'core:quan_ly_lich_su' %}" id="filterLogForm" style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center; flex: 1;">
+            <!-- Live Search Bar -->
+            <div style="position: relative; min-width: 260px; flex: 1;">
+                <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 13.5px;"></i>
+                <input type="text" name="q" id="logSearchInput" value="{{ q }}" placeholder="Tìm theo mã đơn #DH..., kho, hành động, ghi chú..." style="width: 100%; padding: 10px 14px 10px 38px; border-radius: 10px; border: 1.5px solid #e2e8f0; font-size: 13.5px; outline: none; background: #f8fafc; color: #1e293b; transition: all 0.2s;" onfocus="this.style.borderColor='var(--admin-primary)'; this.style.background='#fff';" onblur="this.style.borderColor='#e2e8f0'; this.style.background='#f8fafc';">
+            </div>
+
+            <!-- Filter Vị trí Kho -->
+            <select name="kho" onchange="this.form.submit()" style="padding: 10px 14px; border-radius: 10px; border: 1.5px solid #e2e8f0; font-size: 13px; font-weight: 600; color: #334155; background: #f8fafc; outline: none; cursor: pointer;">
+                <option value="">🏢 Tất cả vị trí kho / bếp</option>
+                {% for k in danh_sach_kho %}
+                    <option value="{{ k.id }}" {% if selected_kho == k.id|stringformat:"s" %}selected{% endif %}>{{ k.ten_kho }}</option>
+                {% endfor %}
+            </select>
+
+            <!-- Filter Hành Động -->
+            <select name="action" onchange="this.form.submit()" style="padding: 10px 14px; border-radius: 10px; border: 1.5px solid #e2e8f0; font-size: 13px; font-weight: 600; color: #334155; background: #f8fafc; outline: none; cursor: pointer;">
+                <option value="">⚡ Tất cả hành động</option>
+                <option value="NHẬP KHO" {% if selected_action == 'NHẬP KHO' %}selected{% endif %}>📥 Nhập kho / Tiếp nhận</option>
+                <option value="BÀN GIAO SHIPPER" {% if selected_action == 'BÀN GIAO SHIPPER' %}selected{% endif %}>🛵 Bàn giao Shipper</option>
+                <option value="ĐANG VẬN CHUYỂN" {% if selected_action == 'ĐANG VẬN CHUYỂN' %}selected{% endif %}>🚚 Đang vận chuyển</option>
+                <option value="XUẤT KHO" {% if selected_action == 'XUẤT KHO' %}selected{% endif %}>📤 Xuất kho / Bếp xong</option>
+                <option value="GIAO THÀNH CÔNG" {% if selected_action == 'GIAO THÀNH CÔNG' %}selected{% endif %}>✅ Giao thành công</option>
+                <option value="ADMIN CẬP NHẬT" {% if selected_action == 'ADMIN CẬP NHẬT' %}selected{% endif %}>🛡️ Admin cập nhật</option>
+            </select>
+
+            {% if q or selected_kho or selected_action %}
+                <a href="{% url 'core:quan_ly_lich_su' %}" class="admin-btn-action admin-btn-action-secondary" style="padding: 9px 14px; font-size: 13px;" title="Xóa bộ lọc">
+                    <i class="fa-solid fa-rotate-left"></i> Đặt lại
+                </a>
+            {% endif %}
+        </form>
+
+        <!-- Right action: Thêm nhật ký mới Modal Trigger -->
+        <button type="button" class="admin-btn-action admin-btn-action-primary" onclick="openAddLogModal()" style="box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35); font-size: 13.5px; padding: 10px 18px;">
+            <i class="fa-solid fa-plus-circle"></i>
+            <span>Thêm Nhật Ký Mới</span>
+        </button>
+    </div>
+</div>
+
+<!-- ==============================================================================
+     3. BẢNG DỮ LIỆU NHẬT KÝ LUÂN CHUYỂN KHO CAO CẤP
+     ============================================================================== -->
+<div class="admin-card">
+    <div class="admin-card-header" style="flex-wrap: wrap; gap: 12px;">
+        <div class="admin-card-title-box">
+            <i class="fa-solid fa-timeline admin-card-title-icon" style="color: #6366f1;"></i>
+            <h3 class="admin-card-title">Dòng Thời Gian Luân Chuyển Hàng Hóa</h3>
+            <span class="admin-card-badge">{{ ds_lich_su|length }} Bản Ghi</span>
+        </div>
+        <div style="font-size: 12.5px; color: #64748b;">
+            <i class="fa-solid fa-circle-info" style="color: #3b82f6;"></i> Nhấp mã đơn để xem chi tiết đơn tức thì
+        </div>
+    </div>
+
+    <div class="admin-table-container">
+        <table class="admin-table" id="logHistoryTable">
+            <thead>
+                <tr>
+                    <th style="width: 140px;">Thời Gian</th>
+                    <th style="width: 120px;">Mã Đơn</th>
+                    <th>Vị Trí Kho / Quán</th>
+                    <th>Hành Động & Bước</th>
+                    <th>Ghi Chú Chi Tiết</th>
+                    <th style="width: 100px; text-align: center;">Thao Tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in ds_lich_su %}
+                <tr id="row-log-{{ log.id }}">
+                    <!-- 1. Thời gian -->
+                    <td>
+                        <div style="font-weight: 700; color: #1e293b; font-size: 13.5px;">
+                            {{ log.thoi_gian|date:"H:i" }}
+                        </div>
+                        <div style="font-size: 11.5px; color: #64748b; font-weight: 500;">
+                            <i class="fa-regular fa-calendar" style="font-size: 10.5px; margin-right: 3px;"></i>
+                            {{ log.thoi_gian|date:"d/m/Y" }}
+                        </div>
+                    </td>
+
+                    <!-- 2. Mã Đơn -->
+                    <td>
+                        <a href="javascript:void(0);" onclick="openQuickOrderDetail('{{ log.don_hang.ma_don }}')" style="display: inline-flex; align-items: center; gap: 4px; font-weight: 800; font-family: monospace; font-size: 13.5px; color: var(--admin-primary); background: #eef2ff; padding: 4px 8px; border-radius: 6px; text-decoration: none; border: 1px solid #c7d2fe; transition: all 0.2s;" title="Xem nhanh đơn #{{ log.don_hang.ma_don }}">
+                            #{{ log.don_hang.ma_don }}
+                            <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 9px; opacity: 0.7;"></i>
+                        </a>
+                        <div style="font-size: 11.5px; color: #64748b; margin-top: 3px; max-width: 130px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            {{ log.don_hang.ten_nguoi_nhan }}
+                        </div>
+                    </td>
+
+                    <!-- 3. Vị trí kho -->
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <div style="width: 32px; height: 32px; border-radius: 8px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; color: #475569; font-size: 14px; flex-shrink: 0;">
+                                <i class="fa-solid fa-warehouse"></i>
+                            </div>
+                            <div>
+                                <div style="font-weight: 700; color: #1e293b; font-size: 13px;">
+                                    {{ log.kho.ten_kho|default:"Chưa xác định kho" }}
+                                </div>
+                                {% if log.kho.dia_chi %}
+                                <div style="font-size: 11.5px; color: #94a3b8; max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    <i class="fa-solid fa-location-dot" style="font-size: 9.5px;"></i> {{ log.kho.dia_chi }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </td>
+
+                    <!-- 4. Hành động -->
+                    <td>
+                        {% if 'ADMIN CẬP NHẬT' in log.trang_thai_buoc %}
+                            <span class="admin-badge" style="background: linear-gradient(135deg, #312e81, #4338ca); color: #ffffff; border: 1px solid #4f46e5; font-size: 11.5px; font-weight: 700; padding: 5px 10px;">
+                                <i class="fa-solid fa-user-shield" style="margin-right: 4px;"></i> {{ log.trang_thai_buoc }}
+                            </span>
+                        {% elif log.trang_thai_buoc == 'BÀN GIAO SHIPPER' %}
+                            <span class="admin-badge admin-badge-info" style="font-size: 11.5px; font-weight: 700; padding: 5px 10px;">
+                                <i class="fa-solid fa-motorcycle" style="margin-right: 4px;"></i> BÀN GIAO SHIPPER
+                            </span>
+                        {% elif log.trang_thai_buoc == 'NHẬP KHO' %}
+                            <span class="admin-badge admin-badge-warning" style="font-size: 11.5px; font-weight: 700; padding: 5px 10px;">
+                                <i class="fa-solid fa-box-archive" style="margin-right: 4px;"></i> NHẬP KHO
+                            </span>
+                        {% elif log.trang_thai_buoc == 'XUẤT KHO' %}
+                            <span class="admin-badge" style="background: #ede9fe; color: #6d28d9; border: 1px solid #ddd6fe; font-size: 11.5px; font-weight: 700; padding: 5px 10px;">
+                                <i class="fa-solid fa-dolly" style="margin-right: 4px;"></i> XUẤT KHO
+                            </span>
+                        {% elif 'ĐANG VẬN CHUYỂN' in log.trang_thai_buoc or 'ĐANG LUÂN CHUYỂN' in log.trang_thai_buoc %}
+                            <span class="admin-badge admin-badge-info" style="font-size: 11.5px; font-weight: 700; padding: 5px 10px;">
+                                <i class="fa-solid fa-truck-fast" style="margin-right: 4px;"></i> {{ log.trang_thai_buoc }}
+                            </span>
+                        {% elif 'GIAO THÀNH CÔNG' in log.trang_thai_buoc or 'HOÀN TẤT' in log.trang_thai_buoc %}
+                            <span class="admin-badge admin-badge-success" style="font-size: 11.5px; font-weight: 700; padding: 5px 10px;">
+                                <i class="fa-solid fa-circle-check" style="margin-right: 4px;"></i> {{ log.trang_thai_buoc }}
+                            </span>
+                        {% elif 'HỦY' in log.trang_thai_buoc %}
+                            <span class="admin-badge admin-badge-danger" style="font-size: 11.5px; font-weight: 700; padding: 5px 10px;">
+                                <i class="fa-solid fa-ban" style="margin-right: 4px;"></i> {{ log.trang_thai_buoc }}
+                            </span>
+                        {% else %}
+                            <span class="admin-badge admin-badge-neutral" style="font-size: 11.5px; font-weight: 700; padding: 5px 10px;">
+                                <i class="fa-solid fa-tag" style="margin-right: 4px;"></i> {{ log.trang_thai_buoc }}
+                            </span>
+                        {% endif %}
+                    </td>
+
+                    <!-- 5. Ghi chú đã được định dạng chuẩn -->
+                    <td>
+                        <div style="font-size: 13px; color: #334155; line-height: 1.5;" class="log-formatted-note" data-raw="{{ log.ghi_chu|default:'' }}">
+                            {% if 'Cập nhật bởi' in log.ghi_chu %}
+                                <span style="background: #f1f5f9; color: #475569; padding: 2px 7px; border-radius: 6px; font-size: 11px; font-weight: 700; margin-right: 4px;">
+                                    <i class="fa-solid fa-pen-nib"></i> Admin Audit
+                                </span>
+                            {% endif %}
+                            
+                            {{ log.ghi_chu|default:"Không có ghi chú" }}
+                        </div>
+                    </td>
+
+                    <!-- 6. Thao tác -->
+                    <td style="text-align: center;">
+                        <div class="admin-row-actions" style="justify-content: center;">
+                            <!-- Xem nhanh đơn hàng -->
+                            <button type="button" class="admin-btn-icon-sm" title="Xem nhanh thông tin đơn hàng" onclick="openQuickOrderDetail('{{ log.don_hang.ma_don }}')">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                            <!-- Xóa dòng nhật ký với modal xác nhận -->
+                            <button type="button" class="admin-btn-icon-sm" style="color: #ef4444; border-color: #fecaca; background: #fef2f2;" title="Xóa dòng nhật ký này" onclick="confirmDeleteLog('{{ log.id }}', '{{ log.don_hang.ma_don }}')">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6">
+                        <div class="admin-empty-state" style="padding: 50px 20px;">
+                            <div style="width: 72px; height: 72px; border-radius: 50%; background: #f1f5f9; display: flex; align-items: center; justify-content: center; font-size: 32px; color: #94a3b8; margin: 0 auto 16px;">
+                                <i class="fa-solid fa-box-open"></i>
+                            </div>
+                            <h4 style="margin: 0 0 6px 0; color: #1e293b; font-weight: 700; font-size: 16px;">Chưa Có Dữ Liệu Luân Chuyển Phù Hợp</h4>
+                            <p style="margin: 0 0 16px 0; color: #64748b; font-size: 13.5px;">Thử thay đổi bộ lọc tìm kiếm hoặc ghi nhận một bước luân chuyển mới.</p>
+                            <button type="button" class="admin-btn-action admin-btn-action-primary" onclick="openAddLogModal()">
+                                <i class="fa-solid fa-plus"></i> Thêm Nhật Ký Ngay
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ==============================================================================
+     MODAL 1: THÊM NHẬT KÝ MỚI TẠI CHỖ (IN-PAGE MODAL)
+     ============================================================================== -->
+<div id="addLogModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); z-index: 99999; backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 16px;">
+    <div style="background: white; border-radius: 20px; max-width: 520px; width: 100%; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35); overflow: hidden; animation: qdModalFade 0.2s ease-out;">
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #1e293b, #0f172a); color: white; padding: 20px 24px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 40px; height: 40px; border-radius: 12px; background: rgba(99, 102, 241, 0.2); border: 1px solid rgba(99, 102, 241, 0.3); display: flex; align-items: center; justify-content: center; font-size: 20px; color: #818cf8;">
+                    <i class="fa-solid fa-timeline"></i>
+                </div>
+                <div>
+                    <h3 style="margin: 0; font-size: 17px; font-weight: 800; color: white;">Thêm Nhật Ký Luân Chuyển</h3>
+                    <div style="font-size: 12px; opacity: 0.8; margin-top: 2px;">Ghi nhận mốc vận đơn và tiến độ kho</div>
+                </div>
+            </div>
+            <button type="button" onclick="closeAddLogModal()" style="background: rgba(255,255,255,0.12); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px;">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <!-- Body Form -->
+        <form action="{% url 'core:them_lich_su' %}" method="POST" style="padding: 22px 24px;">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="core:quan_ly_lich_su">
+
+            <!-- 1. Chọn Đơn Hàng -->
+            <div style="margin-bottom: 16px;">
+                <label style="display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 6px;">
+                    <i class="fa-solid fa-box" style="color: #6366f1;"></i> Chọn Đơn Hàng Vận Chuyển <span style="color: #ef4444;">*</span>
+                </label>
+                <select name="don_hang" required style="width: 100%; padding: 10px 14px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-size: 13.5px; font-weight: 600; color: #1e293b; background: #f8fafc; outline: none;">
+                    <option value="">-- Chọn đơn hàng cần cập nhật --</option>
+                    {% for dh in danh_sach_don %}
+                        <option value="{{ dh.id }}">#{{ dh.ma_don }} - {{ dh.ten_nguoi_nhan }} ({{ dh.trang_thai }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- 2. Chọn Vị Trí Kho / Quán -->
+            <div style="margin-bottom: 16px;">
+                <label style="display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 6px;">
+                    <i class="fa-solid fa-warehouse" style="color: #6366f1;"></i> Vị Trí Kho / Bếp Xuất Phát <span style="color: #ef4444;">*</span>
+                </label>
+                <select name="kho" required style="width: 100%; padding: 10px 14px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-size: 13.5px; font-weight: 600; color: #1e293b; background: #f8fafc; outline: none;">
+                    <option value="">-- Chọn vị trí kho / bếp --</option>
+                    {% for k in danh_sach_kho %}
+                        <option value="{{ k.id }}">{{ k.ten_kho }} ({{ k.dia_chi|truncatechars:35 }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- 3. Bước Luân Chuyển / Hành Động -->
+            <div style="margin-bottom: 16px;">
+                <label style="display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 6px;">
+                    <i class="fa-solid fa-route" style="color: #6366f1;"></i> Hành Động / Bước Luân Chuyển <span style="color: #ef4444;">*</span>
+                </label>
+                <select name="trang_thai_buoc" required style="width: 100%; padding: 10px 14px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-size: 13.5px; font-weight: 700; color: #1e293b; background: #f8fafc; outline: none;">
+                    <option value="NHẬP KHO">📥 NHẬP KHO (Bếp tiếp nhận đơn đặt)</option>
+                    <option value="ĐANG PHÂN LOẠI">🍳 ĐANG CHẾ BIẾN & ĐÓNG GÓI</option>
+                    <option value="XUẤT KHO">📤 XUẤT KHO (Bếp hoàn thành món ăn)</option>
+                    <option value="BÀN GIAO SHIPPER" selected>🛵 BÀN GIAO SHIPPER (Đã giao gói hàng cho Shipper)</option>
+                    <option value="ĐANG LUÂN CHUYỂN">🚚 ĐANG LUÂN CHUYỂN (Shipper đang giao hỏa tốc)</option>
+                    <option value="GIAO THÀNH CÔNG">✅ GIAO THÀNH CÔNG (Khách đã nhận hàng)</option>
+                    <option value="ADMIN CẬP NHẬT">🛡️ ADMIN ĐIỀU PHỐI (Ghi chú nội bộ)</option>
+                </select>
+            </div>
+
+            <!-- 4. Ghi Chú Chi Tiết -->
+            <div style="margin-bottom: 22px;">
+                <label style="display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 6px;">
+                    <i class="fa-solid fa-comment-dots" style="color: #6366f1;"></i> Ghi Chú Chi Tiết
+                </label>
+                <textarea name="ghi_chu" rows="3" placeholder="Nhập chi tiết điều phối, mã biên nhận hoặc ghi chú tài xế..." style="width: 100%; padding: 10px 14px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-size: 13.5px; outline: none; background: #f8fafc; resize: vertical; box-sizing: border-box;"></textarea>
+            </div>
+
+            <!-- Actions -->
+            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <button type="button" onclick="closeAddLogModal()" class="admin-btn-action admin-btn-action-secondary" style="padding: 10px 18px; font-size: 13.5px;">
+                    Hủy Bỏ
+                </button>
+                <button type="submit" class="admin-btn-action admin-btn-action-primary" style="padding: 10px 22px; font-size: 13.5px; box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);">
+                    <i class="fa-solid fa-check"></i> Lưu Nhật Ký
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ==============================================================================
+     MODAL 2: XÁC NHẬN XÓA NHẬT KÝ (SWEET CONFIRM MODAL)
+     ============================================================================== -->
+<div id="deleteConfirmModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); z-index: 99999; backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 16px;">
+    <div style="background: white; border-radius: 20px; max-width: 420px; width: 100%; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35); overflow: hidden; animation: qdModalFade 0.2s ease-out; text-align: center; padding: 28px 24px;">
+        <div style="width: 60px; height: 60px; border-radius: 50%; background: #fee2e2; color: #ef4444; font-size: 26px; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+            <i class="fa-solid fa-trash-can"></i>
+        </div>
+        <h3 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 800; color: #1e293b;">Xác Nhận Xóa Nhật Ký?</h3>
+        <p style="margin: 0 0 24px 0; font-size: 13.5px; color: #64748b; line-height: 1.5;">
+            Bạn có chắc chắn muốn xóa dòng nhật ký của đơn hàng <b id="deleteLogMaDon" style="color: var(--admin-primary);"></b> không? Thao tác này không thể hoàn tác.
+        </p>
+        <div style="display: flex; gap: 12px; justify-content: center;">
+            <button type="button" onclick="closeDeleteModal()" class="admin-btn-action admin-btn-action-secondary" style="padding: 10px 20px; font-size: 13.5px;">
+                Hủy Bỏ
+            </button>
+            <a id="deleteConfirmBtn" href="#" class="admin-btn-action" style="background: #ef4444; color: white; padding: 10px 22px; font-size: 13.5px; border-radius: 10px; text-decoration: none; font-weight: 700; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);">
+                <i class="fa-solid fa-trash"></i> Xóa Vĩnh Viễn
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- ==============================================================================
+     MODAL 3: XEM NHANH CHI TIẾT ĐƠN HÀNG (QUICK ORDER PREVIEW)
+     ============================================================================== -->
+<div id="quickOrderDetailModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); z-index: 99999; backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 16px;">
+    <div style="background: white; border-radius: 20px; max-width: 580px; width: 100%; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35); overflow: hidden; animation: qdModalFade 0.2s ease-out;">
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #1e293b, #0f172a); color: white; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h3 style="margin: 0; font-size: 17px; font-weight: 800; color: white;">Thông Tin Đơn Hàng: #<span id="preview-ma-don"></span></h3>
+                <div style="font-size: 12px; opacity: 0.8; margin-top: 2px;" id="preview-header-sub">Chi tiết món ăn & lộ trình vận chuyển</div>
+            </div>
+            <button type="button" onclick="closeQuickOrderDetail()" style="background: rgba(255,255,255,0.12); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px;">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <!-- Body Content -->
+        <div style="padding: 24px; overflow-y: auto; flex: 1;" id="preview-body">
+            <div style="text-align: center; padding: 30px; color: #94a3b8;">
+                <i class="fa-solid fa-spinner fa-spin" style="font-size: 28px; margin-bottom: 12px; display: block; color: var(--admin-primary);"></i>
+                Đang tải dữ liệu đơn hàng...
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="padding: 14px 24px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+            <a id="preview-full-link" href="#" class="admin-btn-action admin-btn-action-secondary" style="font-size: 13px; text-decoration: none;">
+                <i class="fa-solid fa-map-location-dot"></i> Xem Toàn Bộ Lộ Trình GIS
+            </a>
+            <button type="button" onclick="closeQuickOrderDetail()" class="admin-btn-action admin-btn-action-primary" style="font-size: 13px; padding: 8px 18px;">
+                Đóng
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes qdModalFade {
+    from { opacity: 0; transform: scale(0.96); }
+    to { opacity: 1; transform: scale(1); }
+}
+</style>
+
+<script>
+// Format content note replacements (replacing raw DA_THANH_TOAN, formatting author)
+document.addEventListener('DOMContentLoaded', function() {
+    const noteEls = document.querySelectorAll('.log-formatted-note');
+    noteEls.forEach(el => {
+        let text = el.innerHTML;
+        // Format DA_THANH_TOAN
+        text = text.replace(/DA_THANH_TOAN/g, '<span style="background: #dcfce7; color: #15803d; padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 11px;"><i class="fa-solid fa-check"></i> Đã thanh toán</span>');
+        // Format CHUA_THANH_TOAN
+        text = text.replace(/CHUA_THANH_TOAN/g, '<span style="background: #fef3c7; color: #b45309; padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 11px;"><i class="fa-solid fa-hourglass-half"></i> Chờ thanh toán</span>');
+        // Format Shipper
+        text = text.replace(/Shipper:\s*([^;,\.<]+)/g, 'Shipper: <strong style="color: #4338ca;">$1</strong>');
+        el.innerHTML = text;
+    });
+
+    // Client-side quick filter on search input keyup
+    const searchInput = document.getElementById('logSearchInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const term = this.value.toLowerCase().trim();
+            const rows = document.querySelectorAll('#logHistoryTable tbody tr[id^="row-log-"]');
+            rows.forEach(row => {
+                const text = row.innerText.toLowerCase();
+                row.style.display = text.includes(term) ? '' : 'none';
+            });
+        });
+    }
+});
+
+// Modal Thêm Nhật Ký
+function openAddLogModal() {
+    document.getElementById('addLogModal').style.display = 'flex';
+}
+function closeAddLogModal() {
+    document.getElementById('addLogModal').style.display = 'none';
+}
+
+// Modal Xóa Nhật Ký
+function confirmDeleteLog(logId, maDon) {
+    document.getElementById('deleteLogMaDon').textContent = '#' + maDon;
+    document.getElementById('deleteConfirmBtn').href = '/quan-ly-lich-su/xoa/' + logId + '/';
+    document.getElementById('deleteConfirmModal').style.display = 'flex';
+}
+function closeDeleteModal() {
+    document.getElementById('deleteConfirmModal').style.display = 'none';
+}
+
+// Modal Xem Nhanh Đơn Hàng
+function openQuickOrderDetail(maDon) {
+    document.getElementById('preview-ma-don').textContent = maDon;
+    document.getElementById('preview-full-link').href = '/chi-tiet/' + maDon + '/';
+    document.getElementById('quickOrderDetailModal').style.display = 'flex';
+    
+    const body = document.getElementById('preview-body');
+    body.innerHTML = `
+        <div style="text-align: center; padding: 30px; color: #94a3b8;">
+            <i class="fa-solid fa-spinner fa-spin" style="font-size: 28px; margin-bottom: 12px; display: block; color: var(--admin-primary);"></i>
+            Đang tải dữ liệu đơn #${maDon}...
+        </div>
+    `;
+
+    fetch('/api/don-hang/' + maDon + '/items/')
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                let itemsHtml = '';
+                let totalItemsPrice = 0;
+                data.items.forEach(item => {
+                    const lineTotal = item.price * item.quantity;
+                    totalItemsPrice += lineTotal;
+                    itemsHtml += `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px dashed #e2e8f0;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div style="width: 40px; height: 40px; border-radius: 8px; background: #f1f5f9; overflow: hidden; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                    ${item.img ? `<img src="${item.img}" style="width: 100%; height: 100%; object-fit: cover;">` : `<i class="fa-solid fa-bowl-food" style="color: #94a3b8;"></i>`}
+                                </div>
+                                <div>
+                                    <div style="font-weight: 700; color: #1e293b; font-size: 13.5px;">${item.name}</div>
+                                    <div style="font-size: 12px; color: #64748b;">${Number(item.price).toLocaleString('vi-VN')} đ &times; <strong style="color: #4f46e5;">${item.quantity}</strong></div>
+                                </div>
+                            </div>
+                            <div style="font-weight: 700; color: #0f172a; font-size: 13.5px;">
+                                ${Number(lineTotal).toLocaleString('vi-VN')} đ
+                            </div>
+                        </div>
+                    `;
+                });
+
+                body.innerHTML = `
+                    <div style="background: #f8fafc; border-radius: 12px; padding: 16px; margin-bottom: 18px; border: 1px solid #e2e8f0;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <span style="font-size: 12px; text-transform: uppercase; color: #64748b; font-weight: 700;">Mã Đơn: #${data.ma_don}</span>
+                            <span class="admin-badge admin-badge-info">${data.count} món đã chọn</span>
+                        </div>
+                        <div style="font-size: 13.5px; color: #334155;">
+                            Chi tiết các món ăn phục vụ từ chi nhánh / bếp liên kết.
+                        </div>
+                    </div>
+
+                    <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 700; color: #1e293b;">
+                        <i class="fa-solid fa-utensils" style="color: var(--admin-primary); margin-right: 6px;"></i> Danh Sách Món Ăn Trong Đơn
+                    </h4>
+                    <div style="margin-bottom: 20px;">
+                        ${itemsHtml || '<div style="color: #94a3b8; padding: 15px; text-align: center;">Chưa có món chi tiết (đơn giao kiện hàng hoặc đối tác B2B)</div>'}
+                    </div>
+
+                    <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 14px; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-weight: 700; color: #1e40af; font-size: 13.5px;">Tổng Tiền Món Ăn:</span>
+                        <strong style="font-size: 16px; color: #1d4ed8;">${Number(totalItemsPrice).toLocaleString('vi-VN')} VNĐ</strong>
+                    </div>
+                `;
+            } else {
+                body.innerHTML = '<div style="color: #ef4444; padding: 20px; text-align: center;">Không tìm thấy chi tiết món cho đơn hàng này.</div>';
+            }
+        })
+        .catch(err => {
+            body.innerHTML = '<div style="color: #ef4444; padding: 20px; text-align: center;">Có lỗi xảy ra khi tải dữ liệu đơn hàng.</div>';
+        });
+}
+function closeQuickOrderDetail() {
+    document.getElementById('quickOrderDetailModal').style.display = 'none';
+}
+</script>
+{% endblock %}

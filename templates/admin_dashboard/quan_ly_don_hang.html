@@ -1,0 +1,822 @@
+{% extends "admin_dashboard/admin_base.html" %}
+{% load static currency_filters %}
+
+{% block title %}Quản Lý Vận Đơn & Giao Hàng - Logistics Pro Admin{% endblock %}
+
+{% block page_title %}Quản Lý Vận Đơn & Điều Phối Giao Hàng{% endblock %}
+
+{% block breadcrumb %}
+<span class="sep">/</span>
+<a href="{% url 'core:quan_ly_don_hang' %}" style="color: var(--admin-primary); text-decoration: none; font-weight: 600;">Quản Lý Đơn Hàng</a>
+{% endblock %}
+
+{% block admin_content %}
+<!-- ==============================================================================
+     1. KPI THỐNG KÊ VẬN ĐƠN
+     ============================================================================== -->
+<div class="admin-kpi-grid" style="margin-bottom: 24px;">
+    <!-- KPI 1: Tổng đơn -->
+    <div class="admin-kpi-card">
+        <div class="admin-kpi-header">
+            <div>
+                <div class="admin-kpi-title">Tổng Đơn Hàng</div>
+                <div class="admin-kpi-value">{{ stats.tong_don }}</div>
+            </div>
+            <div class="admin-kpi-icon-box admin-kpi-icon-blue">
+                <i class="fa-solid fa-truck-fast"></i>
+            </div>
+        </div>
+        <div class="admin-kpi-footer">
+            <span class="admin-kpi-subtext">Toàn bộ đơn hàng trong hệ thống</span>
+        </div>
+    </div>
+
+    <!-- KPI 2: Đang xử lý / Chờ giao -->
+    <div class="admin-kpi-card">
+        <div class="admin-kpi-header">
+            <div>
+                <div class="admin-kpi-title">Đơn Đang Xử Lý</div>
+                <div class="admin-kpi-value" style="color: #d97706;">{{ stats.don_dang_xu_ly }}</div>
+            </div>
+            <div class="admin-kpi-icon-box admin-kpi-icon-amber">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+            </div>
+        </div>
+        <div class="admin-kpi-footer">
+            <span class="admin-kpi-subtext">{{ stats.don_cho_tai_xe }} đơn đang chờ tài xế</span>
+        </div>
+    </div>
+
+    <!-- KPI 3: Đơn hỏa tốc -->
+    <div class="admin-kpi-card">
+        <div class="admin-kpi-header">
+            <div>
+                <div class="admin-kpi-title">Đơn Hỏa Tốc</div>
+                <div class="admin-kpi-value" style="color: #ea580c;">{{ stats.don_hoa_toc }}</div>
+            </div>
+            <div class="admin-kpi-icon-box admin-kpi-icon-purple">
+                <i class="fa-solid fa-bolt"></i>
+            </div>
+        </div>
+        <div class="admin-kpi-footer">
+            <span class="admin-kpi-subtext">Ưu tiên tuyến đường nhanh nhất</span>
+        </div>
+    </div>
+
+    <!-- KPI 4: Giao thành công -->
+    <div class="admin-kpi-card">
+        <div class="admin-kpi-header">
+            <div>
+                <div class="admin-kpi-title">Giao Thành Công</div>
+                <div class="admin-kpi-value" style="color: #059669;">{{ stats.don_thanh_cong }}</div>
+            </div>
+            <div class="admin-kpi-icon-box admin-kpi-icon-green">
+                <i class="fa-solid fa-circle-check"></i>
+            </div>
+        </div>
+        <div class="admin-kpi-footer">
+            <span class="admin-kpi-subtext">Tỷ lệ thành công: {{ stats.ty_le_thanh_cong }}%</span>
+        </div>
+    </div>
+</div>
+
+<!-- ==============================================================================
+     2. THANH CÔNG CỤ TÌM KIẾM, BỘ LỌC & NÚT TẠO ĐƠN TẠI CHỖ
+     ============================================================================== -->
+<div class="admin-card" style="margin-bottom: 24px;">
+    <div style="padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+        <form method="GET" action="{% url 'core:quan_ly_don_hang' %}" id="filterOrderForm" style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center; flex: 1;">
+            <!-- Live Search input -->
+            <div style="position: relative; min-width: 260px; flex: 1;">
+                <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 13.5px;"></i>
+                <input type="text" name="q" id="orderSearchInput" value="{{ q }}" placeholder="Tìm theo mã đơn #DH..., tên khách, SĐT..." style="width: 100%; padding: 10px 14px 10px 38px; border-radius: 10px; border: 1.5px solid #e2e8f0; font-size: 13.5px; outline: none; background: #f8fafc; color: #1e293b;">
+            </div>
+
+            <!-- Filter Trạng thái -->
+            <select name="trang_thai" onchange="this.form.submit()" style="padding: 10px 14px; border-radius: 10px; border: 1.5px solid #e2e8f0; font-size: 13px; font-weight: 600; color: #334155; background: #f8fafc; outline: none; cursor: pointer;">
+                <option value="">⚡ Tất cả trạng thái đơn</option>
+                <option value="CHỜ TÀI XẾ" {% if selected_trang_thai == 'CHỜ TÀI XẾ' %}selected{% endif %}>⏳ Chờ tài xế</option>
+                <option value="ĐANG VẬN CHUYỂN" {% if selected_trang_thai == 'ĐANG VẬN CHUYỂN' %}selected{% endif %}>🚚 Đang vận chuyển</option>
+                <option value="ĐÃ GIAO THÀNH CÔNG" {% if selected_trang_thai == 'ĐÃ GIAO THÀNH CÔNG' %}selected{% endif %}>✅ Đã giao thành công</option>
+                <option value="ĐÃ HỦY" {% if selected_trang_thai == 'ĐÃ HỦY' %}selected{% endif %}>❌ Đã hủy</option>
+            </select>
+
+            <!-- Filter Loại giao hàng -->
+            <select name="sort" onchange="this.form.submit()" style="padding: 10px 14px; border-radius: 10px; border: 1.5px solid #e2e8f0; font-size: 13px; font-weight: 600; color: #334155; background: #f8fafc; outline: none; cursor: pointer;">
+                <option value="">📦 Tất cả loại giao</option>
+                <option value="hoa_toc" {% if sort == 'hoa_toc' %}selected{% endif %}>⚡ Giao hỏa tốc 15-25p</option>
+                <option value="trang_thai" {% if sort == 'trang_thai' %}selected{% endif %}>🔄 Sắp xếp theo trạng thái</option>
+            </select>
+
+            {% if q or selected_trang_thai or sort %}
+                <a href="{% url 'core:quan_ly_don_hang' %}" class="admin-btn-action admin-btn-action-secondary" style="padding: 9px 14px; font-size: 13px;">
+                    <i class="fa-solid fa-rotate-left"></i> Đặt lại
+                </a>
+            {% endif %}
+        </form>
+
+        <!-- Right actions -->
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <a href="{% url 'core:export_excel' %}" class="admin-btn-action admin-btn-action-secondary" style="padding: 10px 16px; font-size: 13px;">
+                <i class="fa-solid fa-file-excel" style="color: #10b981;"></i> Xuất Excel
+            </a>
+            <button type="button" class="admin-btn-action admin-btn-action-primary" onclick="openQuickCreateOrderModal()" style="box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35); font-size: 13.5px; padding: 10px 18px;">
+                <i class="fa-solid fa-plus-circle"></i>
+                <span>Tạo Đơn Hàng Mới</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ==============================================================================
+     3. BẢNG DỮ LIỆU ĐƠN HÀNG SAAS CHUYÊN NGHIỆP
+     ============================================================================== -->
+<div class="admin-card">
+    <div class="admin-card-header" style="flex-wrap: wrap; gap: 12px;">
+        <div class="admin-card-title-box">
+            <i class="fa-solid fa-receipt admin-card-title-icon" style="color: #6366f1;"></i>
+            <h3 class="admin-card-title">Danh Sách Vận Đơn Hệ Thống</h3>
+            <span class="admin-card-badge">{{ ds_don|length }} Đơn Hàng</span>
+        </div>
+        <div style="font-size: 12.5px; color: #64748b;">
+            <i class="fa-solid fa-bolt" style="color: #f59e0b;"></i> Nhấp biểu tượng ⚡ để điều phối & đổi trạng thái 1-Click
+        </div>
+    </div>
+
+    <div class="admin-table-container">
+        <table class="admin-table" id="ordersTable">
+            <thead>
+                <tr>
+                    <th style="width: 110px;">Mã Đơn</th>
+                    <th>Khách Hàng</th>
+                    <th>Quán / Bếp Xuất Phát</th>
+                    <th>Tài Xế Phụ Trách</th>
+                    <th>Loại Giao Hàng</th>
+                    <th>Tổng Tiền</th>
+                    <th>Trạng Thái Đơn</th>
+                    <th>Thanh Toán</th>
+                    <th>Thời Gian Tạo</th>
+                    <th style="text-align: right; width: 140px;">Thao Tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for dh in ds_don %}
+                <tr id="row-order-{{ dh.id }}">
+                    <!-- 1. Mã đơn -->
+                    <td>
+                        <a href="javascript:void(0);" onclick="openQuickOrderDetail('{{ dh.ma_don }}')" style="color: var(--admin-primary); font-family: monospace; font-size: 13.5px; text-decoration: none; font-weight: 800; display: inline-flex; align-items: center; gap: 4px;" title="Xem nhanh chi tiết đơn">
+                            #{{ dh.ma_don }}
+                            <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 9px; opacity: 0.65;"></i>
+                        </a>
+                    </td>
+
+                    <!-- 2. Khách hàng -->
+                    <td>
+                        <div style="font-weight: 700; color: #1e293b; font-size: 13.5px;">{{ dh.ten_nguoi_nhan }}</div>
+                        <div style="font-size: 11.5px; color: #64748b;">
+                            <i class="fa-solid fa-phone" style="font-size: 10px;"></i> {{ dh.sdt_nguoi_nhan }}
+                        </div>
+                        <div style="font-size: 11px; color: #94a3b8; max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            <i class="fa-solid fa-location-dot" style="font-size: 9.5px;"></i> {{ dh.dia_chi_nguoi_nhan }}
+                        </div>
+                    </td>
+
+                    <!-- 3. Quán / Bếp -->
+                    <td>
+                        <div style="font-weight: 600; color: #334155; font-size: 13px;">
+                            <i class="fa-solid fa-warehouse" style="color: #6366f1; margin-right: 4px; font-size: 11px;"></i>
+                            {{ dh.kho_xuat_phat.ten_kho }}
+                        </div>
+                    </td>
+
+                    <!-- 4. Tài xế -->
+                    <td id="driver-order-{{ dh.id }}">
+                        {% if dh.tai_xe %}
+                            <div style="font-weight: 700; color: #1e293b; font-size: 13px;">
+                                <i class="fa-solid fa-motorcycle" style="color: #6366f1; font-size: 12px; margin-right: 4px;"></i>
+                                {{ dh.tai_xe.ten_tai_xe }}
+                            </div>
+                            <div style="font-size: 11px; color: #64748b;">{{ dh.tai_xe.bien_so }}</div>
+                        {% else %}
+                            <span style="color: #94a3b8; font-style: italic; font-size: 12px;">Chưa phân công</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- 5. Loại giao hàng -->
+                    <td>
+                        {% if dh.loai_giao_hang == 'HOA_TOC' %}
+                            <span class="admin-badge admin-badge-warning" title="Giao hỏa tốc 15-25 phút">
+                                <i class="fa-solid fa-bolt"></i> Hỏa Tốc
+                            </span>
+                        {% else %}
+                            <span class="admin-badge admin-badge-neutral">
+                                <i class="fa-solid fa-truck"></i> Tiêu Chuẩn
+                            </span>
+                        {% endif %}
+                    </td>
+
+                    <!-- 6. Tổng tiền -->
+                    <td>
+                        <strong style="color: #0f172a; font-size: 13.5px;">{{ dh.tong_tien|currency_vn }}</strong>
+                    </td>
+
+                    <!-- 7. Trạng thái -->
+                    <td id="status-order-{{ dh.id }}">
+                        {% if dh.trang_thai == 'ĐÃ GIAO THÀNH CÔNG' %}
+                            <span class="admin-badge admin-badge-success">
+                                <i class="fa-solid fa-check"></i> Đã Giao
+                            </span>
+                        {% elif dh.trang_thai == 'ĐANG VẬN CHUYỂN' %}
+                            <span class="admin-badge admin-badge-info">
+                                <i class="fa-solid fa-truck-fast"></i> Đang Giao
+                            </span>
+                        {% elif dh.trang_thai == 'CHỜ TÀI XẾ' %}
+                            <span class="admin-badge admin-badge-warning">
+                                <i class="fa-solid fa-user-clock"></i> Chờ Tài Xế
+                            </span>
+                        {% elif dh.trang_thai == 'ĐÃ HỦY' or dh.trang_thai == 'HỦY' %}
+                            <span class="admin-badge admin-badge-danger">
+                                <i class="fa-solid fa-ban"></i> Đã Hủy
+                            </span>
+                        {% else %}
+                            <span class="admin-badge admin-badge-neutral">
+                                {{ dh.trang_thai }}
+                            </span>
+                        {% endif %}
+                    </td>
+
+                    <!-- 8. Thanh toán -->
+                    <td id="payment-order-{{ dh.id }}">
+                        {% if dh.trang_thai_thanh_toan == 'DA_THANH_TOAN' %}
+                            <span class="admin-badge admin-badge-success" style="font-size: 11px;">
+                                <i class="fa-solid fa-check-double"></i> Đã Trả
+                            </span>
+                        {% else %}
+                            <span class="admin-badge admin-badge-warning" style="font-size: 11px;">
+                                <i class="fa-solid fa-hourglass-half"></i> Chờ Trả
+                            </span>
+                        {% endif %}
+                    </td>
+
+                    <!-- 9. Ngày tạo -->
+                    <td style="color: var(--admin-text-muted); font-size: 12px; white-space: nowrap;">
+                        {{ dh.ngay_tao|date:"H:i d/m/Y" }}
+                    </td>
+
+                    <!-- 10. Thao tác -->
+                    <td style="text-align: right;">
+                        <div class="admin-row-actions" style="justify-content: flex-end;">
+                            <!-- 1-Click Dispatch Modal Trigger -->
+                            <button type="button" class="admin-btn-icon-sm" style="background: #eef2ff; color: #4f46e5; border-color: #c7d2fe;" title="Điều phối & Đổi trạng thái 1-Click" onclick="openQuickDispatchModal('{{ dh.id }}', '{{ dh.ma_don }}', '{{ dh.trang_thai|escapejs }}', '{{ dh.tai_xe.id|default:'' }}', '{{ dh.trang_thai_thanh_toan }}', '{{ dh.ten_nguoi_nhan|escapejs }}', '{{ dh.tong_tien|currency_vn }}')">
+                                <i class="fa-solid fa-bolt"></i>
+                            </button>
+                            <!-- Xem nhanh đơn hàng -->
+                            <button type="button" class="admin-btn-icon-sm" title="Xem nhanh chi tiết đơn hàng" onclick="openQuickOrderDetail('{{ dh.ma_don }}')">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                            <!-- Sửa đơn hàng -->
+                            <a href="{% url 'core:sua_don_hang' id=dh.id %}" class="admin-btn-icon-sm" title="Chỉnh sửa chi tiết đơn hàng">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </a>
+                            <!-- Xóa đơn hàng -->
+                            <button type="button" class="admin-btn-icon-sm" style="color: #ef4444; border-color: #fecaca; background: #fef2f2;" title="Xóa đơn hàng này" onclick="confirmDeleteOrder('{{ dh.id }}', '{{ dh.ma_don }}')">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="10">
+                        <div class="admin-empty-state" style="padding: 50px 20px;">
+                            <i class="fa-solid fa-inbox admin-empty-icon"></i>
+                            <h4 style="margin: 0 0 6px 0; color: #1e293b; font-weight: 700; font-size: 16px;">Chưa Có Đơn Hàng Nào Phù Hợp</h4>
+                            <p style="margin: 0 0 16px 0; color: #64748b; font-size: 13.5px;">Thử đổi từ khóa tìm kiếm hoặc khởi tạo đơn hàng mới.</p>
+                            <button type="button" class="admin-btn-action admin-btn-action-primary" onclick="openQuickCreateOrderModal()">
+                                <i class="fa-solid fa-plus"></i> Tạo Đơn Hàng Ngay
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ==============================================================================
+     MODAL 1: ĐIỀU PHỐI & ĐỔI TRẠNG THÁI 1-CLICK TẠI CHỖ
+     ============================================================================== -->
+<div id="quickDispatchModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); z-index: 99999; backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 16px;">
+    <div style="background: white; border-radius: 20px; max-width: 490px; width: 100%; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35); overflow: hidden; animation: qdModalFade 0.2s ease-out;">
+        <div style="background: linear-gradient(135deg, #1e293b, #0f172a); color: white; padding: 20px 24px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 40px; height: 40px; border-radius: 12px; background: rgba(245, 158, 11, 0.2); border: 1px solid rgba(245, 158, 11, 0.3); display: flex; align-items: center; justify-content: center; font-size: 20px; color: #f59e0b;">
+                    <i class="fa-solid fa-bolt"></i>
+                </div>
+                <div>
+                    <h3 style="margin: 0; font-size: 17px; font-weight: 800; color: white;">Điều Phối Đơn: #<span id="qd-ma-don"></span></h3>
+                    <div style="font-size: 12.5px; opacity: 0.85; margin-top: 2px;">Khách: <b id="qd-ten-khach" style="color: #e2e8f0;"></b> &bull; <b id="qd-tong-tien" style="color: #fb923c;"></b></div>
+                </div>
+            </div>
+            <button type="button" onclick="closeQuickDispatchModal()" style="background: rgba(255,255,255,0.12); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px;">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <form id="quickDispatchForm" onsubmit="submitQuickDispatch(event)" style="padding: 22px 24px;">
+            {% csrf_token %}
+            <input type="hidden" id="qd-don-id" name="don_id">
+
+            <div style="margin-bottom: 16px;">
+                <label style="display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 6px;">
+                    <i class="fa-solid fa-signal" style="color: #6366f1;"></i> Trạng Thái Đơn Hàng
+                </label>
+                <select id="qd-trang-thai" name="trang_thai" style="width: 100%; padding: 10px 14px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-size: 13.5px; font-weight: 700; color: #1e293b; background: #f8fafc; outline: none;">
+                    <option value="CHỜ TÀI XẾ">⏳ CHỜ TÀI XẾ (Đơn mới chờ nhận)</option>
+                    <option value="ĐANG VẬN CHUYỂN">🚚 ĐANG VẬN CHUYỂN (Tài xế đang giao)</option>
+                    <option value="ĐÃ GIAO THÀNH CÔNG">✅ ĐÃ GIAO THÀNH CÔNG (Hoàn tất đơn)</option>
+                    <option value="ĐÃ HỦY">❌ ĐÃ HỦY (Hủy đơn hàng)</option>
+                </select>
+            </div>
+
+            <div style="margin-bottom: 16px;">
+                <label style="display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 6px;">
+                    <i class="fa-solid fa-motorcycle" style="color: #10b981;"></i> Phân Công Tài Xế Shipper
+                </label>
+                <select id="qd-tai-xe" name="tai_xe_id" style="width: 100%; padding: 10px 14px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-size: 13.5px; font-weight: 700; color: #1e293b; background: #f8fafc; outline: none;">
+                    <option value="0">-- Chưa phân công tài xế --</option>
+                    {% for tx in all_tai_xe %}
+                        <option value="{{ tx.id }}">{{ tx.ten_tai_xe }} ({{ tx.bien_so }}) - {% if tx.dang_lam_viec %}🟢 Online{% else %}⚪ Nghỉ ca{% endif %}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 6px;">
+                    <i class="fa-solid fa-wallet" style="color: #f59e0b;"></i> Trạng Thái Thanh Toán
+                </label>
+                <select id="qd-thanh-toan" name="trang_thai_thanh_toan" style="width: 100%; padding: 10px 14px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-size: 13.5px; font-weight: 700; color: #1e293b; background: #f8fafc; outline: none;">
+                    <option value="CHUA_THANH_TOAN">⏳ Chưa thanh toán (Chờ COD / QR)</option>
+                    <option value="DA_THANH_TOAN">✅ Đã thanh toán (Tiền đã vào ví/sàn)</option>
+                </select>
+            </div>
+
+            <div style="display: flex; gap: 10px; justify-content: flex-end; border-top: 1px solid #f1f5f9; padding-top: 16px;">
+                <button type="button" onclick="closeQuickDispatchModal()" style="padding: 9px 18px; border-radius: 10px; border: 1px solid #e2e8f0; background: #f8fafc; color: #64748b; font-weight: 700; font-size: 13px; cursor: pointer;">
+                    Đóng
+                </button>
+                <button type="submit" id="btn-save-dispatch" style="padding: 9px 22px; border-radius: 10px; border: none; background: linear-gradient(135deg, #ff5722, #ea580c); color: white; font-weight: 700; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(255,87,34,0.3);">
+                    <i class="fa-solid fa-floppy-disk"></i> Lưu Cập Nhật Ngay
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ==============================================================================
+     MODAL 2: TẠO ĐƠN HÀNG HỎA TỐC 1-CLICK TẠI CHỖ
+     ============================================================================== -->
+<div id="quickCreateOrderModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); z-index: 99999; backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 16px;">
+    <div style="background: white; border-radius: 20px; max-width: 580px; width: 100%; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35); overflow: hidden; animation: qdModalFade 0.2s ease-out;">
+        <div style="background: linear-gradient(135deg, #1e293b, #0f172a); color: white; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 38px; height: 38px; border-radius: 12px; background: rgba(79, 70, 229, 0.2); border: 1px solid rgba(79, 70, 229, 0.3); display: flex; align-items: center; justify-content: center; font-size: 18px; color: #818cf8;">
+                    <i class="fa-solid fa-plus-circle"></i>
+                </div>
+                <div>
+                    <h3 style="margin: 0; font-size: 17px; font-weight: 800; color: white;">Tạo Đơn Hàng Mới Tại Chỗ</h3>
+                    <div style="font-size: 12px; opacity: 0.8; margin-top: 2px;">Khởi tạo và điều phối vận đơn trực tiếp</div>
+                </div>
+            </div>
+            <button type="button" onclick="closeQuickCreateOrderModal()" style="background: rgba(255,255,255,0.12); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px;">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <form id="quickCreateOrderForm" onsubmit="submitQuickCreateOrder(event)" style="padding: 22px 24px; overflow-y: auto; flex: 1;">
+            {% csrf_token %}
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+                <div>
+                    <label style="display: block; font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 5px;">
+                        Tên Khách Hàng <span style="color: #ef4444;">*</span>
+                    </label>
+                    <input type="text" name="ten_nguoi_nhan" required placeholder="VD: Nguyễn Văn A" style="width: 100%; padding: 9px 12px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 13px; outline: none; background: #f8fafc; box-sizing: border-box;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 5px;">
+                        Số Điện Thoại <span style="color: #ef4444;">*</span>
+                    </label>
+                    <input type="tel" name="sdt_nguoi_nhan" required placeholder="VD: 0901234567" style="width: 100%; padding: 9px 12px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 13px; outline: none; background: #f8fafc; box-sizing: border-box;">
+                </div>
+            </div>
+
+            <div style="margin-bottom: 14px;">
+                <label style="display: block; font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 5px;">
+                    Địa Chỉ Giao Hàng <span style="color: #ef4444;">*</span>
+                </label>
+                <input type="text" name="dia_chi_nguoi_nhan" required placeholder="Số nhà, tên đường, Phường, Quận..." style="width: 100%; padding: 9px 12px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 13px; outline: none; background: #f8fafc; box-sizing: border-box;">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+                <div>
+                    <label style="display: block; font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 5px;">
+                        Bếp / Quán Xuất Phát <span style="color: #ef4444;">*</span>
+                    </label>
+                    <select name="kho_xuat_phat" required style="width: 100%; padding: 9px 12px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 13px; font-weight: 600; outline: none; background: #f8fafc;">
+                        {% for k in all_kho %}
+                            <option value="{{ k.id }}">{{ k.ten_kho }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label style="display: block; font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 5px;">
+                        Loại Giao Hàng
+                    </label>
+                    <select name="loai_giao_hang" style="width: 100%; padding: 9px 12px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 13px; font-weight: 600; outline: none; background: #f8fafc;">
+                        <option value="HOA_TOC" selected>⚡ Hỏa Tốc (15 - 25 phút)</option>
+                        <option value="TIEU_CHUAN">🚚 Tiêu Chuẩn</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 14px;">
+                <label style="display: block; font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 5px;">
+                    Phân Công Shipper (Tùy chọn)
+                </label>
+                <select name="tai_xe_id" style="width: 100%; padding: 9px 12px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 13px; font-weight: 600; outline: none; background: #f8fafc;">
+                    <option value="0">-- Chưa phân công (Để Chờ tài xế) --</option>
+                    {% for tx in all_tai_xe %}
+                        <option value="{{ tx.id }}">{{ tx.ten_tai_xe }} ({{ tx.bien_so }}) - {% if tx.dang_lam_viec %}🟢 Online{% else %}⚪ Nghỉ ca{% endif %}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+                <div>
+                    <label style="display: block; font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 5px;">
+                        Tiền Món Ăn (VNĐ)
+                    </label>
+                    <input type="number" name="tien_mon_an" value="50000" step="5000" style="width: 100%; padding: 9px 12px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 13px; outline: none; background: #f8fafc; box-sizing: border-box;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 5px;">
+                        Phí Giao Hàng (VNĐ)
+                    </label>
+                    <input type="number" name="phi_van_chuyen" value="20000" step="5000" style="width: 100%; padding: 9px 12px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 13px; outline: none; background: #f8fafc; box-sizing: border-box;">
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+                <div>
+                    <label style="display: block; font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 5px;">
+                        Phương Thức Thanh Toán
+                    </label>
+                    <select name="phuong_thuc_thanh_toan" style="width: 100%; padding: 9px 12px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 13px; outline: none; background: #f8fafc;">
+                        <option value="TIEN_MAT_COD">💵 Tiền mặt khi nhận (COD)</option>
+                        <option value="CHUYEN_KHOAN_QR">📱 Chuyển khoản VietQR</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="display: block; font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 5px;">
+                        Trạng Thái Thanh Toán
+                    </label>
+                    <select name="trang_thai_thanh_toan" style="width: 100%; padding: 9px 12px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 13px; outline: none; background: #f8fafc;">
+                        <option value="CHUA_THANH_TOAN">⏳ Chưa thanh toán</option>
+                        <option value="DA_THANH_TOAN">✅ Đã thanh toán</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 18px;">
+                <label style="display: block; font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 5px;">
+                    Ghi Chú Đơn Hàng
+                </label>
+                <input type="text" name="ghi_chu" placeholder="Ghi chú món ăn hoặc lưu ý giao hàng..." style="width: 100%; padding: 9px 12px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 13px; outline: none; background: #f8fafc; box-sizing: border-box;">
+            </div>
+
+            <div style="display: flex; gap: 10px; justify-content: flex-end; border-top: 1px solid #f1f5f9; padding-top: 14px;">
+                <button type="button" onclick="closeQuickCreateOrderModal()" style="padding: 9px 18px; border-radius: 10px; border: 1px solid #e2e8f0; background: #f8fafc; color: #64748b; font-weight: 700; font-size: 13px; cursor: pointer;">
+                    Hủy Bỏ
+                </button>
+                <button type="submit" id="btn-submit-quick-order" style="padding: 9px 24px; border-radius: 10px; border: none; background: linear-gradient(135deg, #4f46e5, #4338ca); color: white; font-weight: 700; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);">
+                    <i class="fa-solid fa-check"></i> Tạo Đơn Hàng Ngay
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ==============================================================================
+     MODAL 3: XEM NHANH CHI TIẾT ĐƠN HÀNG TẠI CHỖ
+     ============================================================================== -->
+<div id="quickOrderDetailModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); z-index: 99999; backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 16px;">
+    <div style="background: white; border-radius: 20px; max-width: 580px; width: 100%; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35); overflow: hidden; animation: qdModalFade 0.2s ease-out;">
+        <div style="background: linear-gradient(135deg, #1e293b, #0f172a); color: white; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h3 style="margin: 0; font-size: 17px; font-weight: 800; color: white;">Thông Tin Đơn Hàng: #<span id="preview-ma-don"></span></h3>
+                <div style="font-size: 12px; opacity: 0.8; margin-top: 2px;">Chi tiết món ăn & lộ trình giao hàng trực tiếp</div>
+            </div>
+            <button type="button" onclick="closeQuickOrderDetail()" style="background: rgba(255,255,255,0.12); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px;">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <div style="padding: 24px; overflow-y: auto; flex: 1;" id="preview-body">
+            <div style="text-align: center; padding: 30px; color: #94a3b8;">
+                <i class="fa-solid fa-spinner fa-spin" style="font-size: 28px; margin-bottom: 12px; display: block; color: var(--admin-primary);"></i>
+                Đang tải dữ liệu đơn hàng...
+            </div>
+        </div>
+
+        <div style="padding: 14px 24px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+            <a id="preview-full-link" href="#" class="admin-btn-action admin-btn-action-secondary" style="font-size: 13px; text-decoration: none;">
+                <i class="fa-solid fa-map-location-dot"></i> Bản Đồ GIS Giám Sát
+            </a>
+            <button type="button" onclick="closeQuickOrderDetail()" class="admin-btn-action admin-btn-action-primary" style="font-size: 13px; padding: 8px 18px;">
+                Đóng
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ==============================================================================
+     MODAL 4: XÁC NHẬN XÓA ĐƠN HÀNG
+     ============================================================================== -->
+<div id="deleteOrderModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); z-index: 99999; backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 16px;">
+    <div style="background: white; border-radius: 20px; max-width: 420px; width: 100%; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35); overflow: hidden; animation: qdModalFade 0.2s ease-out; text-align: center; padding: 28px 24px;">
+        <div style="width: 60px; height: 60px; border-radius: 50%; background: #fee2e2; color: #ef4444; font-size: 26px; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+            <i class="fa-solid fa-trash-can"></i>
+        </div>
+        <h3 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 800; color: #1e293b;">Xác Nhận Xóa Đơn Hàng?</h3>
+        <p style="margin: 0 0 24px 0; font-size: 13.5px; color: #64748b; line-height: 1.5;">
+            Bạn có chắc chắn muốn xóa đơn <b id="deleteOrderMaDon" style="color: var(--admin-primary);"></b> không? Thao tác này sẽ xóa toàn bộ lịch sử luân chuyển liên quan.
+        </p>
+        <div style="display: flex; gap: 12px; justify-content: center;">
+            <button type="button" onclick="closeDeleteOrderModal()" class="admin-btn-action admin-btn-action-secondary" style="padding: 10px 20px; font-size: 13.5px;">
+                Hủy Bỏ
+            </button>
+            <a id="deleteOrderConfirmBtn" href="#" class="admin-btn-action" style="background: #ef4444; color: white; padding: 10px 22px; font-size: 13.5px; border-radius: 10px; text-decoration: none; font-weight: 700; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);">
+                <i class="fa-solid fa-trash"></i> Xóa Vĩnh Viễn
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes qdModalFade {
+    from { opacity: 0; transform: scale(0.96) translateY(-10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+</style>
+
+<script>
+// Client-side instant filter on search input
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('orderSearchInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const term = this.value.toLowerCase().trim();
+            const rows = document.querySelectorAll('#ordersTable tbody tr[id^="row-order-"]');
+            rows.forEach(row => {
+                const text = row.innerText.toLowerCase();
+                row.style.display = text.includes(term) ? '' : 'none';
+            });
+        });
+    }
+});
+
+// 1. Quick Dispatch Modal
+function openQuickDispatchModal(id, maDon, trangThai, taiXeId, thanhToan, tenKhach, tongTien) {
+    document.getElementById('qd-don-id').value = id;
+    document.getElementById('qd-ma-don').innerText = maDon;
+    document.getElementById('qd-ten-khach').innerText = tenKhach;
+    document.getElementById('qd-tong-tien').innerText = tongTien;
+    document.getElementById('qd-trang-thai').value = trangThai;
+    document.getElementById('qd-tai-xe').value = taiXeId || '0';
+    document.getElementById('qd-thanh-toan').value = thanhToan;
+    document.getElementById('quickDispatchModal').style.display = 'flex';
+}
+function closeQuickDispatchModal() {
+    document.getElementById('quickDispatchModal').style.display = 'none';
+}
+function submitQuickDispatch(e) {
+    e.preventDefault();
+    const donId = document.getElementById('qd-don-id').value;
+    const btn = document.getElementById('btn-save-dispatch');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang lưu...';
+
+    const formData = new FormData(document.getElementById('quickDispatchForm'));
+    fetch('/api/admin/don-hang/' + donId + '/quick-update/', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('#quickDispatchForm [name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(r => r.json())
+    .then(data => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Lưu Cập Nhật Ngay';
+        if (data.success) {
+            closeQuickDispatchModal();
+
+            const driverCell = document.getElementById('driver-order-' + donId);
+            if (driverCell) {
+                if (data.tai_xe_id) {
+                    driverCell.innerHTML = `<div style="font-weight: 700; color: #1e293b; font-size: 13px;"><i class="fa-solid fa-motorcycle" style="color: #6366f1; font-size: 12px; margin-right: 4px;"></i> ${data.tai_xe_ten}</div>`;
+                } else {
+                    driverCell.innerHTML = `<span style="color: #94a3b8; font-style: italic; font-size: 12px;">Chưa phân công</span>`;
+                }
+            }
+
+            const statusCell = document.getElementById('status-order-' + donId);
+            if (statusCell) {
+                if (data.trang_thai === 'ĐÃ GIAO THÀNH CÔNG') {
+                    statusCell.innerHTML = `<span class="admin-badge admin-badge-success"><i class="fa-solid fa-check"></i> Đã Giao</span>`;
+                } else if (data.trang_thai === 'ĐANG VẬN CHUYỂN') {
+                    statusCell.innerHTML = `<span class="admin-badge admin-badge-info"><i class="fa-solid fa-truck-fast"></i> Đang Giao</span>`;
+                } else if (data.trang_thai === 'CHỜ TÀI XẾ') {
+                    statusCell.innerHTML = `<span class="admin-badge admin-badge-warning"><i class="fa-solid fa-user-clock"></i> Chờ Tài Xế</span>`;
+                } else if (data.trang_thai === 'ĐÃ HỦY') {
+                    statusCell.innerHTML = `<span class="admin-badge admin-badge-danger"><i class="fa-solid fa-ban"></i> Đã Hủy</span>`;
+                } else {
+                    statusCell.innerHTML = `<span class="admin-badge admin-badge-neutral">${data.trang_thai}</span>`;
+                }
+            }
+
+            const payCell = document.getElementById('payment-order-' + donId);
+            if (payCell) {
+                if (data.trang_thai_thanh_toan === 'DA_THANH_TOAN') {
+                    payCell.innerHTML = `<span class="admin-badge admin-badge-success" style="font-size: 11px;"><i class="fa-solid fa-check-double"></i> Đã Trả</span>`;
+                } else {
+                    payCell.innerHTML = `<span class="admin-badge admin-badge-warning" style="font-size: 11px;"><i class="fa-solid fa-hourglass-half"></i> Chờ Trả</span>`;
+                }
+            }
+
+            if (window.AdminToasts) {
+                window.AdminToasts.show(data.message, 'success');
+            } else {
+                alert('🎉 ' + data.message);
+            }
+        } else {
+            alert('❌ ' + (data.message || 'Lỗi'));
+        }
+    })
+    .catch(err => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Lưu Cập Nhật Ngay';
+        alert('❌ Có lỗi kết nối máy chủ!');
+    });
+}
+
+// 2. Quick Create Order Modal
+function openQuickCreateOrderModal() {
+    document.getElementById('quickCreateOrderModal').style.display = 'flex';
+}
+function closeQuickCreateOrderModal() {
+    document.getElementById('quickCreateOrderModal').style.display = 'none';
+}
+function submitQuickCreateOrder(e) {
+    e.preventDefault();
+    const form = document.getElementById('quickCreateOrderForm');
+    const btn = document.getElementById('btn-submit-quick-order');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang tạo...';
+
+    const formData = new FormData(form);
+    fetch('/api/admin/don-hang/quick-create/', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(r => r.json())
+    .then(data => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> Tạo Đơn Hàng Ngay';
+        if (data.success) {
+            closeQuickCreateOrderModal();
+            form.reset();
+            if (window.AdminToasts) {
+                window.AdminToasts.show(data.message, 'success');
+            }
+            setTimeout(() => { window.location.reload(); }, 600);
+        } else {
+            alert('❌ ' + data.message);
+        }
+    })
+    .catch(err => {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> Tạo Đơn Hàng Ngay';
+        alert('❌ Lỗi kết nối khi tạo đơn');
+    });
+}
+
+// 3. Quick Order Detail Modal
+function openQuickOrderDetail(maDon) {
+    document.getElementById('preview-ma-don').textContent = maDon;
+    document.getElementById('preview-full-link').href = '/chi-tiet/' + maDon + '/';
+    document.getElementById('quickOrderDetailModal').style.display = 'flex';
+
+    const body = document.getElementById('preview-body');
+    body.innerHTML = `
+        <div style="text-align: center; padding: 30px; color: #94a3b8;">
+            <i class="fa-solid fa-spinner fa-spin" style="font-size: 28px; margin-bottom: 12px; display: block; color: var(--admin-primary);"></i>
+            Đang tải dữ liệu đơn #${maDon}...
+        </div>
+    `;
+
+    fetch('/api/don-hang/' + maDon + '/items/')
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                let itemsHtml = '';
+                let totalItemsPrice = 0;
+                data.items.forEach(item => {
+                    const lineTotal = item.price * item.quantity;
+                    totalItemsPrice += lineTotal;
+                    itemsHtml += `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px dashed #e2e8f0;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div style="width: 40px; height: 40px; border-radius: 8px; background: #f1f5f9; overflow: hidden; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                    ${item.img ? `<img src="${item.img}" style="width: 100%; height: 100%; object-fit: cover;">` : `<i class="fa-solid fa-bowl-food" style="color: #94a3b8;"></i>`}
+                                </div>
+                                <div>
+                                    <div style="font-weight: 700; color: #1e293b; font-size: 13.5px;">${item.name}</div>
+                                    <div style="font-size: 12px; color: #64748b;">${Number(item.price).toLocaleString('vi-VN')} đ &times; <strong style="color: #4f46e5;">${item.quantity}</strong></div>
+                                </div>
+                            </div>
+                            <div style="font-weight: 700; color: #0f172a; font-size: 13.5px;">
+                                ${Number(lineTotal).toLocaleString('vi-VN')} đ
+                            </div>
+                        </div>
+                    `;
+                });
+
+                body.innerHTML = `
+                    <div style="background: #f8fafc; border-radius: 12px; padding: 16px; margin-bottom: 18px; border: 1px solid #e2e8f0;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <span style="font-size: 12px; text-transform: uppercase; color: #64748b; font-weight: 700;">Mã Đơn: #${data.ma_don}</span>
+                            <span class="admin-badge admin-badge-info">${data.count} món đã đặt</span>
+                        </div>
+                        <div style="font-size: 13.5px; color: #334155;">
+                            Đơn hàng trực tuyến từ chi nhánh ẩm thực & điều phối vận tải.
+                        </div>
+                    </div>
+
+                    <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 700; color: #1e293b;">
+                        <i class="fa-solid fa-utensils" style="color: var(--admin-primary); margin-right: 6px;"></i> Danh Sách Món Ăn Trong Đơn
+                    </h4>
+                    <div style="margin-bottom: 20px;">
+                        ${itemsHtml || '<div style="color: #94a3b8; padding: 15px; text-align: center;">Chưa có món chi tiết (đơn giao kiện hàng hoặc đối tác B2B)</div>'}
+                    </div>
+
+                    <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 14px; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-weight: 700; color: #1e40af; font-size: 13.5px;">Tổng Tiền Món Ăn:</span>
+                        <strong style="font-size: 16px; color: #1d4ed8;">${Number(totalItemsPrice).toLocaleString('vi-VN')} VNĐ</strong>
+                    </div>
+                `;
+            } else {
+                body.innerHTML = '<div style="color: #ef4444; padding: 20px; text-align: center;">Không tìm thấy chi tiết món cho đơn hàng này.</div>';
+            }
+        })
+        .catch(err => {
+            body.innerHTML = '<div style="color: #ef4444; padding: 20px; text-align: center;">Có lỗi xảy ra khi tải dữ liệu đơn hàng.</div>';
+        });
+}
+function closeQuickOrderDetail() {
+    document.getElementById('quickOrderDetailModal').style.display = 'none';
+}
+
+// 4. Delete Order Modal
+function confirmDeleteOrder(donId, maDon) {
+    document.getElementById('deleteOrderMaDon').textContent = '#' + maDon;
+    document.getElementById('deleteOrderConfirmBtn').href = '/xoa-don-hang/' + donId + '/';
+    document.getElementById('deleteOrderModal').style.display = 'flex';
+}
+function closeDeleteOrderModal() {
+    document.getElementById('deleteOrderModal').style.display = 'none';
+}
+
+// Backdrop and Escape handlers
+window.addEventListener('click', function(e) {
+    ['quickDispatchModal', 'quickCreateOrderModal', 'quickOrderDetailModal', 'deleteOrderModal'].forEach(id => {
+        const m = document.getElementById(id);
+        if (m && e.target === m) {
+            m.style.display = 'none';
+        }
+    });
+});
+window.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        ['quickDispatchModal', 'quickCreateOrderModal', 'quickOrderDetailModal', 'deleteOrderModal'].forEach(id => {
+            const m = document.getElementById(id);
+            if (m) m.style.display = 'none';
+        });
+    }
+});
+</script>
+{% endblock %}

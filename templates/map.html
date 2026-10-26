@@ -1,0 +1,1048 @@
+{% extends "base.html" %}
+{% load static currency_filters %}
+
+{% block content %}
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+
+<style>
+    :root {
+        --primary-orange: #ff5722;
+        --primary-hover: #f4511e;
+        --accent-green: #10b981;
+        --accent-blue: #0284c7;
+        --card-bg: #ffffff;
+        --text-dark: #0f172a;
+        --text-muted: #64748b;
+        --border-color: #e2e8f0;
+    }
+
+    body {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        background-color: #f8fafc;
+    }
+
+    .tracking-page-container {
+        max-width: 1440px;
+        margin: 20px auto 70px;
+        padding: 0 16px;
+    }
+
+    /* 5-STEP TIMELINE BAR */
+    .timeline-banner {
+        background: #ffffff;
+        border-radius: 20px;
+        padding: 24px 30px;
+        margin-bottom: 24px;
+        box-shadow: 0 8px 30px rgba(15, 23, 42, 0.05);
+        border: 1px solid var(--border-color);
+    }
+
+    .timeline-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .timeline-title {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .timeline-title h1 {
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--text-dark);
+        margin: 0;
+    }
+
+    .eta-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: linear-gradient(135deg, #fff7ed, #ffedd5);
+        border: 1.5px solid #fed7aa;
+        color: #c2410c;
+        padding: 8px 18px;
+        border-radius: 999px;
+        font-size: 13px;
+        font-weight: 800;
+        box-shadow: 0 2px 8px rgba(254, 215, 170, 0.4);
+    }
+
+    .eta-badge.delivered {
+        background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+        border-color: #bbf7d0;
+        color: #15803d;
+        box-shadow: 0 2px 8px rgba(187, 247, 208, 0.4);
+    }
+
+    /* Step items */
+    .steps-track {
+        display: flex;
+        justify-content: space-between;
+        position: relative;
+    }
+
+    .steps-track::before {
+        content: '';
+        position: absolute;
+        top: 24px;
+        left: 35px;
+        right: 35px;
+        height: 4px;
+        background: #e2e8f0;
+        z-index: 1;
+    }
+
+    .steps-progress-fill {
+        position: absolute;
+        top: 24px;
+        left: 35px;
+        height: 4px;
+        background: linear-gradient(90deg, #ff5722, #10b981);
+        z-index: 1;
+        transition: width 0.5s ease;
+    }
+
+    .step-item {
+        position: relative;
+        z-index: 2;
+        text-align: center;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .step-circle {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: #ffffff;
+        border: 3px solid #cbd5e1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        color: #94a3b8;
+        transition: all 0.3s ease;
+        margin-bottom: 10px;
+    }
+
+    .step-item.completed .step-circle {
+        background: #10b981;
+        border-color: #10b981;
+        color: #ffffff;
+        box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+    }
+
+    .step-item.active .step-circle {
+        background: #ff5722;
+        border-color: #ff5722;
+        color: #ffffff;
+        box-shadow: 0 0 0 6px rgba(255, 87, 34, 0.2);
+        animation: activePulse 2s infinite;
+    }
+
+    @keyframes activePulse {
+        0% { box-shadow: 0 0 0 0 rgba(255, 87, 34, 0.4); }
+        70% { box-shadow: 0 0 0 12px rgba(255, 87, 34, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(255, 87, 34, 0); }
+    }
+
+    .step-label {
+        font-size: 13px;
+        font-weight: 700;
+        color: #64748b;
+        margin-bottom: 2px;
+    }
+
+    .step-item.completed .step-label { color: #0f172a; font-weight: 800; }
+    .step-item.active .step-label { color: #ff5722; font-weight: 900; }
+
+    .step-subtext {
+        font-size: 11px;
+        color: #94a3b8;
+        font-weight: 600;
+    }
+
+    @media (max-width: 768px) {
+        .steps-track {
+            flex-direction: column;
+            gap: 18px;
+            align-items: flex-start;
+        }
+        .steps-track::before, .steps-progress-fill { display: none; }
+        .step-item {
+            flex-direction: row;
+            gap: 14px;
+            text-align: left;
+            align-items: center;
+        }
+        .step-circle { margin-bottom: 0; width: 40px; height: 40px; font-size: 15px; }
+    }
+
+    /* MAIN TWO-COLUMN LAYOUT */
+    .map-container-wrapper {
+        display: flex;
+        gap: 24px;
+        min-height: 640px;
+    }
+
+    @media (max-width: 992px) {
+        .map-container-wrapper {
+            flex-direction: column;
+        }
+        .map-section {
+            height: 440px !important;
+        }
+    }
+
+    .map-section {
+        flex: 1.8;
+        background: #fff;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+        overflow: hidden;
+        position: relative;
+        border: 1px solid var(--border-color);
+        min-height: 580px;
+    }
+
+    #map {
+        width: 100%;
+        height: 100%;
+        min-height: 580px;
+        z-index: 1;
+    }
+
+    .info-section {
+        flex: 1.2;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        overflow-y: auto;
+    }
+
+    .info-card {
+        background: #ffffff;
+        border-radius: 20px;
+        padding: 22px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.04);
+        border: 1px solid var(--border-color);
+    }
+
+    .order-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        padding-bottom: 16px;
+        border-bottom: 1.5px dashed var(--border-color);
+        margin-bottom: 18px;
+    }
+
+    .order-badge {
+        padding: 6px 14px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+        display: inline-block;
+    }
+
+    /* Route info */
+    .route-info {
+        position: relative;
+        padding-left: 28px;
+    }
+
+    .route-info::before {
+        content: '';
+        position: absolute;
+        left: 6px;
+        top: 14px;
+        bottom: 14px;
+        width: 3px;
+        background: linear-gradient(to bottom, #ff5722, #10b981);
+        border-radius: 3px;
+    }
+
+    .route-point {
+        position: relative;
+        margin-bottom: 20px;
+    }
+
+    .route-point:last-child {
+        margin-bottom: 0;
+    }
+
+    .route-point::before {
+        content: '';
+        position: absolute;
+        left: -29px;
+        top: 4px;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        border: 3px solid white;
+        box-shadow: 0 0 10px rgba(0,0,0,0.18);
+        z-index: 2;
+    }
+
+    .point-start::before { background: #ff5722; }
+    .point-end::before { background: #10b981; }
+
+    .route-point small {
+        display: block;
+        color: #94a3b8;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        margin-bottom: 3px;
+    }
+
+    .route-point .loc-title {
+        font-weight: 800;
+        color: #0f172a;
+        font-size: 14.5px;
+        margin-bottom: 3px;
+    }
+
+    .route-point .loc-detail {
+        font-size: 12.5px;
+        color: #64748b;
+        line-height: 1.4;
+    }
+
+    /* Shipper Live Box */
+    .shipper-live-box {
+        background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+        border: 1.5px solid #86efac;
+        border-radius: 16px;
+        padding: 16px 18px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 18px;
+        gap: 12px;
+    }
+
+    .shipper-info-left {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+
+    .shipper-avatar {
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        background: #10b981;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        flex-shrink: 0;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .shipper-actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .btn-call-shipper {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 14px;
+        border-radius: 10px;
+        background: #10b981;
+        color: white;
+        font-weight: 800;
+        font-size: 12px;
+        text-decoration: none;
+        transition: 0.2s;
+    }
+
+    .btn-call-shipper:hover {
+        background: #059669;
+        color: white;
+    }
+
+    /* Price box */
+    .price-box {
+        background: #f8fafc;
+        border-radius: 16px;
+        padding: 18px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .price-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 13.5px;
+        margin-bottom: 8px;
+        color: #475569;
+    }
+
+    .price-row strong {
+        color: #0f172a;
+        font-weight: 700;
+    }
+
+    .total-price {
+        font-size: 24px;
+        font-weight: 900;
+        color: #ff5722;
+        text-align: center;
+        margin-top: 6px;
+    }
+
+    /* RATING & REVIEW CARD */
+    .rating-card {
+        background: linear-gradient(135deg, #ffffff, #fffbeb);
+        border: 1.5px solid #fde68a;
+        border-radius: 20px;
+        padding: 24px;
+        box-shadow: 0 8px 24px rgba(245, 158, 11, 0.08);
+    }
+
+    .rating-stars {
+        display: flex;
+        gap: 8px;
+        margin: 12px 0 16px;
+        cursor: pointer;
+    }
+
+    .star-btn {
+        font-size: 28px;
+        color: #cbd5e1;
+        transition: all 0.2s;
+        background: none;
+        border: none;
+        padding: 0;
+        cursor: pointer;
+    }
+
+    .star-btn.hover, .star-btn.selected {
+        color: #f59e0b;
+        transform: scale(1.15);
+    }
+
+    .review-textarea {
+        width: 100%;
+        border-radius: 12px;
+        border: 1.5px solid #e2e8f0;
+        padding: 12px 14px;
+        font-size: 13.5px;
+        outline: none;
+        resize: vertical;
+        min-height: 80px;
+        font-family: inherit;
+        background: #ffffff;
+    }
+
+    .review-textarea:focus {
+        border-color: #f59e0b;
+        box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+    }
+
+    .btn-submit-review {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: white;
+        border: none;
+        padding: 11px 22px;
+        border-radius: 12px;
+        font-weight: 800;
+        font-size: 13.5px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: 0.2s;
+        box-shadow: 0 4px 14px rgba(217, 119, 6, 0.3);
+    }
+
+    .btn-submit-review:hover {
+        background: linear-gradient(135deg, #d97706, #b45309);
+        transform: translateY(-1px);
+    }
+
+    .review-item-card {
+        background: #ffffff;
+        border: 1px solid #f1f5f9;
+        border-radius: 14px;
+        padding: 14px;
+        margin-top: 12px;
+    }
+
+    .btn-back {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+        padding: 13px;
+        border-radius: 12px;
+        background: #ffffff;
+        border: 1.5px solid #e2e8f0;
+        color: #475569;
+        font-weight: 700;
+        font-size: 14px;
+        text-decoration: none;
+        transition: 0.25s;
+    }
+
+    .btn-back:hover {
+        background: #f8fafc;
+        color: #0f172a;
+    }
+</style>
+
+<div class="tracking-page-container">
+    <!-- 5-STEP HORIZONTAL INTERACTIVE TIMELINE -->
+    <div class="timeline-banner">
+        <div class="timeline-header">
+            <div class="timeline-title">
+                <div style="width: 40px; height: 40px; border-radius: 12px; background: rgba(255, 87, 34, 0.1); color: #ff5722; display: flex; align-items: center; justify-content: center; font-size: 18px;">
+                    <i class="fa-solid fa-location-crosshairs"></i>
+                </div>
+                <div>
+                    <h1>Theo Dõi Đơn Hàng Live #{{ dh.ma_don }}</h1>
+                    <span style="font-size: 12px; color: #64748b; font-weight: 600;">
+                        Đặt lúc: {{ dh.ngay_tao|date:"H:i - d/m/Y" }}
+                    </span>
+                </div>
+            </div>
+
+            <!-- DYNAMIC ETA BADGE -->
+            <div>
+                {% if current_step == 5 %}
+                <div class="eta-badge delivered">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span>Đã giao thành công lúc {{ dh.ngay_tao|date:"H:i" }}</span>
+                </div>
+                {% elif dh.loai_giao_hang == 'HOA_TOC' %}
+                <div class="eta-badge">
+                    <i class="fa-solid fa-bolt" style="color: #ff5722;"></i>
+                    <span id="eta-text">⚡ Hỏa tốc: Giao dự kiến trong 15 - 20 phút</span>
+                </div>
+                {% else %}
+                <div class="eta-badge">
+                    <i class="fa-solid fa-clock" style="color: #0284c7;"></i>
+                    <span id="eta-text">Dự kiến giao: 25 - 35 phút</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 5 STEPS VISUAL BAR -->
+        <div class="steps-track">
+            {% if current_step >= 5 %}
+            <div class="steps-progress-fill" style="width: calc(100% - 70px);"></div>
+            {% elif current_step == 4 %}
+            <div class="steps-progress-fill" style="width: calc(75% - 50px);"></div>
+            {% elif current_step == 3 %}
+            <div class="steps-progress-fill" style="width: calc(50% - 35px);"></div>
+            {% elif current_step == 2 %}
+            <div class="steps-progress-fill" style="width: calc(25% - 20px);"></div>
+            {% else %}
+            <div class="steps-progress-fill" style="width: 0%;"></div>
+            {% endif %}
+
+            <!-- Step 1 -->
+            <div class="step-item {% if current_step > 1 %}completed{% elif current_step == 1 %}active{% endif %}">
+                <div class="step-circle">
+                    {% if current_step > 1 %}<i class="fa-solid fa-check"></i>{% else %}<i class="fa-solid fa-receipt"></i>{% endif %}
+                </div>
+                <div class="step-label">1. Đã đặt đơn</div>
+                <div class="step-subtext">Hệ thống ghi nhận</div>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="step-item {% if current_step > 2 %}completed{% elif current_step == 2 %}active{% endif %}">
+                <div class="step-circle">
+                    {% if current_step > 2 %}<i class="fa-solid fa-check"></i>{% else %}<i class="fa-solid fa-store"></i>{% endif %}
+                </div>
+                <div class="step-label">2. Quán tiếp nhận</div>
+                <div class="step-subtext">Đã xác nhận đơn</div>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="step-item {% if current_step > 3 %}completed{% elif current_step == 3 %}active{% endif %}">
+                <div class="step-circle">
+                    {% if current_step > 3 %}<i class="fa-solid fa-check"></i>{% else %}<i class="fa-solid fa-fire-burner"></i>{% endif %}
+                </div>
+                <div class="step-label">3. Đang nấu món</div>
+                <div class="step-subtext">Bếp trưởng chuẩn bị</div>
+            </div>
+
+            <!-- Step 4 -->
+            <div class="step-item {% if current_step > 4 %}completed{% elif current_step == 4 %}active{% endif %}">
+                <div class="step-circle">
+                    {% if current_step > 4 %}<i class="fa-solid fa-check"></i>{% else %}<i class="fa-solid fa-motorcycle"></i>{% endif %}
+                </div>
+                <div class="step-label">4. Shipper đang giao</div>
+                <div class="step-subtext">Đang trên đường tới</div>
+            </div>
+
+            <!-- Step 5 -->
+            <div class="step-item {% if current_step == 5 %}completed{% endif %}">
+                <div class="step-circle">
+                    {% if current_step == 5 %}<i class="fa-solid fa-gift"></i>{% else %}<i class="fa-solid fa-box-check"></i>{% endif %}
+                </div>
+                <div class="step-label">5. Giao thành công</div>
+                <div class="step-subtext">Chúc bạn ngon miệng</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN TWO-COLUMN: MAP GIS & ORDER INFO -->
+    <div class="map-container-wrapper">
+        <!-- CỘT BẢN ĐỒ LEAFLET TRỰC QUAN -->
+        <div class="map-section">
+            <div id="map"></div>
+        </div>
+
+        <!-- CỘT THÔNG TIN VẬN ĐƠN, TÀI XẾ & ĐÁNH GIÁ -->
+        <div class="info-section">
+            <!-- THÔNG TIN CHÍNH -->
+            <div class="info-card">
+                <div class="order-header">
+                    <div>
+                        <span style="font-size: 11px; color: #94a3b8; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px;">MÃ ĐƠN HÀNG</span>
+                        <h2 style="font-size: 22px; font-weight: 900; color: #0f172a; margin: 4px 0 0;">#{{ dh.ma_don }}</h2>
+                    </div>
+                    <div style="text-align: right;">
+                        <span class="order-badge" id="badge-{{ dh.ma_don }}">{{ dh.trang_thai }}</span>
+                        {% if dh.loai_giao_hang == 'HOA_TOC' %}
+                        <span style="display: block; margin-top: 5px; font-size: 11.5px; font-weight: 800; color: #ff5722;">
+                            <i class="fa-solid fa-bolt"></i> HỎA TỐC 15P
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- THÔNG TIN SHIPPER GPS -->
+                {% if dh.tai_xe %}
+                <div class="shipper-live-box">
+                    <div class="shipper-info-left">
+                        <div class="shipper-avatar">
+                            <i class="fa-solid fa-motorcycle"></i>
+                        </div>
+                        <div>
+                            <span style="font-size: 11px; font-weight: 800; color: #15803d; text-transform: uppercase;">
+                                <i class="fa-solid fa-circle" style="font-size: 8px; color: #10b981;"></i> Shipper Phụ Trách
+                            </span>
+                            <div style="font-size: 14.5px; font-weight: 800; color: #0f172a;">
+                                {{ dh.tai_xe.ten_tai_xe }} <span style="font-weight: 600; color: #64748b;">({{ dh.tai_xe.bien_so }})</span>
+                            </div>
+                            <div style="font-size: 12px; color: #64748b; font-weight: 600;">
+                                <i class="fa-solid fa-star" style="color: #f59e0b;"></i> 4.9/5 • 350+ chuyến
+                            </div>
+                        </div>
+                    </div>
+                    <div class="shipper-actions">
+                        <a href="tel:{{ dh.tai_xe.sdt }}" class="btn-call-shipper" title="Gọi điện cho Shipper">
+                            <i class="fa-solid fa-phone"></i> Gọi ngay
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- ĐỊA CHỈ BẾP VÀ KHÁCH HÀNG -->
+                <div class="route-info">
+                    <div class="route-point point-start">
+                        <small>Bếp / Cửa hàng chế biến</small>
+                        <div class="loc-title">{{ dh.kho_xuat_phat.ten_kho }}</div>
+                        <div class="loc-detail"><i class="fa-solid fa-store" style="color: #ff5722;"></i> {{ dh.kho_xuat_phat.dia_chi }}</div>
+                    </div>
+
+                    <div class="route-point point-end">
+                        <small>Địa chỉ nhận hàng của bạn</small>
+                        <div class="loc-title">{{ dh.ten_nguoi_nhan }}</div>
+                        <div class="loc-detail"><i class="fa-solid fa-location-dot" style="color: #10b981;"></i> {{ dh.dia_chi_nguoi_nhan }}</div>
+                        <div style="font-size: 12px; color: #0284c7; font-weight: 700; margin-top: 4px;">
+                            <i class="fa-solid fa-phone"></i> {{ dh.sdt_nguoi_nhan }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CARD ĐÁNH GIÁ & PHẢN HỒI (FEATURE 4) -->
+            <div class="rating-card" id="rating-section">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                    <h3 style="font-size: 16px; font-weight: 800; color: #92400e; margin: 0; display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-star" style="color: #f59e0b;"></i> Đánh Giá Món Ăn & Dịch Vụ
+                    </h3>
+                    <span style="font-size: 11.5px; background: #fef3c7; color: #b45309; padding: 4px 10px; border-radius: 999px; font-weight: 800;">
+                        {{ danh_gia_list|length }} phản hồi
+                    </span>
+                </div>
+
+                <!-- FORM ĐÁNH GIÁ NẾU CHƯA ĐÁNH GIÁ HOẶC MUỐN GỬI THÊM -->
+                <form id="review-form" method="POST" action="{% url 'core:gui_danh_gia' dh.ma_don %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="ajax" value="1">
+                    <input type="hidden" name="so_sao" id="input-so-sao" value="5">
+
+                    <p style="font-size: 13px; color: #78350f; margin: 0 0 8px;">Bạn cảm thấy chất lượng món ăn và tốc độ giao hàng thế nào?</p>
+
+                    <!-- Star Selector -->
+                    <div class="rating-stars" id="star-container">
+                        <button type="button" class="star-btn selected" data-value="1"><i class="fa-solid fa-star"></i></button>
+                        <button type="button" class="star-btn selected" data-value="2"><i class="fa-solid fa-star"></i></button>
+                        <button type="button" class="star-btn selected" data-value="3"><i class="fa-solid fa-star"></i></button>
+                        <button type="button" class="star-btn selected" data-value="4"><i class="fa-solid fa-star"></i></button>
+                        <button type="button" class="star-btn selected" data-value="5"><i class="fa-solid fa-star"></i></button>
+                    </div>
+
+                    <div style="margin-bottom: 10px;">
+                        <input type="text" name="ten_khach" id="input-ten-khach" value="{{ dh.ten_nguoi_nhan }}" placeholder="Tên của bạn" style="width: 100%; border-radius: 10px; border: 1.5px solid #e2e8f0; padding: 9px 12px; font-size: 13px; outline: none; margin-bottom: 8px; font-family: inherit;">
+                        <textarea name="nhan_xet" id="input-nhan-xet" class="review-textarea" placeholder="Chia sẻ cảm nhận của bạn về món ăn, độ nóng sốt hoặc thái độ shipper..." required></textarea>
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end;">
+                        <button type="submit" class="btn-submit-review" id="btn-submit-review">
+                            <i class="fa-solid fa-paper-plane"></i> Gửi đánh giá ngay
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Review list -->
+                <div id="reviews-container">
+                    {% for dg in danh_gia_list %}
+                    <div class="review-item-card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                            <div style="font-size: 13.5px; font-weight: 800; color: #0f172a;">
+                                {{ dg.ten_khach|default:"Khách hàng" }}
+                                <span style="font-size: 11px; background: #dcfce7; color: #166534; padding: 2px 8px; border-radius: 6px; margin-left: 6px; font-weight: 700;">
+                                    <i class="fa-solid fa-badge-check"></i> Đã mua hàng
+                                </span>
+                            </div>
+                            <div style="color: #f59e0b; font-size: 13px;">
+                                {% for i in "12345"|make_list %}
+                                    {% if forloop.counter <= dg.so_sao %}
+                                        <i class="fa-solid fa-star"></i>
+                                    {% else %}
+                                        <i class="fa-regular fa-star" style="color: #cbd5e1;"></i>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <p style="font-size: 13px; color: #475569; margin: 0 0 4px; line-height: 1.4;">{{ dg.nhan_xet }}</p>
+                        <span style="font-size: 11px; color: #94a3b8; font-weight: 600;">{{ dg.ngay_tao|date:"H:i - d/m/Y" }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- DANH SÁCH MÓN ĂN -->
+            {% if chi_tiet_mon %}
+            <div class="info-card">
+                <h4 style="margin: 0 0 14px 0; color: #0f172a; font-size: 15px; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-bowl-food" style="color: #ff5722;"></i> Danh sách món trong đơn ({{ chi_tiet_mon|length }})
+                </h4>
+                <div style="max-height: 160px; overflow-y: auto;">
+                    {% for item in chi_tiet_mon %}
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 13.5px;">
+                        <div>
+                            <b style="color: #ff5722; margin-right: 6px;">{{ item.so_luong }}x</b>
+                            <span style="color: #1e293b; font-weight: 700;">{{ item.mon_an.ten_mon }}</span>
+                        </div>
+                        <strong style="color: #0f172a;">{{ item.thanh_tien|dinh_dang_tien }}đ</strong>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- TIẾN ĐỘ LUÂN CHUYỂN LOGS -->
+            <div class="info-card">
+                <h4 style="margin: 0 0 14px 0; color: #0f172a; font-size: 15px; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-clock-rotate-left" style="color: #6366f1;"></i> Nhật ký hành trình
+                </h4>
+                <div class="timeline" style="border-left: 2px dashed #e2e8f0; padding-left: 18px; margin-left: 8px;">
+                    {% for log in lich_su %}
+                    <div style="margin-bottom: 14px; position: relative;">
+                        <div style="position: absolute; left: -24px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background: #ff5722; border: 2px solid white;"></div>
+                        <div style="font-size: 11px; color: #94a3b8; font-weight: 700;">{{ log.thoi_gian|date:"H:i - d/m/Y" }}</div>
+                        <div style="font-weight: 800; color: #0f172a; font-size: 13px;">{{ log.get_trang_thai_buoc_display }}</div>
+                        <div style="font-size: 12px; color: #64748b;">{{ log.ghi_chu|default:"" }}</div>
+                    </div>
+                    {% empty %}
+                    <p style="color: #94a3b8; font-size: 13px; margin: 0;">Đơn hàng vừa được khởi tạo thành công.</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- CƯỚC PHÍ & VIETQR -->
+            <div class="info-card">
+                <h4 style="margin: 0 0 14px 0; color: #0f172a; font-size: 15px; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-wallet" style="color: #10b981;"></i> Chi phí & Thanh toán
+                </h4>
+                <div class="price-box">
+                    <div class="price-row"><span>Khoảng cách:</span> <strong id="distance">{{ dh.khoang_cach_km }} km</strong></div>
+                    <div class="price-row"><span>Thời gian giao ước tính:</span> <strong id="duration">Đang tính...</strong></div>
+                    <div class="price-row"><span>Phương thức:</span> <strong>{{ dh.get_phuong_thuc_thanh_toan_display }}</strong></div>
+                    <div class="price-row"><span>Trạng thái:</span>
+                        {% if dh.trang_thai_thanh_toan == 'DA_THANH_TOAN' %}
+                        <strong style="color: #16a34a;"><i class="fa-solid fa-check"></i> {{ dh.get_trang_thai_thanh_toan_display }}</strong>
+                        {% else %}
+                        <strong style="color: #ea580c;"><i class="fa-solid fa-clock"></i> {{ dh.get_trang_thai_thanh_toan_display }}</strong>
+                        {% endif %}
+                    </div>
+                    <div style="border-top: 1px dashed #cbd5e1; margin: 12px 0;"></div>
+                    <div style="font-size: 12px; color: #64748b; font-weight: 800; text-transform: uppercase;">Tổng Tiền Thanh Toán</div>
+                    <div class="total-price" id="shipping-fee">{{ dh.tong_tien|dinh_dang_tien }}đ</div>
+
+                    {% if dh.trang_thai_thanh_toan != 'DA_THANH_TOAN' %}
+                    <div style="margin-top: 15px; text-align: center;">
+                        <a href="{{ qr_url }}" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; gap: 6px; background: #0284c7; color: white; padding: 10px 18px; border-radius: 12px; text-decoration: none; font-size: 13px; font-weight: 800;" title="Mở mã VietQR thanh toán">
+                            <i class="fa-solid fa-qrcode"></i> Mở mã VietQR chuyển khoản
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <a href="{% url 'core:home' %}" class="btn-back"><i class="fa-solid fa-arrow-left"></i> Trở về Trang chủ</a>
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Tô màu badge đơn hàng
+        const badge = document.getElementById("badge-{{ dh.ma_don }}");
+        if (badge) {
+            const txt = badge.innerText.toUpperCase();
+            if (txt.includes('THÀNH CÔNG') || txt.includes('ĐÃ GIAO')) {
+                badge.style.backgroundColor = '#dcfce7'; badge.style.color = '#166534';
+            } else if (txt.includes('HỦY')) {
+                badge.style.backgroundColor = '#fee2e2'; badge.style.color = '#991b1b';
+            } else if (txt.includes('CHỜ')) {
+                badge.style.backgroundColor = '#fef9c3'; badge.style.color = '#854d0e';
+            } else {
+                badge.style.backgroundColor = '#e0e7ff'; badge.style.color = '#4338ca';
+            }
+        }
+
+        // Tọa độ Bếp và Khách
+        var startLat = parseFloat("{{ dh.kho_xuat_phat.lat }}") || 10.7721;
+        var startLng = parseFloat("{{ dh.kho_xuat_phat.lng }}") || 106.6983;
+        var endLat = parseFloat("{{ dh.lat_khach }}") || 10.7769;
+        var endLng = parseFloat("{{ dh.lng_khach }}") || 106.7009;
+
+        // Khởi tạo Map
+        var map = L.map('map', {zoomControl: false}).setView([startLat, startLng], 14);
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        // Icon Restaurant & Customer
+        var startIcon = L.divIcon({
+            html: "<div style='background-color:#ff5722; width:34px; height:34px; border-radius:50%; border:3px solid white; box-shadow:0 4px 14px rgba(255,87,34,0.4); display:flex; align-items:center; justify-content:center; color:white; font-size:14px;'><i class='fa-solid fa-store'></i></div>",
+            iconSize: [34, 34], iconAnchor: [17, 17]
+        });
+
+        var endIcon = L.divIcon({
+            html: "<div style='background-color:#10b981; width:34px; height:34px; border-radius:50%; border:3px solid white; box-shadow:0 4px 14px rgba(16,185,129,0.4); display:flex; align-items:center; justify-content:center; color:white; font-size:14px;'><i class='fa-solid fa-location-dot'></i></div>",
+            iconSize: [34, 34], iconAnchor: [17, 17]
+        });
+
+        // Vẽ tuyến đường bằng Leaflet Routing Machine
+        var control = L.Routing.control({
+            waypoints: [L.latLng(startLat, startLng), L.latLng(endLat, endLng)],
+            routeWhileDragging: false,
+            show: false,
+            lineOptions: { 
+                styles: [{color: '#ff5722', opacity: 0.9, weight: 6}] 
+            },
+            createMarker: function(i, wp) {
+                if (i === 0) {
+                    return L.marker(wp.latLng, {icon: startIcon}).bindPopup("<b>🏪 {{ dh.kho_xuat_phat.ten_kho }}</b>");
+                } else {
+                    return L.marker(wp.latLng, {icon: endIcon}).bindPopup("<b>👤 {{ dh.ten_nguoi_nhan }}</b><br>{{ dh.dia_chi_nguoi_nhan }}");
+                }
+            }
+        }).addTo(map);
+
+        control.on('routesfound', function(e) {
+            var summary = e.routes[0].summary;
+            var distKm = (summary.totalDistance / 1000).toFixed(1);
+            var timeMin = Math.round((summary.totalTime / 60) * 1.25);
+
+            document.getElementById('distance').innerText = distKm + " km";
+            document.getElementById('duration').innerText = timeMin + " phút";
+
+            var etaEl = document.getElementById('eta-text');
+            if (etaEl && {{ current_step }} < 5) {
+                var now = new Date();
+                now.setMinutes(now.getMinutes() + timeMin);
+                var hh = String(now.getHours()).padStart(2, '0');
+                var mm = String(now.getMinutes()).padStart(2, '0');
+                etaEl.innerHTML = "⚡ Dự kiến giao khoảng: <b>" + timeMin + " phút</b> (khoảng " + hh + ":" + mm + ")";
+            }
+
+            // SIMULATED SHIPPER REAL-TIME MOVEMENT ALONG ROUTE
+            var shipperName = "{{ dh.tai_xe.ten_tai_xe|default:''|escapejs }}";
+            var currentStep = {{ current_step }};
+            if (shipperName && currentStep >= 4 && currentStep < 5) {
+                var coordinates = e.routes[0].coordinates;
+                if (coordinates && coordinates.length > 5) {
+                    var midIdx = Math.floor(coordinates.length * 0.45);
+                    var initialPoint = coordinates[midIdx];
+
+                    var liveShipperIcon = L.divIcon({
+                        html: "<div style='background-color:#0284c7; width:38px; height:38px; border-radius:50%; border:3px solid white; box-shadow:0 0 0 6px rgba(2,132,199,0.3); display:flex; align-items:center; justify-content:center; color:white; font-size:16px; animation:activePulse 1.8s infinite;'><i class='fa-solid fa-motorcycle'></i></div>",
+                        iconSize: [38, 38], iconAnchor: [19, 19]
+                    });
+
+                    var liveShipperMarker = L.marker([initialPoint.lat, initialPoint.lng], {icon: liveShipperIcon}).addTo(map)
+                        .bindPopup("<b>🛵 Shipper: " + shipperName + "</b><br><span style='color:#10b981; font-weight:800;'>● Đang di chuyển giao món</span>");
+
+                    // Tự động mô phỏng trượt nhẹ trên đường
+                    var curIdx = midIdx;
+                    setInterval(function() {
+                        if (curIdx < coordinates.length - 2) {
+                            curIdx++;
+                            var nextPt = coordinates[curIdx];
+                            liveShipperMarker.setLatLng([nextPt.lat, nextPt.lng]);
+                        }
+                    }, 2500);
+                }
+            }
+        });
+
+        // TƯƠNG TÁC RATING CHỌN SAO (FEATURE 4)
+        const starBtns = document.querySelectorAll('#star-container .star-btn');
+        const inputSoSao = document.getElementById('input-so-sao');
+
+        starBtns.forEach(btn => {
+            btn.addEventListener('mouseenter', function() {
+                const val = parseInt(this.getAttribute('data-value'));
+                starBtns.forEach(b => {
+                    const bVal = parseInt(b.getAttribute('data-value'));
+                    if (bVal <= val) {
+                        b.classList.add('hover');
+                    } else {
+                        b.classList.remove('hover');
+                    }
+                });
+            });
+
+            btn.addEventListener('mouseleave', function() {
+                starBtns.forEach(b => b.classList.remove('hover'));
+            });
+
+            btn.addEventListener('click', function() {
+                const val = parseInt(this.getAttribute('data-value'));
+                inputSoSao.value = val;
+                starBtns.forEach(b => {
+                    const bVal = parseInt(b.getAttribute('data-value'));
+                    if (bVal <= val) {
+                        b.classList.add('selected');
+                    } else {
+                        b.classList.remove('selected');
+                    }
+                });
+            });
+        });
+
+        // GỬI ĐÁNH GIÁ QUA AJAX (FEATURE 4)
+        const reviewForm = document.getElementById('review-form');
+        if (reviewForm) {
+            reviewForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const btnSubmit = document.getElementById('btn-submit-review');
+                btnSubmit.disabled = true;
+                btnSubmit.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Đang gửi...";
+
+                const formData = new FormData(reviewForm);
+
+                fetch(reviewForm.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        // Thêm review mới vào danh sách
+                        const reviewsContainer = document.getElementById('reviews-container');
+                        let starsHtml = '';
+                        for (let i = 1; i <= 5; i++) {
+                            if (i <= data.so_sao) {
+                                starsHtml += '<i class="fa-solid fa-star"></i> ';
+                            } else {
+                                starsHtml += '<i class="fa-regular fa-star" style="color: #cbd5e1;"></i> ';
+                            }
+                        }
+
+                        const newCard = document.createElement('div');
+                        newCard.className = 'review-item-card';
+                        newCard.style.animation = 'fadeIn 0.5s ease';
+                        newCard.innerHTML = `
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                <div style="font-size: 13.5px; font-weight: 800; color: #0f172a;">
+                                    ${data.ten_khach}
+                                    <span style="font-size: 11px; background: #dcfce7; color: #166534; padding: 2px 8px; border-radius: 6px; margin-left: 6px; font-weight: 700;">
+                                        <i class="fa-solid fa-badge-check"></i> Đã mua hàng
+                                    </span>
+                                </div>
+                                <div style="color: #f59e0b; font-size: 13px;">${starsHtml}</div>
+                            </div>
+                            <p style="font-size: 13px; color: #475569; margin: 0 0 4px; line-height: 1.4;">${data.nhan_xet}</p>
+                            <span style="font-size: 11px; color: #94a3b8; font-weight: 600;">${data.ngay_tao}</span>
+                        `;
+
+                        reviewsContainer.prepend(newCard);
+
+                        // Reset form & hiển thị thông báo
+                        document.getElementById('input-nhan-xet').value = '';
+                        btnSubmit.disabled = false;
+                        btnSubmit.innerHTML = "<i class='fa-solid fa-check'></i> Đã gửi thành công!";
+                        if (typeof showToast === 'function') {
+                            showToast(`Cảm ơn bạn đã gửi đánh giá ${data.so_sao} sao cho đơn hàng!`, 'success', 'Đánh giá thành công');
+                        }
+                        setTimeout(() => {
+                            btnSubmit.innerHTML = "<i class='fa-solid fa-paper-plane'></i> Gửi đánh giá khác";
+                        }, 2500);
+                    } else {
+                        if (typeof showToast === 'function') {
+                            showToast("Có lỗi xảy ra, vui lòng thử lại sau!", "error", "Không thể gửi");
+                        } else {
+                            alert("Có lỗi xảy ra, vui lòng thử lại!");
+                        }
+                        btnSubmit.disabled = false;
+                        btnSubmit.innerHTML = "<i class='fa-solid fa-paper-plane'></i> Gửi đánh giá ngay";
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    btnSubmit.disabled = false;
+                    btnSubmit.innerHTML = "<i class='fa-solid fa-paper-plane'></i> Gửi đánh giá ngay";
+                });
+            });
+        }
+    });
+</script>
+{% endblock %}

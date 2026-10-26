@@ -1,0 +1,442 @@
+{% extends "base.html" %}
+{% load static currency_filters %}
+
+{% block content %}
+<style>
+    .menu-container {
+        max-width: 1240px;
+        margin: 20px auto 60px;
+        padding: 0 15px;
+    }
+
+    /* Sub-hero banner */
+    .menu-hero {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        border-radius: 24px;
+        padding: 40px;
+        color: white;
+        margin-bottom: 35px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.12);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .menu-hero::after {
+        content: '';
+        position: absolute;
+        top: -50px;
+        right: -50px;
+        width: 250px;
+        height: 250px;
+        background: radial-gradient(circle, rgba(255, 87, 34, 0.3) 0%, transparent 70%);
+        border-radius: 50%;
+    }
+
+    /* Filter Category Pills */
+    .category-pills {
+        display: flex;
+        gap: 12px;
+        overflow-x: auto;
+        padding-bottom: 12px;
+        margin-bottom: 30px;
+    }
+    .category-pills::-webkit-scrollbar { height: 5px; }
+    .category-pills::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+    .cat-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 20px;
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 30px;
+        color: #475569;
+        font-weight: 600;
+        font-size: 14px;
+        text-decoration: none;
+        white-space: nowrap;
+        transition: all 0.25s ease;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+    }
+
+    .cat-pill:hover, .cat-pill.active {
+        background: linear-gradient(135deg, #ff5722, #ff7043);
+        color: white;
+        border-color: #ff5722;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(255, 87, 34, 0.25);
+    }
+
+    /* Food Grid */
+    .food-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+        gap: 25px;
+    }
+
+    .food-card {
+        background: white;
+        border-radius: 20px;
+        overflow: hidden;
+        border: 1px solid #f1f5f9;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.04);
+        transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        display: flex;
+        flex-direction: column;
+        position: relative;
+    }
+
+    .food-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 16px 35px rgba(0,0,0,0.1);
+        border-color: rgba(255, 87, 34, 0.3);
+    }
+
+    .food-img-wrapper {
+        position: relative;
+        width: 100%;
+        height: 190px;
+        overflow: hidden;
+        background: #f8fafc;
+    }
+
+    .food-img-wrapper img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.5s ease;
+    }
+
+    .food-card:hover .food-img-wrapper img {
+        transform: scale(1.08);
+    }
+
+    .badge-express {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        background: rgba(255, 87, 34, 0.95);
+        -webkit-backdrop-filter: blur(4px);
+        backdrop-filter: blur(4px);
+        color: white;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    }
+
+    .badge-discount {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        background: rgba(239, 68, 68, 0.95);
+        color: white;
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 800;
+    }
+
+    .food-info {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+    }
+
+    .food-kitchen {
+        font-size: 12px;
+        color: #94a3b8;
+        font-weight: 600;
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .food-title {
+        font-size: 16px;
+        font-weight: 800;
+        color: #1e293b;
+        margin-bottom: 8px;
+        line-height: 1.4;
+    }
+
+    .food-desc {
+        font-size: 12.5px;
+        color: #64748b;
+        line-height: 1.5;
+        margin-bottom: 15px;
+        flex: 1;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .food-meta {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 15px;
+        font-size: 12px;
+        color: #64748b;
+    }
+
+    .food-meta b { color: #1e293b; }
+
+    .food-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-top: 15px;
+        border-top: 1px dashed #f1f5f9;
+    }
+
+    .price-box {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .price-current {
+        color: #ff5722;
+        font-size: 18px;
+        font-weight: 900;
+    }
+
+    .price-old {
+        color: #94a3b8;
+        font-size: 12px;
+        text-decoration: line-through;
+    }
+
+    .btn-add-cart {
+        background: linear-gradient(135deg, #ff5722, #ff7043);
+        color: white;
+        border: none;
+        padding: 9px 16px;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 13px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.25s ease;
+        box-shadow: 0 4px 12px rgba(255, 87, 34, 0.25);
+    }
+
+    .btn-add-cart:hover {
+        transform: scale(1.05);
+        box-shadow: 0 6px 18px rgba(255, 87, 34, 0.4);
+    }
+</style>
+
+<div class="menu-container">
+    <!-- SUB-HERO BANNER -->
+    <div class="menu-hero">
+        <div style="max-width: 650px; z-index: 1;">
+            <span style="background: rgba(255, 87, 34, 0.2); color: #ff7043; border: 1px solid rgba(255, 87, 34, 0.4); padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 800; letter-spacing: 0.5px;">
+                ⚡ NỀN TẢNG ĐẶT MÓN và ĐIỀU PHỐI HỎA TỐC
+            </span>
+            <h1 style="font-size: 32px; font-weight: 900; margin: 15px 0 10px; color: white;">
+                Thực Đơn Món Ngon Nóng Hổi Giao Tận Nơi
+            </h1>
+            <p style="color: #94a3b8; font-size: 14px; margin: 0; line-height: 1.6;">
+                Khám phá ẩm thực phong phú từ các bếp trung tâm và nhà hàng đối tác. Tính cước phí minh bạch theo khoảng cách thực tế trên bản đồ Leaflet!
+            </p>
+        </div>
+        <div style="z-index: 1;">
+            <a href="{% url 'core:checkout' %}" style="display: inline-flex; align-items: center; gap: 10px; background: white; color: #ff5722; padding: 12px 24px; border-radius: 30px; font-weight: 800; text-decoration: none; font-size: 14px; box-shadow: 0 8px 25px rgba(0,0,0,0.15);">
+                <i class="fa-solid fa-cart-shopping"></i> Đi đến Thanh toán
+            </a>
+        </div>
+    </div>
+
+    <!-- THANH TÌM KIẾM và SẮP XẾP THÔNG MINH -->
+    <div style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; justify-content: space-between; align-items: center;">
+        <form method="GET" action="{% url 'core:thuc_don' %}" id="menuFilterForm" style="display: flex; gap: 10px; flex: 1; max-width: 520px;">
+            {% if danh_muc_dang_chon %}<input type="hidden" name="danh_muc" value="{{ danh_muc_dang_chon.slug }}">{% endif %}
+            {% if muc_gia %}<input type="hidden" name="muc_gia" value="{{ muc_gia }}">{% endif %}
+            {% if dac_diem %}<input type="hidden" name="dac_diem" value="{{ dac_diem }}">{% endif %}
+            {% if sort %}<input type="hidden" name="sort" value="{{ sort }}">{% endif %}
+
+            <div style="position: relative; flex: 1;">
+                <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #94a3b8;"></i>
+                <input type="text" name="q" id="instantMenuSearch" value="{{ q }}" placeholder="Tìm nhanh món ăn, cơm tấm, trà sữa, pizza..." class="form-control" style="padding-left: 42px; border-radius: 30px; width: 100%; border: 1.5px solid #e2e8f0; background: white;" title="Tìm kiếm món ăn" aria-label="Tìm kiếm món ăn">
+            </div>
+            <button type="submit" class="btn-primary" style="padding: 10px 22px; border-radius: 30px; border: none; background: #ff5722; color: white; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(255, 87, 34, 0.3);" title="Tìm kiếm món ăn" aria-label="Tìm kiếm món ăn">
+                <i class="fa-solid fa-magnifying-glass"></i> Tìm
+            </button>
+        </form>
+
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <span style="font-size: 13px; font-weight: 700; color: #1e293b;">
+                <span style="color: #ff5722;">{{ tong_mon }}</span> món ăn
+            </span>
+            <label for="sort-menu-select" style="font-size: 13px; font-weight: 600; color: #64748b; margin-bottom: 0;">Sắp xếp:</label>
+            <select id="sort-menu-select" onchange="applyMenuSort(this.value);" class="form-control" style="width: auto; border-radius: 20px; padding: 8px 16px; font-size: 13px; border: 1.5px solid #e2e8f0; font-weight: 600;" title="Sắp xếp món ăn" aria-label="Sắp xếp món ăn">
+                <option value="" {% if not sort %}selected{% endif %}>Mặc định</option>
+                <option value="ban_chay" {% if sort == 'ban_chay' %}selected{% endif %}>🔥 Bán chạy nhất</option>
+                <option value="danh_gia" {% if sort == 'danh_gia' %}selected{% endif %}>⭐ Đánh giá cao nhất</option>
+                <option value="chuan_bi" {% if sort == 'chuan_bi' %}selected{% endif %}>⏱️ Chuẩn bị nhanh nhất</option>
+                <option value="gia_tang" {% if sort == 'gia_tang' %}selected{% endif %}>💵 Giá tăng dần</option>
+                <option value="gia_giam" {% if sort == 'gia_giam' %}selected{% endif %}>💎 Giá giảm dần</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- BỘ LỌC ĐA TIÊU CHÍ (GIÁ & ĐẶC ĐIỂM) -->
+    <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; align-items: center;">
+        <span style="font-size: 12px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-right: 4px;">
+            <i class="fa-solid fa-filter"></i> Lọc theo:
+        </span>
+        <a href="?{% if danh_muc_dang_chon %}danh_muc={{ danh_muc_dang_chon.slug }}&{% endif %}{% if sort %}sort={{ sort }}&{% endif %}{% if dac_diem == 'hoa_toc' %}{% else %}dac_diem=hoa_toc&{% endif %}{% if muc_gia %}muc_gia={{ muc_gia }}{% endif %}" class="cat-pill {% if dac_diem == 'hoa_toc' %}active{% endif %}" style="padding: 6px 14px; font-size: 12.5px;">
+            ⚡ Giao Hỏa Tốc
+        </a>
+        <a href="?{% if danh_muc_dang_chon %}danh_muc={{ danh_muc_dang_chon.slug }}&{% endif %}{% if sort %}sort={{ sort }}&{% endif %}{% if dac_diem == 'best_seller' %}{% else %}dac_diem=best_seller&{% endif %}{% if muc_gia %}muc_gia={{ muc_gia }}{% endif %}" class="cat-pill {% if dac_diem == 'best_seller' %}active{% endif %}" style="padding: 6px 14px; font-size: 12.5px;">
+            🔥 Best Seller
+        </a>
+        <a href="?{% if danh_muc_dang_chon %}danh_muc={{ danh_muc_dang_chon.slug }}&{% endif %}{% if sort %}sort={{ sort }}&{% endif %}{% if dac_diem == 'khuyen_mai' %}{% else %}dac_diem=khuyen_mai&{% endif %}{% if muc_gia %}muc_gia={{ muc_gia }}{% endif %}" class="cat-pill {% if dac_diem == 'khuyen_mai' %}active{% endif %}" style="padding: 6px 14px; font-size: 12.5px;">
+            🏷️ Đang Giảm Giá
+        </a>
+
+        <span style="border-left: 2px solid #e2e8f0; height: 18px; margin: 0 4px;"></span>
+
+        <a href="?{% if danh_muc_dang_chon %}danh_muc={{ danh_muc_dang_chon.slug }}&{% endif %}{% if sort %}sort={{ sort }}&{% endif %}{% if dac_diem %}dac_diem={{ dac_diem }}&{% endif %}{% if muc_gia == 'duoi_50k' %}{% else %}muc_gia=duoi_50k{% endif %}" class="cat-pill {% if muc_gia == 'duoi_50k' %}active{% endif %}" style="padding: 6px 14px; font-size: 12.5px;">
+            Dưới 50.000đ
+        </a>
+        <a href="?{% if danh_muc_dang_chon %}danh_muc={{ danh_muc_dang_chon.slug }}&{% endif %}{% if sort %}sort={{ sort }}&{% endif %}{% if dac_diem %}dac_diem={{ dac_diem }}&{% endif %}{% if muc_gia == '50k_100k' %}{% else %}muc_gia=50k_100k{% endif %}" class="cat-pill {% if muc_gia == '50k_100k' %}active{% endif %}" style="padding: 6px 14px; font-size: 12.5px;">
+            50.000đ - 100.000đ
+        </a>
+        <a href="?{% if danh_muc_dang_chon %}danh_muc={{ danh_muc_dang_chon.slug }}&{% endif %}{% if sort %}sort={{ sort }}&{% endif %}{% if dac_diem %}dac_diem={{ dac_diem }}&{% endif %}{% if muc_gia == 'tren_100k' %}{% else %}muc_gia=tren_100k{% endif %}" class="cat-pill {% if muc_gia == 'tren_100k' %}active{% endif %}" style="padding: 6px 14px; font-size: 12.5px;">
+            Trên 100.000đ
+        </a>
+
+        {% if muc_gia or dac_diem or q or sort %}
+        <a href="{% url 'core:thuc_don' %}{% if danh_muc_dang_chon %}?danh_muc={{ danh_muc_dang_chon.slug }}{% endif %}" style="margin-left: auto; color: #ef4444; font-size: 12.5px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+            <i class="fa-solid fa-xmark"></i> Xóa bộ lọc
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- DANH MỤC MÓN ĂN (PILLS) -->
+    <div class="category-pills">
+        <a href="{% url 'core:thuc_don' %}{% if muc_gia %}?muc_gia={{ muc_gia }}{% endif %}{% if dac_diem %}&dac_diem={{ dac_diem }}{% endif %}" class="cat-pill {% if not danh_muc_dang_chon %}active{% endif %}">
+            <i class="fa-solid fa-utensils"></i> Tất cả danh mục
+        </a>
+        {% for dm in danh_mucs %}
+        <a href="{% url 'core:thuc_don' %}?danh_muc={{ dm.slug }}{% if muc_gia %}&muc_gia={{ muc_gia }}{% endif %}{% if dac_diem %}&dac_diem={{ dac_diem }}{% endif %}{% if sort %}&sort={{ sort }}{% endif %}" class="cat-pill {% if danh_muc_dang_chon and danh_muc_dang_chon.id == dm.id %}active{% endif %}">
+            <i class="fa-solid {{ dm.icon }}"></i> {{ dm.ten_danh_muc }}
+        </a>
+        {% endfor %}
+    </div>
+
+    <!-- LƯỚI DANH SÁCH MÓN ĂN -->
+    <div class="food-grid">
+        {% for mon in ds_mon %}
+        <div class="food-card">
+            <div class="food-img-wrapper">
+                <img src="{{ mon.hinh_anh }}" alt="{{ mon.ten_mon }}" title="{{ mon.ten_mon }}" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&auto=format&fit=crop&q=60';">
+                {% if mon.is_hoa_toc %}
+                    <span class="badge-express"><i class="fa-solid fa-bolt"></i> HỎA TỐC 15P</span>
+                {% endif %}
+                {% if mon.phan_tram_giam_gia > 0 %}
+                    <span class="badge-discount">-{{ mon.phan_tram_giam_gia }}%</span>
+                {% endif %}
+            </div>
+
+            <div class="food-info">
+                <div class="food-kitchen">
+                    <i class="fa-solid fa-store" style="color: #ff5722;"></i>
+                    <span>{{ mon.kho_hang.ten_kho|default:"Bếp trung tâm" }}</span>
+                </div>
+
+                <div class="food-title">{{ mon.ten_mon }}</div>
+                <div class="food-desc">{{ mon.mo_ta }}</div>
+
+                <div class="food-meta">
+                    <span><i class="fa-solid fa-star" style="color: #fbbf24;"></i> <b>{{ mon.danh_gia }}</b></span>
+                    <span><i class="fa-solid fa-clock" style="color: #94a3b8;"></i> {{ mon.thoi_gian_chuan_bi }}p</span>
+                    <span><i class="fa-solid fa-fire" style="color: #ef4444;"></i> Đã bán: <b>{{ mon.da_ban }}</b></span>
+                </div>
+
+                <div class="food-footer">
+                    <div class="price-box">
+                        <span class="price-current">{{ mon.gia_hien_tai|dinh_dang_tien }}đ</span>
+                        {% if mon.gia_khuyen_mai and mon.gia_khuyen_mai < mon.gia %}
+                            <span class="price-old">{{ mon.gia|dinh_dang_tien }}đ</span>
+                        {% endif %}
+                    </div>
+
+                    <button type="button" 
+                            class="btn-add-cart" 
+                            title="Thêm {{ mon.ten_mon }} vào giỏ hàng"
+                            aria-label="Thêm {{ mon.ten_mon }} vào giỏ hàng"
+                            data-id="{{ mon.id }}"
+                            data-name="{{ mon.ten_mon }}"
+                            data-price="{{ mon.gia_hien_tai }}"
+                            data-img="{{ mon.hinh_anh }}"
+                            data-kho="{{ mon.kho_hang.id|default:1 }}"
+                            onclick="addToCart(this.dataset.id, this.dataset.name, this.dataset.price, this.dataset.img, this.dataset.kho)">
+                        <i class="fa-solid fa-plus"></i> Thêm món
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; background: white; border-radius: 20px; border: 1px dashed #cbd5e1;">
+            <i class="fa-solid fa-magnifying-glass" style="font-size: 45px; color: #cbd5e1; margin-bottom: 15px;"></i>
+            <h3 style="color: #64748b; font-size: 18px;">Không tìm thấy món ăn phù hợp</h3>
+            <p style="color: #94a3b8; font-size: 14px;">Thử tìm kiếm với từ khóa khác hoặc bấm chọn Tất cả danh mục.</p>
+            <a href="{% url 'core:thuc_don' %}" style="display: inline-block; margin-top: 10px; color: #ff5722; font-weight: 700; text-decoration: none;">
+                Quay lại thực đơn chính &rarr;
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+function applyMenuSort(sortVal) {
+    var url = new URL(window.location.href);
+    if (sortVal) {
+        url.searchParams.set('sort', sortVal);
+    } else {
+        url.searchParams.delete('sort');
+    }
+    window.location.href = url.toString();
+}
+
+// Tìm kiếm tức thì không cần đợi tải lại trang
+document.addEventListener('DOMContentLoaded', function() {
+    var searchInput = document.getElementById('instantMenuSearch');
+    if (searchInput) {
+        searchInput.addEventListener('input', function(e) {
+            var val = e.target.value.toLowerCase().trim();
+            var cards = document.querySelectorAll('.food-card');
+            cards.forEach(function(card) {
+                var title = (card.querySelector('.food-title') || {}).textContent || '';
+                var desc = (card.querySelector('.food-desc') || {}).textContent || '';
+                var kitchen = (card.querySelector('.food-kitchen') || {}).textContent || '';
+                var full = (title + ' ' + desc + ' ' + kitchen).toLowerCase();
+                if (!val || full.includes(val)) {
+                    card.style.display = '';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

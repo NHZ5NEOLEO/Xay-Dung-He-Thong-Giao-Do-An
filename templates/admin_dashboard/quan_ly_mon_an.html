@@ -1,0 +1,499 @@
+{% extends "admin_dashboard/admin_base.html" %}
+{% load static currency_filters %}
+
+{% block title %}Quản Lý Thực Đơn Món Ăn - Logistics Pro Admin{% endblock %}
+
+{% block page_title %}Quản Lý Thực Đơn & Kho Món Ăn{% endblock %}
+
+{% block breadcrumb %}
+<span class="sep">/</span>
+<a href="{% url 'core:admin_quan_ly_mon_an' %}">Thực Đơn Món</a>
+{% endblock %}
+
+{% block admin_content %}
+<!-- ==============================================================================
+     1. KPI THỐNG KÊ KHO MÓN ĂN
+     ============================================================================== -->
+<div class="admin-kpi-grid" style="margin-bottom: 24px;">
+    <div class="admin-kpi-card">
+        <div class="admin-kpi-header">
+            <div>
+                <div class="admin-kpi-title">Tổng Món Trong Thực Đơn</div>
+                <div class="admin-kpi-value">{{ stats.tong_mon }}</div>
+            </div>
+            <div class="admin-kpi-icon-box admin-kpi-icon-blue">
+                <i class="fa-solid fa-utensils"></i>
+            </div>
+        </div>
+        <div class="admin-kpi-footer">
+            <span class="admin-kpi-subtext">Toàn bộ thực đơn hệ thống</span>
+        </div>
+    </div>
+
+    <div class="admin-kpi-card">
+        <div class="admin-kpi-header">
+            <div>
+                <div class="admin-kpi-title">Món Đang Phục Vụ</div>
+                <div class="admin-kpi-value" style="color: #16a34a;">{{ stats.mon_con }}</div>
+            </div>
+            <div class="admin-kpi-icon-box admin-kpi-icon-green">
+                <i class="fa-solid fa-circle-check"></i>
+            </div>
+        </div>
+        <div class="admin-kpi-footer">
+            <span class="admin-kpi-subtext">Khách hàng có thể đặt trực tiếp</span>
+        </div>
+    </div>
+
+    <div class="admin-kpi-card">
+        <div class="admin-kpi-header">
+            <div>
+                <div class="admin-kpi-title">Món Tạm Hết Hàng</div>
+                <div class="admin-kpi-value" style="color: #dc2626;">{{ stats.mon_het }}</div>
+            </div>
+            <div class="admin-kpi-icon-box admin-kpi-icon-amber">
+                <i class="fa-solid fa-ban"></i>
+            </div>
+        </div>
+        <div class="admin-kpi-footer">
+            <span class="admin-kpi-subtext">Tạm khóa bán trên app</span>
+        </div>
+    </div>
+
+    <div class="admin-kpi-card">
+        <div class="admin-kpi-header">
+            <div>
+                <div class="admin-kpi-title">Món Bán Chạy / Nổi Bật</div>
+                <div class="admin-kpi-value" style="color: #ea580c;">{{ stats.mon_noi_bat }}</div>
+            </div>
+            <div class="admin-kpi-icon-box admin-kpi-icon-purple">
+                <i class="fa-solid fa-fire"></i>
+            </div>
+        </div>
+        <div class="admin-kpi-footer">
+            <span class="admin-kpi-subtext">Được ghim trang chủ</span>
+        </div>
+    </div>
+</div>
+
+<!-- ==============================================================================
+     2. THANH CÔNG CỤ TÌM KIẾM, LỌC & NÚT THÊM MÓN
+     ============================================================================== -->
+<div class="admin-card" style="margin-bottom: 24px;">
+    <div style="padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+        <form method="GET" action="{% url 'core:admin_quan_ly_mon_an' %}" style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center; flex: 1;">
+            <!-- Search bar -->
+            <div style="position: relative; min-width: 260px; flex: 1;">
+                <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 13px;"></i>
+                <input type="text" name="q" value="{{ q }}" placeholder="Tìm theo tên món, mô tả..." style="width: 100%; padding: 9px 12px 9px 36px; border-radius: 10px; border: 1.5px solid #e2e8f0; font-size: 13px; outline: none; background: #f8fafc;">
+            </div>
+
+            <!-- Filter Danh mục -->
+            <select name="danh_muc" onchange="this.form.submit()" style="padding: 9px 14px; border-radius: 10px; border: 1.5px solid #e2e8f0; font-size: 13px; font-weight: 600; color: #334155; background: #f8fafc; outline: none;">
+                <option value="">-- Tất cả danh mục --</option>
+                {% for dm in danh_mucs %}
+                    <option value="{{ dm.id }}" {% if selected_danh_muc == dm.id|stringformat:"s" %}selected{% endif %}>{{ dm.ten_danh_muc }}</option>
+                {% endfor %}
+            </select>
+
+            <!-- Filter Trạng thái -->
+            <select name="status" onchange="this.form.submit()" style="padding: 9px 14px; border-radius: 10px; border: 1.5px solid #e2e8f0; font-size: 13px; font-weight: 600; color: #334155; background: #f8fafc; outline: none;">
+                <option value="">-- Tất cả trạng thái --</option>
+                <option value="con_mon" {% if selected_status == 'con_mon' %}selected{% endif %}>🟢 Đang phục vụ</option>
+                <option value="het_mon" {% if selected_status == 'het_mon' %}selected{% endif %}>🔴 Tạm hết món</option>
+                <option value="noi_bat" {% if selected_status == 'noi_bat' %}selected{% endif %}>🔥 Món nổi bật</option>
+            </select>
+
+            {% if q or selected_danh_muc or selected_status %}
+                <a href="{% url 'core:admin_quan_ly_mon_an' %}" style="color: #64748b; font-size: 12.5px; text-decoration: none; padding: 8px 12px; border-radius: 8px; background: #f1f5f9; display: inline-flex; align-items: center; gap: 4px;">
+                    <i class="fa-solid fa-xmark"></i> Xóa lọc
+                </a>
+            {% endif %}
+        </form>
+
+        <button type="button" onclick="openAddFoodModal()" style="background: linear-gradient(135deg, #ff5722, #ea580c); color: white; border: none; padding: 10px 20px; border-radius: 12px; font-weight: 700; font-size: 13.5px; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(255, 87, 34, 0.35); transition: 0.2s;">
+            <i class="fa-solid fa-plus" style="font-size: 14px;"></i>
+            <span>Thêm Món Ăn Mới</span>
+        </button>
+    </div>
+</div>
+
+<!-- ==============================================================================
+     3. BẢNG DANH SÁCH MÓN ĂN VÀ CÔNG TẮC BẬT/TẮT TỨC THÌ
+     ============================================================================== -->
+<div class="admin-card">
+    <div class="admin-table-container">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th style="width: 70px;">Ảnh</th>
+                    <th>Tên Món Ăn</th>
+                    <th>Danh Mục</th>
+                    <th>Bếp / Quán</th>
+                    <th>Giá Bán</th>
+                    <th>Đã Bán</th>
+                    <th style="text-align: center;">Trạng Thái Bán</th>
+                    <th>Đặc Tính</th>
+                    <th style="text-align: right;">Thao Tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for mon in page_obj %}
+                <tr id="row-food-{{ mon.id }}">
+                    <td>
+                        <img src="{{ mon.hinh_anh }}" alt="{{ mon.ten_mon }}" style="width: 50px; height: 50px; border-radius: 10px; object-fit: cover; border: 1px solid #e2e8f0; box-shadow: 0 2px 5px rgba(0,0,0,0.06);" onerror="this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100&auto=format&fit=crop&q=60'">
+                    </td>
+                    <td>
+                        <div style="font-weight: 700; color: #0f172a; font-size: 14px;">{{ mon.ten_mon }}</div>
+                        {% if mon.mo_ta %}
+                            <div style="font-size: 11.5px; color: #64748b; max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ mon.mo_ta }}</div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span style="background: #f1f5f9; color: #475569; padding: 4px 10px; border-radius: 8px; font-size: 12px; font-weight: 700;">
+                            <i class="fa-solid {{ mon.danh_muc.icon }}" style="color: #ff5722; font-size: 11px; margin-right: 3px;"></i>
+                            {{ mon.danh_muc.ten_danh_muc }}
+                        </span>
+                    </td>
+                    <td>
+                        <div style="font-size: 12.5px; color: #334155; font-weight: 500;">
+                            {{ mon.kho_hang.ten_kho|default:"Bếp trung tâm" }}
+                        </div>
+                    </td>
+                    <td>
+                        <div style="font-weight: 800; color: #0f172a; font-size: 14px;">
+                            {{ mon.gia|currency_vn }}
+                        </div>
+                        {% if mon.gia_khuyen_mai and mon.gia_khuyen_mai > 0 %}
+                            <div style="font-size: 11px; color: #16a34a; font-weight: 700;">
+                                KM: {{ mon.gia_khuyen_mai|currency_vn }} (-{{ mon.phan_tram_giam_gia }}%)
+                            </div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <b style="color: #0f172a;">{{ mon.da_ban }}</b> <span style="font-size: 11px; color: #64748b;">phần</span>
+                    </td>
+                    <td style="text-align: center;">
+                        <!-- Interactive Toggle Switch -->
+                        <label class="switch-toggle" style="position: relative; display: inline-block; width: 44px; height: 24px; vertical-align: middle;">
+                            <input type="checkbox" id="toggle-food-{{ mon.id }}" onchange="toggleFoodStatus({{ mon.id }})" {% if mon.is_con_mon %}checked{% endif %} style="opacity: 0; width: 0; height: 0;">
+                            <span class="switch-slider" style="position: absolute; cursor: pointer; inset: 0; background-color: {% if mon.is_con_mon %}#10b981{% else %}#cbd5e1{% endif %}; transition: .3s; border-radius: 24px;"></span>
+                        </label>
+                        <div id="status-text-{{ mon.id }}" style="font-size: 11px; font-weight: 700; margin-top: 3px; color: {% if mon.is_con_mon %}#10b981{% else %}#94a3b8{% endif %};">
+                            {% if mon.is_con_mon %}Còn món{% else %}Hết món{% endif %}
+                        </div>
+                    </td>
+                    <td>
+                        <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                            {% if mon.is_noi_bat %}
+                                <span style="background: #fff7ed; color: #ea580c; border: 1px solid #ffedd5; padding: 2px 7px; border-radius: 6px; font-size: 10.5px; font-weight: 800;">
+                                    🔥 Hot
+                                </span>
+                            {% endif %}
+                            {% if mon.is_hoa_toc %}
+                                <span style="background: #eff6ff; color: #2563eb; border: 1px solid #dbeafe; padding: 2px 7px; border-radius: 6px; font-size: 10.5px; font-weight: 800;">
+                                    ⚡ 15P
+                                </span>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td style="text-align: right;">
+                        <div class="admin-row-actions" style="justify-content: flex-end;">
+                            <button type="button" class="admin-btn-icon-sm" title="Chỉnh sửa món" onclick="openEditFoodModal({{ mon.id }}, '{{ mon.ten_mon|escapejs }}', '{{ mon.danh_muc.id }}', '{{ mon.kho_hang.id|default:'' }}', '{{ mon.gia }}', '{{ mon.gia_khuyen_mai|default:'' }}', '{{ mon.hinh_anh|escapejs }}', '{{ mon.mo_ta|escapejs }}', {{ mon.is_noi_bat|yesno:'true,false' }}, {{ mon.is_hoa_toc|yesno:'true,false' }}, {{ mon.is_con_mon|yesno:'true,false' }})">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </button>
+                            <a href="{% url 'core:admin_xoa_mon_an' id=mon.id %}" class="admin-btn-icon-sm" style="color: #ef4444;" title="Xóa món" onclick="return confirm('Bạn có chắc chắn muốn xóa món \'{{ mon.ten_mon|escapejs }}\' khỏi thực đơn?')">
+                                <i class="fa-solid fa-trash"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9" style="text-align: center; padding: 40px;">
+                        <div class="admin-empty-state">
+                            <i class="fa-solid fa-utensils admin-empty-icon"></i>
+                            <p class="admin-empty-title">Không tìm thấy món ăn nào</p>
+                            <p class="admin-empty-desc">Thử tìm kiếm với từ khóa khác hoặc bấm nút "+ Thêm Món Ăn Mới" để tạo món.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Phân trang -->
+    {% if page_obj.has_other_pages %}
+    <div style="padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f1f5f9;">
+        <div style="font-size: 13px; color: #64748b;">
+            Hiển thị trang <b>{{ page_obj.number }}</b> / <b>{{ page_obj.paginator.num_pages }}</b> (Tổng {{ page_obj.paginator.count }} món)
+        </div>
+        <div style="display: flex; gap: 6px;">
+            {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}{% if selected_danh_muc %}&danh_muc={{ selected_danh_muc }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}" style="padding: 6px 12px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; text-decoration: none; color: #334155; font-size: 12.5px; font-weight: 700;">
+                    &larr; Trước
+                </a>
+            {% endif %}
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}{% if selected_danh_muc %}&danh_muc={{ selected_danh_muc }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}" style="padding: 6px 12px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; text-decoration: none; color: #334155; font-size: 12.5px; font-weight: 700;">
+                    Sau &rarr;
+                </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- ==============================================================================
+     4. MODAL THÊM MÓN ĂN MỚI
+     ============================================================================== -->
+<div id="addFoodModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); z-index: 99999; backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 16px;">
+    <div style="background: white; border-radius: 20px; max-width: 560px; width: 100%; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3); overflow: hidden; max-height: 90vh; display: flex; flex-direction: column;">
+        <div style="background: linear-gradient(135deg, #1e293b, #0f172a); color: white; padding: 20px 24px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-bowl-food" style="color: #ff5722; font-size: 20px;"></i>
+                <h3 style="margin: 0; font-size: 17px; font-weight: 800; color: white;">Thêm Món Ăn Mới Vào Thực Đơn</h3>
+            </div>
+            <button type="button" onclick="closeAddFoodModal()" style="background: rgba(255,255,255,0.12); border: none; color: white; width: 30px; height: 30px; border-radius: 50%; cursor: pointer;">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <form method="POST" action="{% url 'core:admin_them_mon_an' %}" style="padding: 24px; overflow-y: auto;">
+            {% csrf_token %}
+            <div style="margin-bottom: 14px;">
+                <label style="display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 5px;">Tên món ăn (*)</label>
+                <input type="text" name="ten_mon" required placeholder="VD: Cơm Tấm Sườn Bì Chả Đặc Biệt" style="width: 100%; padding: 10px 14px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-size: 13.5px; font-weight: 600;">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+                <div>
+                    <label style="display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 5px;">Danh mục (*)</label>
+                    <select name="danh_muc_id" required style="width: 100%; padding: 10px 14px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-size: 13px; font-weight: 600;">
+                        {% for dm in danh_mucs %}
+                            <option value="{{ dm.id }}">{{ dm.ten_danh_muc }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label style="display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 5px;">Quán / Bếp chế biến</label>
+                    <select name="kho_hang_id" style="width: 100%; padding: 10px 14px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-size: 13px; font-weight: 600;">
+                        <option value="">-- Mặc định (Bếp chính) --</option>
+                        {% for k in kho_hangs %}
+                            <option value="{{ k.id }}">{{ k.ten_kho }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+                <div>
+                    <label style="display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 5px;">Giá bán gốc (VNĐ) (*)</label>
+                    <input type="number" name="gia" required placeholder="VD: 55000" style="width: 100%; padding: 10px 14px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-size: 13.5px; font-weight: 700;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 5px;">Giá khuyến mãi (Nếu có)</label>
+                    <input type="number" name="gia_khuyen_mai" placeholder="VD: 45000" style="width: 100%; padding: 10px 14px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-size: 13.5px;">
+                </div>
+            </div>
+
+            <div style="margin-bottom: 14px;">
+                <label style="display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 5px;">Đường dẫn ảnh (URL Image)</label>
+                <input type="url" name="hinh_anh" placeholder="https://images.unsplash.com/..." style="width: 100%; padding: 10px 14px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-size: 13px;">
+            </div>
+
+            <div style="margin-bottom: 14px;">
+                <label style="display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 5px;">Mô tả món ăn</label>
+                <textarea name="mo_ta" rows="2" placeholder="Mô tả nguyên liệu, hương vị..." style="width: 100%; padding: 10px 14px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-size: 13px; resize: vertical;"></textarea>
+            </div>
+
+            <div style="display: flex; gap: 20px; margin-bottom: 18px; padding: 10px 14px; background: #f8fafc; border-radius: 10px; border: 1px dashed #e2e8f0;">
+                <label style="display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 700; color: #334155; cursor: pointer;">
+                    <input type="checkbox" name="is_con_mon" checked> Đang phục vụ (Còn món)
+                </label>
+                <label style="display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 700; color: #ea580c; cursor: pointer;">
+                    <input type="checkbox" name="is_noi_bat"> 🔥 Món Hot / Bán chạy
+                </label>
+                <label style="display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 700; color: #2563eb; cursor: pointer;">
+                    <input type="checkbox" name="is_hoa_toc" checked> ⚡ Giao Hỏa tốc
+                </label>
+            </div>
+
+            <div style="display: flex; gap: 10px; justify-content: flex-end; border-top: 1px solid #f1f5f9; padding-top: 16px;">
+                <button type="button" onclick="closeAddFoodModal()" style="padding: 9px 18px; border-radius: 10px; border: 1px solid #e2e8f0; background: #f8fafc; color: #64748b; font-weight: 700; font-size: 13px; cursor: pointer;">
+                    Hủy
+                </button>
+                <button type="submit" style="padding: 9px 22px; border-radius: 10px; border: none; background: linear-gradient(135deg, #ff5722, #ea580c); color: white; font-weight: 700; font-size: 13px; cursor: pointer;">
+                    <i class="fa-solid fa-plus"></i> Thêm Món Vào Menu
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ==============================================================================
+     5. MODAL CHỈNH SỬA MÓN ĂN
+     ============================================================================== -->
+<div id="editFoodModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); z-index: 99999; backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 16px;">
+    <div style="background: white; border-radius: 20px; max-width: 560px; width: 100%; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3); overflow: hidden; max-height: 90vh; display: flex; flex-direction: column;">
+        <div style="background: linear-gradient(135deg, #1e293b, #0f172a); color: white; padding: 20px 24px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-pen-to-square" style="color: #38bdf8; font-size: 20px;"></i>
+                <h3 style="margin: 0; font-size: 17px; font-weight: 800; color: white;">Cập Nhật Thông Tin Món Ăn</h3>
+            </div>
+            <button type="button" onclick="closeEditFoodModal()" style="background: rgba(255,255,255,0.12); border: none; color: white; width: 30px; height: 30px; border-radius: 50%; cursor: pointer;">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <form id="editFoodForm" method="POST" style="padding: 24px; overflow-y: auto;">
+            {% csrf_token %}
+            <div style="margin-bottom: 14px;">
+                <label style="display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 5px;">Tên món ăn (*)</label>
+                <input type="text" id="edit-ten-mon" name="ten_mon" required style="width: 100%; padding: 10px 14px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-size: 13.5px; font-weight: 600;">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+                <div>
+                    <label style="display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 5px;">Danh mục (*)</label>
+                    <select id="edit-danh-muc" name="danh_muc_id" required style="width: 100%; padding: 10px 14px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-size: 13px; font-weight: 600;">
+                        {% for dm in danh_mucs %}
+                            <option value="{{ dm.id }}">{{ dm.ten_danh_muc }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label style="display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 5px;">Quán / Bếp chế biến</label>
+                    <select id="edit-kho-hang" name="kho_hang_id" style="width: 100%; padding: 10px 14px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-size: 13px; font-weight: 600;">
+                        <option value="">-- Mặc định (Bếp chính) --</option>
+                        {% for k in kho_hangs %}
+                            <option value="{{ k.id }}">{{ k.ten_kho }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+                <div>
+                    <label style="display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 5px;">Giá bán gốc (VNĐ) (*)</label>
+                    <input type="number" id="edit-gia" name="gia" required style="width: 100%; padding: 10px 14px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-size: 13.5px; font-weight: 700;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 5px;">Giá khuyến mãi (Nếu có)</label>
+                    <input type="number" id="edit-gia-km" name="gia_khuyen_mai" style="width: 100%; padding: 10px 14px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-size: 13.5px;">
+                </div>
+            </div>
+
+            <div style="margin-bottom: 14px;">
+                <label style="display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 5px;">Đường dẫn ảnh (URL Image)</label>
+                <input type="url" id="edit-hinh-anh" name="hinh_anh" style="width: 100%; padding: 10px 14px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-size: 13px;">
+            </div>
+
+            <div style="margin-bottom: 14px;">
+                <label style="display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 5px;">Mô tả món ăn</label>
+                <textarea id="edit-mo-ta" name="mo_ta" rows="2" style="width: 100%; padding: 10px 14px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-size: 13px; resize: vertical;"></textarea>
+            </div>
+
+            <div style="display: flex; gap: 20px; margin-bottom: 18px; padding: 10px 14px; background: #f8fafc; border-radius: 10px; border: 1px dashed #e2e8f0;">
+                <label style="display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 700; color: #334155; cursor: pointer;">
+                    <input type="checkbox" id="edit-is-con-mon" name="is_con_mon"> Đang phục vụ (Còn món)
+                </label>
+                <label style="display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 700; color: #ea580c; cursor: pointer;">
+                    <input type="checkbox" id="edit-is-noi-bat" name="is_noi_bat"> 🔥 Món Hot / Bán chạy
+                </label>
+                <label style="display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 700; color: #2563eb; cursor: pointer;">
+                    <input type="checkbox" id="edit-is-hoa-toc" name="is_hoa_toc"> ⚡ Giao Hỏa tốc
+                </label>
+            </div>
+
+            <div style="display: flex; gap: 10px; justify-content: flex-end; border-top: 1px solid #f1f5f9; padding-top: 16px;">
+                <button type="button" onclick="closeEditFoodModal()" style="padding: 9px 18px; border-radius: 10px; border: 1px solid #e2e8f0; background: #f8fafc; color: #64748b; font-weight: 700; font-size: 13px; cursor: pointer;">
+                    Hủy
+                </button>
+                <button type="submit" style="padding: 9px 22px; border-radius: 10px; border: none; background: #2563eb; color: white; font-weight: 700; font-size: 13px; cursor: pointer;">
+                    <i class="fa-solid fa-floppy-disk"></i> Lưu Thay Đổi
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.switch-slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .3s;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+input:checked + .switch-slider {
+    background-color: #10b981 !important;
+}
+input:checked + .switch-slider:before {
+    transform: translateX(20px);
+}
+</style>
+
+<script>
+    function toggleFoodStatus(monId) {
+        const checkbox = document.getElementById('toggle-food-' + monId);
+        const textElem = document.getElementById('status-text-' + monId);
+
+        fetch('/api/admin/mon-an/' + monId + '/toggle-status/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                checkbox.checked = data.is_con_mon;
+                textElem.innerText = data.is_con_mon ? 'Còn món' : 'Hết món';
+                textElem.style.color = data.is_con_mon ? '#10b981' : '#94a3b8';
+            } else {
+                alert('Lỗi: ' + data.message);
+                checkbox.checked = !checkbox.checked;
+            }
+        })
+        .catch(() => {
+            alert('Lỗi kết nối máy chủ!');
+            checkbox.checked = !checkbox.checked;
+        });
+    }
+
+    function openAddFoodModal() {
+        document.getElementById('addFoodModal').style.display = 'flex';
+    }
+    function closeAddFoodModal() {
+        document.getElementById('addFoodModal').style.display = 'none';
+    }
+
+    function openEditFoodModal(id, tenMon, danhMucId, khoHangId, gia, giaKm, hinhAnh, moTa, isNoiBat, isHoaToc, isConMon) {
+        const form = document.getElementById('editFoodForm');
+        form.action = '/admin-dashboard/mon-an/sua/' + id + '/';
+
+        document.getElementById('edit-ten-mon').value = tenMon;
+        document.getElementById('edit-danh-muc').value = danhMucId;
+        document.getElementById('edit-kho-hang').value = khoHangId || '';
+        document.getElementById('edit-gia').value = parseInt(gia);
+        document.getElementById('edit-gia-km').value = giaKm ? parseInt(giaKm) : '';
+        document.getElementById('edit-hinh-anh').value = hinhAnh;
+        document.getElementById('edit-mo-ta').value = moTa;
+        document.getElementById('edit-is-noi-bat').checked = isNoiBat;
+        document.getElementById('edit-is-hoa-toc').checked = isHoaToc;
+        document.getElementById('edit-is-con-mon').checked = isConMon;
+
+        document.getElementById('editFoodModal').style.display = 'flex';
+    }
+    function closeEditFoodModal() {
+        document.getElementById('editFoodModal').style.display = 'none';
+    }
+</script>
+{% endblock %}

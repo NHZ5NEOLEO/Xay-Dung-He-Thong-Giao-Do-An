@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+<style>
+    /* BÊ NGUYÊN CSS TỪ FORM CHUNG QUA ĐÂY */
+    body { font-family: 'Poppins', sans-serif; background-color: #f4f6f9; }
+    .form-wrapper { max-width: 900px; margin: 40px auto; }
+    .card-box { background: white; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.06); overflow: hidden; }
+    .form-header { background: linear-gradient(135deg, #5e72e4 0%, #825ee4 100%); padding: 30px 40px; color: white; }
+    .form-header h2 { margin: 0; font-size: 24px; font-weight: 700; display: flex; align-items: center; gap: 12px; }
+    .form-header p { margin: 8px 0 0 0; font-size: 14px; opacity: 0.9; }
+    .form-body { padding: 40px; }
+    .form-label { display: block; font-weight: 600; color: #475569; margin-bottom: 8px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    /* STYLE CHO Ô NHẬP LIỆU */
+    .custom-field input {
+        width: 100%; padding: 14px 18px; border: 2px solid #e2e8f0;
+        border-radius: 12px; font-size: 14px; color: #1e293b;
+        background: #f8fafc; outline: none; transition: all 0.3s ease;
+        font-family: 'Poppins', sans-serif; box-sizing: border-box;
+    }
+    .custom-field input:focus { border-color: #5e72e4; background: #ffffff; box-shadow: 0 0 0 4px rgba(94, 114, 228, 0.15); }
+
+    /* Ô tọa độ màu vàng nhạt y chang form chung */
+    .coord-field input { background: #fffbeb !important; border-color: #fde68a !important; color: #92400e !important; font-weight: 600; }
+
+    /* MAP và SEARCH BOX */
+    .map-container { background: #fff; padding: 25px; border-radius: 15px; border: 2px dashed #cbd5e1; margin-bottom: 35px; }
+    .search-box { display: flex; gap: 10px; margin-bottom: 20px; }
+    .search-wrapper { position: relative; flex: 1; }
+    .search-wrapper input { width: 100%; padding: 14px 18px; border: 2px solid #e2e8f0; border-radius: 12px; outline: none; background: #f8fafc; }
+    .search-box button { background: linear-gradient(135deg, #fb6340 0%, #f5365c 100%); color: white; border: none; padding: 0 25px; border-radius: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+    #map-picker { height: 350px; width: 100%; border-radius: 12px; border: 1px solid #e2e8f0; }
+
+    /* GỢI Ý ĐỊA CHỈ */
+    .suggestion-box { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #e2e8f0; border-radius: 12px; margin-top: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); z-index: 9999; max-height: 250px; overflow-y: auto; display: none; padding: 0; list-style: none; }
+    .suggestion-box li { padding: 12px 18px; border-bottom: 1px solid #f1f5f9; cursor: pointer; font-size: 13px; color: #475569; display: flex; align-items: flex-start; gap: 10px; }
+    .suggestion-box li:hover { background: #fff5f5; color: #f5365c; }
+
+    /* ACTIONS */
+    .form-actions { display: flex; justify-content: flex-end; align-items: center; gap: 15px; margin-top: 40px; padding-top: 25px; border-top: 1px solid #e2e8f0; }
+    .btn-back { padding: 14px 28px; border-radius: 12px; font-weight: 600; color: #64748b; background: #f1f5f9; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
+    .btn-submit { padding: 14px 28px; border-radius: 12px; font-weight: 600; color: white; background: linear-gradient(135deg, #5e72e4 0%, #825ee4 100%); border: none; cursor: pointer; box-shadow: 0 4px 15px rgba(94, 114, 228, 0.3); display: inline-flex; align-items: center; gap: 8px; }
+</style>
+
+<div class="form-wrapper">
+    <div class="card-box">
+        <div class="form-header">
+            <h2><i class="fa-solid fa-box-open"></i> Thêm Đơn Hàng Mới</h2>
+            <p>Khởi tạo đơn hàng vào hệ thống Logistics Pro.</p>
+        </div>
+
+        <div class="form-body">
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="map-container">
+                    <label class="form-label" style="color: #fb6340; display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-map-location-dot"></i> Bản Đồ Hỗ Trợ Tìm Tọa Độ
+                    </label>
+                    
+                    <div class="search-box">
+                        <div class="search-wrapper">
+                            <input type="text" id="address-search" placeholder="Nhập địa chỉ cần tìm (VD: Quận 1, TP.HCM)..." autocomplete="off">
+                            <ul id="suggestion-list" class="suggestion-box"></ul>
+                        </div>
+                        <button type="button" id="btn-search"><i class="fa-solid fa-magnifying-glass"></i> Đến ngay</button>
+                    </div>
+
+                    <div id="map-picker"></div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 25px;">
+                    
+                    <div class="custom-field">
+                        <label class="form-label">Tên người nhận</label>
+                        <input type="text" name="ten_nguoi_nhan" placeholder="Họ và tên khách hàng..." required>
+                    </div>
+
+                    <div class="custom-field">
+                        <label class="form-label">Số điện thoại</label>
+                        <input type="text" name="sdt_nguoi_nhan" placeholder="Số điện thoại liên hệ..." required>
+                    </div>
+
+                    <div class="custom-field" style="grid-column: 1 / -1;">
+                        <label class="form-label">Địa chỉ giao hàng</label>
+                        <input type="text" id="id_dia_chi" name="dia_chi_nguoi_nhan" placeholder="Số nhà, tên đường, phường/xã..." required>
+                    </div>
+
+                    <div class="custom-field coord-field">
+                        <label class="form-label">Vĩ độ (LAT)</label>
+                        <input type="text" id="id_lat" name="lat_khach" placeholder="0.000000">
+                    </div>
+
+                    <div class="custom-field coord-field">
+                        <label class="form-label">Kinh độ (LNG)</label>
+                        <input type="text" id="id_lng" name="lng_khach" placeholder="0.000000">
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <a href="{% url 'core:quan_ly_don_hang' %}" class="btn-back"><i class="fa-solid fa-arrow-left"></i> Quay lại</a>
+                    <button type="submit" class="btn-submit"><i class="fa-solid fa-floppy-disk"></i> Lưu Đơn Hàng</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+    /* BÊ NGUYÊN JAVASCRIPT THÔNG MINH CỦA ÔNG QUA ĐÂY */
+    document.addEventListener("DOMContentLoaded", function() {
+        const latInput = document.getElementById('id_lat');
+        const lngInput = document.getElementById('id_lng');
+        const addressInput = document.getElementById('id_dia_chi');
+        const searchInput = document.getElementById('address-search');
+        const suggestionList = document.getElementById('suggestion-list');
+
+        let startLat = 10.7769; let startLng = 106.7009;
+
+        var map = L.map('map-picker').setView([startLat, startLng], 14);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        var marker = L.marker([startLat, startLng], {draggable: true}).addTo(map);
+
+        function updateInputs(lat, lng) {
+            latInput.value = lat.toFixed(6);
+            lngInput.value = lng.toFixed(6);
+        }
+
+        marker.on('dragend', function () { updateInputs(marker.getLatLng().lat, marker.getLatLng().lng); });
+        map.on('click', function(e) { marker.setLatLng(e.latlng); updateInputs(e.latlng.lat, e.latlng.lng); });
+
+        // AUTOCOMPLETE LOGIC CỦA ÔNG
+        searchInput.addEventListener('input', function() {
+            const query = this.value;
+            if (query.length < 3) { suggestionList.style.display = 'none'; return; }
+
+            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ', Việt Nam')}&limit=5`)
+                .then(res => res.json())
+                .then(data => {
+                    suggestionList.innerHTML = '';
+                    data.forEach(item => {
+                        const li = document.createElement('li');
+                        li.innerHTML = `<i class="fa-solid fa-location-dot"></i> <span>${item.display_name}</span>`;
+                        li.onclick = function() {
+                            const lat = parseFloat(item.lat); const lng = parseFloat(item.lon);
+                            map.setView([lat, lng], 17); marker.setLatLng([lat, lng]);
+                            updateInputs(lat, lng);
+                            addressInput.value = item.display_name.replace(', Việt Nam', '');
+                            suggestionList.style.display = 'none';
+                        };
+                        suggestionList.appendChild(li);
+                    });
+                    suggestionList.style.display = 'block';
+                });
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+
+<style>
+    .opt-layout { display: flex; gap: 20px; padding: 20px 0; height: calc(100vh - 100px); }
+    
+    /* Cột Panel bên trái */
+    .opt-sidebar { 
+        width: 380px; background: white; border-radius: 16px; 
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08); padding: 25px; 
+        display: flex; flex-direction: column; 
+    }
+    .filter-box { background: #f8fafc; padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #e2e8f0; }
+    .route-list { flex: 1; overflow-y: auto; padding-right: 5px; }
+    
+    /* Các Thẻ Lộ Trình */
+    .route-item { 
+        background: #f8fafc; padding: 15px; border-radius: 12px; margin-bottom: 12px; 
+        border-left: 4px solid #cbd5e1; transition: 0.3s; 
+    }
+    .route-item.optimized { border-left-color: #5e72e4; background: #f0f7ff; }
+    .route-item h4 { margin: 0 0 5px 0; font-size: 15px; color: #1e293b; }
+    .route-item p { margin: 0; font-size: 13px; color: #64748b; }
+    
+    .step-number { 
+        display: inline-block; width: 24px; height: 24px; background: #5e72e4; 
+        color: white; border-radius: 50%; text-align: center; line-height: 24px; 
+        font-size: 12px; font-weight: bold; margin-right: 8px; 
+    }
+
+    /* Bản đồ bên phải */
+    .opt-map-container { flex: 1; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.08); border: 2px solid #e2e8f0; }
+    #opt-map { width: 100%; height: 100%; }
+
+    /* Ẩn bảng hướng dẫn chữ cồng kềnh của Routing Machine */
+    .leaflet-routing-container { display: none !important; }
+</style>
+
+<div class="opt-layout">
+    <div class="opt-sidebar">
+        <h2 style="color: #32325d; font-size: 20px; margin-bottom: 15px;">
+            <i class="fa-solid fa-route" style="color: #fb6340;"></i> Tối ưu Lộ trình
+        </h2>
+        
+        <div class="filter-box">
+            <form method="GET" action="{% url 'core:toi_uu' %}">
+                <label for="tai_xe_select" style="font-size: 12px; font-weight: bold; color: #8898aa; display: block; margin-bottom: 8px;">CHỌN TÀI XẾ ĐỂ TỐI ƯU:</label>
+                <select id="tai_xe_select" name="tai_xe_id" class="form-control" onchange="this.form.submit()" title="Chọn tài xế để tối ưu" aria-label="Chọn tài xế để tối ưu">
+                    <option value="">-- Chọn Tài xế --</option>
+                    {% for tx in ds_tai_xe %}
+                        <option value="{{ tx.id }}" {% if tx_dang_chon and tx_dang_chon.id == tx.id %}selected{% endif %}>
+                            🚗 {{ tx.ten_tai_xe }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+
+        {% if tx_dang_chon %}
+            {% if ds_don %}
+                <button id="btn-run-opt" class="btn-submit" style="width: 100%; margin-bottom: 20px; background: linear-gradient(135deg, #5e72e4 0%, #825ee4 100%) !important;">
+                    <i class="fa-solid fa-bolt"></i> TÌM ĐƯỜNG ĐI THỰC TẾ (OSM)
+                </button>
+                <div class="route-list" id="route-panel">
+                    {% for d in ds_don %}
+                    <div class="route-item">
+                        <h4><i class="fa-solid fa-box"></i> {{ d.ma_don }} - {{ d.ten_nguoi_nhan }}</h4>
+                        <p><i class="fa-solid fa-location-dot"></i> {{ d.dia_chi_nguoi_nhan }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div style="text-align: center; color: #8898aa; margin-top: 40px;">
+                    <i class="fa-solid fa-mug-hot" style="font-size: 40px; margin-bottom: 15px; color: #cbd5e1;"></i>
+                    <p>Tài xế hiện không có đơn hàng cần giao.</p>
+                </div>
+            {% endif %}
+        {% else %}
+            <div style="text-align: center; color: #8898aa; margin-top: 40px;">
+                <i class="fa-solid fa-hand-pointer" style="font-size: 40px; margin-bottom: 15px; color: #cbd5e1;"></i>
+                <p>Vui lòng chọn một tài xế để bắt đầu.</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="opt-map-container">
+        <div id="opt-map"></div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const ordersData = JSON.parse('{{ don_hang_json|escapejs }}');
+        
+        // 1. Khởi tạo bản đồ OPENSTREETMAP (Đã sửa link để tránh bị chặn)
+        var map = L.map('opt-map').setView([10.7769, 106.7009], 13);
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        var routingControl = null;
+
+        // 2. Hiển thị marker vị trí các đơn hàng
+        if(ordersData.length > 0) {
+            var bounds = [];
+            ordersData.forEach(function(order) {
+                L.marker([order.lat, order.lng]).addTo(map)
+                    .bindPopup(`<b>${order.ma_don}</b><br>${order.ten}`);
+                bounds.push([order.lat, order.lng]);
+            });
+            map.fitBounds(bounds);
+        }
+
+        // 3. Xử lý thuật toán Tối ưu và Chỉ đường
+        const btnRun = document.getElementById('btn-run-opt');
+        if(btnRun) {
+            btnRun.addEventListener('click', function() {
+                if(ordersData.length === 0) return;
+
+                btnRun.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ĐANG TÍNH LỘ TRÌNH OSM...';
+
+                // Thuật toán TSP (Tìm điểm gần nhất)
+                let unvisited = [...ordersData];
+                let optimizedRoute = [];
+                let current = unvisited.shift();
+                optimizedRoute.push(current);
+
+                while (unvisited.length > 0) {
+                    let nearestIndex = 0;
+                    let minDistance = Infinity;
+                    for (let i = 0; i < unvisited.length; i++) {
+                        let dist = map.distance([current.lat, current.lng], [unvisited[i].lat, unvisited[i].lng]);
+                        if (dist < minDistance) {
+                            minDistance = dist;
+                            nearestIndex = i;
+                        }
+                    }
+                    current = unvisited[nearestIndex];
+                    optimizedRoute.push(current);
+                    unvisited.splice(nearestIndex, 1);
+                }
+
+                // Vẽ ĐƯỜNG ĐI THỰC TẾ theo đường phố
+                if (routingControl) map.removeControl(routingControl);
+
+                let waypoints = optimizedRoute.map(o => L.latLng(o.lat, o.lng));
+
+                routingControl = L.Routing.control({
+                    waypoints: waypoints,
+                    routeWhileDragging: false,
+                    addWaypoints: false,
+                    draggableWaypoints: false,
+                    lineOptions: {
+                        styles: [{ color: '#5e72e4', weight: 6, opacity: 0.8 }]
+                    },
+                    createMarker: function() { return null; } 
+                }).addTo(map);
+
+                // Cập nhật danh sách thứ tự bên trái
+                let panelHtml = '';
+                optimizedRoute.forEach((o, index) => {
+                    panelHtml += `
+                        <div class="route-item optimized">
+                            <h4><span class="step-number">${index + 1}</span> ${o.ma_don} - ${o.ten}</h4>
+                            <p><i class="fa-solid fa-location-dot"></i> ${o.dia_chi}</p>
+                        </div>
+                    `;
+                });
+                document.getElementById('route-panel').innerHTML = panelHtml;
+
+                btnRun.innerHTML = '<i class="fa-solid fa-check"></i> ĐÃ TỐI ƯU ĐƯỜNG PHỐ';
+            });
+        }
+    });
+</script>
+{% endblock %}

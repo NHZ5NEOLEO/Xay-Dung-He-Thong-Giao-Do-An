@@ -1,0 +1,696 @@
+{% extends "base.html" %}
+{% load static currency_filters %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+
+<style>
+    .dashboard-container { 
+        max-width: 1240px; 
+        margin: 20px auto 70px; 
+        padding: 0 15px; 
+    }
+
+    /* --- HERO SWIPER BANNER CHUYỂN ĐỘNG CHUYÊN NGHIỆP --- */
+    .bannerSwiper {
+        width: 100%; 
+        height: 390px; 
+        border-radius: 28px; 
+        margin-bottom: 35px; 
+        box-shadow: 0 20px 45px rgba(0,0,0,0.12);
+        overflow: hidden;
+        background-color: #0f172a;
+        position: relative;
+    }
+
+    .bannerSwiper .swiper-slide {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+    }
+    
+    .banner-slide-content {
+        position: absolute; 
+        top: 0; 
+        left: 0; 
+        width: 100%; 
+        height: 100%; 
+        box-sizing: border-box;
+        background: linear-gradient(to right, rgba(15, 23, 42, 0.95) 0%, rgba(15, 23, 42, 0.6) 60%, rgba(15, 23, 42, 0.1) 100%); 
+        display: flex; 
+        flex-direction: column; 
+        justify-content: center; 
+        align-items: flex-start;
+        padding: 30px 75px;
+        z-index: 2;
+    }
+
+    .bannerSwiper .swiper-button-next, .bannerSwiper .swiper-button-prev {
+        color: white;
+        background: rgba(255, 255, 255, 0.18);
+        width: 44px; height: 44px;
+        border-radius: 50%;
+        -webkit-backdrop-filter: blur(8px);
+        backdrop-filter: blur(8px);
+        transition: 0.3s;
+        z-index: 10;
+    }
+    .bannerSwiper .swiper-button-prev { left: 20px; }
+    .bannerSwiper .swiper-button-next { right: 20px; }
+    .bannerSwiper .swiper-button-next:hover, .bannerSwiper .swiper-button-prev:hover {
+        background: #ff5722; color: white; transform: scale(1.08);
+    }
+    .bannerSwiper .swiper-button-next:after, .bannerSwiper .swiper-button-prev:after {
+        font-size: 16px; font-weight: bold;
+    }
+    
+    .bannerSwiper .swiper-pagination {
+        bottom: 16px !important;
+        z-index: 10;
+    }
+    .bannerSwiper .swiper-pagination-bullet { 
+        background: rgba(255,255,255,0.45); 
+        width: 10px; 
+        height: 10px; 
+        transition: all 0.3s ease;
+    }
+    .bannerSwiper .swiper-pagination-bullet-active { 
+        background: #ff5722; 
+        width: 32px; 
+        border-radius: 8px; 
+    }
+
+    @media (max-width: 768px) {
+        .bannerSwiper { height: 350px; border-radius: 20px; }
+        .banner-slide-content { padding: 25px 35px; }
+        .banner-slide-content h1 { font-size: 24px !important; line-height: 1.3 !important; }
+        .banner-slide-content p { font-size: 13px !important; margin-bottom: 15px !important; }
+        .bannerSwiper .swiper-button-next, .bannerSwiper .swiper-button-prev { display: none; }
+    }
+
+    /* Category pills */
+    .category-scroll {
+        display: flex;
+        gap: 12px;
+        overflow-x: auto;
+        padding-bottom: 10px;
+        margin-bottom: 35px;
+    }
+    .category-scroll::-webkit-scrollbar { height: 4px; }
+    .category-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+    .cat-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 22px;
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 50px;
+        color: #334155;
+        font-weight: 700;
+        font-size: 14px;
+        text-decoration: none;
+        white-space: nowrap;
+        transition: all 0.25s ease;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+    .cat-btn:hover {
+        background: #ff5722;
+        color: white;
+        border-color: #ff5722;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(255, 87, 34, 0.25);
+    }
+
+    /* Food card item */
+    .featured-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 22px;
+        margin-bottom: 45px;
+    }
+
+    .home-food-card {
+        background: white;
+        border-radius: 20px;
+        overflow: hidden;
+        border: 1px solid #f1f5f9;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+        transition: all 0.3s ease;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .home-food-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 16px 30px rgba(0,0,0,0.08);
+        border-color: rgba(255, 87, 34, 0.25);
+    }
+
+    .food-thumb {
+        width: 100%;
+        height: 175px;
+        object-fit: cover;
+    }
+
+    /* KPI SWIPER TMĐT */
+    .kpiSwiper {
+        width: 100%;
+        padding: 10px 5px 45px 5px !important;
+    }
+    
+    .kpi-card {
+        background: #fff; 
+        border-radius: 22px; 
+        padding: 24px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+        display: flex; 
+        align-items: center; 
+        gap: 18px;
+        border: 1px solid rgba(0,0,0,0.04);
+        transition: all 0.35s ease;
+        height: 100%; 
+    }
+
+    .kpi-card:hover { 
+        transform: translateY(-6px); 
+        box-shadow: 0 18px 35px rgba(0,0,0,0.08); 
+    }
+
+    .kpi-icon {
+        width: 60px; 
+        height: 60px; 
+        border-radius: 16px;
+        display: flex; 
+        align-items: center; 
+        justify-content: center;
+        font-size: 24px; 
+        color: white; 
+        flex-shrink: 0;
+    }
+
+    .bg-gmv { background: linear-gradient(135deg, #ff5722, #ea580c); box-shadow: 0 8px 20px rgba(255, 87, 34, 0.3); }
+    .bg-san { background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3); }
+    .bg-ads { background: linear-gradient(135deg, #8b5cf6, #6d28d9); box-shadow: 0 8px 20px rgba(139, 92, 246, 0.3); }
+    .bg-shipper { background: linear-gradient(135deg, #0284c7, #0369a1); box-shadow: 0 8px 20px rgba(2, 132, 199, 0.3); }
+
+    .kpi-info h4 { 
+        margin: 0; 
+        font-size: 12px; 
+        color: #64748b; 
+        font-weight: 700; 
+        text-transform: uppercase; 
+        letter-spacing: 0.5px; 
+    }
+    
+    .kpi-info h2 { 
+        margin: 4px 0 0 0; 
+        font-size: 22px; 
+        color: #1e293b; 
+        font-weight: 900; 
+    }
+
+    /* Table */
+    .custom-table { width: 100%; border-collapse: separate; border-spacing: 0 10px; }
+    .custom-table thead th { color: #8898aa; font-weight: 700; text-transform: uppercase; font-size: 12px; padding: 14px; text-align: left; }
+    .custom-table tbody tr { background-color: #f8fafc; transition: all 0.25s ease; }
+    .custom-table tbody tr:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.05); background-color: #fff; }
+    .custom-table td { padding: 14px; font-size: 13.5px; color: #475569; vertical-align: middle; }
+    .custom-table td:first-child { border-radius: 12px 0 0 12px; }
+    .custom-table td:last-child { border-radius: 0 12px 12px 0; }
+</style>
+
+<div class="dashboard-container">
+    <!-- 1. HERO SWIPER BANNER CHUYỂN ĐỘNG GIỚI THIỆU CHUYÊN NGHIỆP -->
+    <div class="swiper bannerSwiper">
+        <div class="swiper-wrapper">
+            <!-- Slide 1 -->
+            <div class="swiper-slide">
+                <img src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1600&auto=format&fit=crop&q=80" alt="Giao món hỏa tốc 15 phút" title="Giao món hỏa tốc 15 phút" style="width: 100%; height: 100%; object-fit: cover;">
+                <div class="banner-slide-content">
+                    <span style="display: inline-flex; align-items: center; gap: 6px; background: rgba(255, 87, 34, 0.25); color: #ff7043; border: 1px solid rgba(255, 87, 34, 0.5); padding: 5px 14px; border-radius: 8px; font-size: 11.5px; font-weight: 800; letter-spacing: 0.8px; width: fit-content; margin-bottom: 12px;">
+                        ⚡ GIAO MÓN HỎA TỐC 15 - 25 PHÚT
+                    </span>
+                    <h1 style="color: white; font-size: 34px; font-weight: 900; margin: 0 0 10px 0; max-width: 740px; line-height: 1.25;">
+                        Thưởng thức món ngon <span style="color: #ff7043;">nóng hổi giao tận bàn</span>
+                    </h1>
+                    <p style="color: #cbd5e1; font-size: 14px; margin: 0 0 20px; max-width: 540px; line-height: 1.55;">
+                        Hệ thống định vị GPS tự động điều phối Shipper gần nhất và tính cước phí minh bạch theo khoảng cách thực tế trên bản đồ Leaflet!
+                    </p>
+                    <div>
+                        <a href="{% url 'core:thuc_don' %}" style="display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #ff5722, #ff7043); color: white; padding: 11px 24px; border-radius: 30px; font-weight: 800; text-decoration: none; font-size: 13.5px; box-shadow: 0 6px 20px rgba(255, 87, 34, 0.4);">
+                            <i class="fa-solid fa-utensils"></i> Khám phá thực đơn
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 2 -->
+            <div class="swiper-slide">
+                <img src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=1600&auto=format&fit=crop&q=80" alt="Mạng lưới 5 bếp trung tâm" title="Mạng lưới 5 bếp trung tâm" style="width: 100%; height: 100%; object-fit: cover;">
+                <div class="banner-slide-content">
+                    <span style="display: inline-flex; align-items: center; gap: 6px; background: rgba(16, 185, 129, 0.25); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.5); padding: 5px 14px; border-radius: 8px; font-size: 11.5px; font-weight: 800; letter-spacing: 0.8px; width: fit-content; margin-bottom: 12px;">
+                        🏪 5 BẾP TRUNG TÂM & QUÁN ĂN LIÊN KẾT
+                    </span>
+                    <h1 style="color: white; font-size: 34px; font-weight: 900; margin: 0 0 10px 0; max-width: 740px; line-height: 1.25;">
+                        Mạng lưới ẩm thực <span style="color: #34d399;">vận hành bằng GIS</span>
+                    </h1>
+                    <p style="color: #cbd5e1; font-size: 14px; margin: 0 0 20px; max-width: 540px; line-height: 1.55;">
+                        Từ Cơm tấm, Bún bò, Phở Hà Nội đến Pizza Ý 4P's và Trà sữa Gong Cha. Kiểm soát sức chứa đơn hàng tự động để không bao giờ trễ hẹn!
+                    </p>
+                    <div>
+                        <a href="{% url 'core:ban_do_chung' %}" style="display: inline-flex; align-items: center; gap: 8px; background: #10b981; color: white; padding: 11px 24px; border-radius: 30px; font-weight: 800; text-decoration: none; font-size: 13.5px; box-shadow: 0 6px 20px rgba(16, 185, 129, 0.35);">
+                            <i class="fa-solid fa-earth-americas"></i> Xem bản đồ điều phối
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 3 -->
+            <div class="swiper-slide">
+                <img src="https://images.unsplash.com/photo-1556740738-b6a63e27c4df?w=1600&auto=format&fit=crop&q=80" alt="Thanh toán VietQR và doanh thu TMĐT" title="Thanh toán VietQR và doanh thu TMĐT" style="width: 100%; height: 100%; object-fit: cover;">
+                <div class="banner-slide-content">
+                    <span style="display: inline-flex; align-items: center; gap: 6px; background: rgba(139, 92, 246, 0.25); color: #c084fc; border: 1px solid rgba(139, 92, 246, 0.5); padding: 5px 14px; border-radius: 8px; font-size: 11.5px; font-weight: 800; letter-spacing: 0.8px; width: fit-content; margin-bottom: 12px;">
+                        💳 THANH TOÁN VIETQR & ADS DOANH THU TMĐT
+                    </span>
+                    <h1 style="color: white; font-size: 34px; font-weight: 900; margin: 0 0 10px 0; max-width: 740px; line-height: 1.25;">
+                        Thanh toán QR siêu tốc và <span style="color: #c084fc;">bùng nổ doanh thu</span>
+                    </h1>
+                    <p style="color: #cbd5e1; font-size: 14px; margin: 0 0 20px; max-width: 540px; line-height: 1.55;">
+                        Tạo mã QR VietQR động theo đơn hàng, thông báo Mailbox tự động. Doanh thu minh bạch từ bán món, chiết khấu và tài trợ quảng cáo!
+                    </p>
+                    <div>
+                        <a href="{% url 'core:partner_demo' %}" style="display: inline-flex; align-items: center; gap: 8px; background: #8b5cf6; color: white; padding: 11px 24px; border-radius: 30px; font-weight: 800; text-decoration: none; font-size: 13.5px; box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);">
+                            <i class="fa-solid fa-handshake"></i> Cổng API Đối tác B2B
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="swiper-button-next banner-next"></div>
+        <div class="swiper-button-prev banner-prev"></div>
+        <div class="swiper-pagination banner-pagination"></div>
+    </div>
+
+    <!-- 2. DANH MỤC NHANH (QUICK CATEGORIES) -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h3 style="margin: 0; font-size: 20px; font-weight: 800; color: #1e293b; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-list-ul" style="color: #ff5722;"></i> Khám phá theo danh mục
+        </h3>
+        <a href="{% url 'core:thuc_don' %}" style="color: #ff5722; font-weight: 700; font-size: 13.5px; text-decoration: none;">
+            Xem tất cả món &rarr;
+        </a>
+    </div>
+
+    <div class="category-scroll">
+        {% for dm in danh_muc_list %}
+        <a href="{% url 'core:thuc_don' %}?danh_muc={{ dm.slug }}" class="cat-btn">
+            <i class="fa-solid {{ dm.icon }}" style="color: #ff5722; font-size: 16px;"></i>
+            <span>{{ dm.ten_danh_muc }}</span>
+        </a>
+        {% endfor %}
+    </div>
+
+    <!-- 3. MÓN ĂN NỔI BẬT ĐẶT NHANH (FEATURED DISHES) -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div>
+            <h3 style="margin: 0; font-size: 20px; font-weight: 800; color: #1e293b; display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-fire" style="color: #ef4444;"></i> Món Ăn Bán Chạy và Giao Hỏa Tốc
+            </h3>
+            <span style="font-size: 13px; color: #64748b;">Được khách hàng yêu thích và đặt nhiều nhất trong tuần</span>
+        </div>
+        <a href="{% url 'core:thuc_don' %}?sort=ban_chay" style="color: #ff5722; font-weight: 700; font-size: 13.5px; text-decoration: none;">
+            Thực đơn đầy đủ &rarr;
+        </a>
+    </div>
+
+    <div class="featured-grid">
+        {% for mon in mon_an_noi_bat %}
+        <div class="home-food-card">
+            <div style="position: relative;">
+                <img src="{{ mon.hinh_anh }}" alt="{{ mon.ten_mon }}" class="food-thumb" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&auto=format&fit=crop&q=60';">
+                <span style="position: absolute; top: 10px; left: 10px; background: rgba(255, 87, 34, 0.95); color: white; padding: 3px 8px; border-radius: 12px; font-size: 10.5px; font-weight: 800;">
+                    ⚡ HỎA TỐC 15P
+                </span>
+                {% if mon.phan_tram_giam_gia > 0 %}
+                <span style="position: absolute; top: 10px; right: 10px; background: #ef4444; color: white; padding: 3px 8px; border-radius: 12px; font-size: 10.5px; font-weight: 800;">
+                    -{{ mon.phan_tram_giam_gia }}%
+                </span>
+                {% endif %}
+            </div>
+
+            <div style="padding: 16px; display: flex; flex-direction: column; flex: 1;">
+                <span style="font-size: 11.5px; color: #94a3b8; font-weight: 600;">
+                    <i class="fa-solid fa-store" style="color: #ff5722;"></i> {{ mon.kho_hang.ten_kho|default:"Bếp trung tâm" }}
+                </span>
+                <h4 style="margin: 6px 0 8px; font-size: 15px; font-weight: 800; color: #1e293b; line-height: 1.4;">
+                    {{ mon.ten_mon }}
+                </h4>
+                
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: auto; padding-top: 10px; border-top: 1px dashed #f1f5f9;">
+                    <div>
+                        <strong style="color: #ff5722; font-size: 16px; font-weight: 900;">{{ mon.gia_hien_tai|dinh_dang_tien }}đ</strong>
+                        {% if mon.gia_khuyen_mai and mon.gia_khuyen_mai < mon.gia %}
+                        <small style="color: #94a3b8; text-decoration: line-through; display: block; font-size: 11px;">{{ mon.gia|dinh_dang_tien }}đ</small>
+                        {% endif %}
+                    </div>
+
+                    <button type="button" 
+                            title="Thêm {{ mon.ten_mon }} vào giỏ hàng"
+                            aria-label="Thêm {{ mon.ten_mon }} vào giỏ hàng"
+                            data-id="{{ mon.id }}"
+                            data-name="{{ mon.ten_mon }}"
+                            data-price="{{ mon.gia_hien_tai }}"
+                            data-img="{{ mon.hinh_anh }}"
+                            data-kho="{{ mon.kho_hang.id|default:1 }}"
+                            onclick="addToCart(this.dataset.id, this.dataset.name, this.dataset.price, this.dataset.img, this.dataset.kho)"
+                            style="background: linear-gradient(135deg, #ff5722, #ff7043); color: white; border: none; width: 34px; height: 34px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; box-shadow: 0 4px 10px rgba(255, 87, 34, 0.3);">
+                        <i class="fa-solid fa-plus"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- 4. BANNER QUẢNG CÁO và ADS TMĐT -->
+    {% if ads_banners %}
+    <div style="background: linear-gradient(135deg, #fff7ed, #ffedd5); border: 2px dashed #ffedd5; border-radius: 20px; padding: 25px 30px; margin-bottom: 45px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <div style="width: 55px; height: 55px; border-radius: 50%; background: #ff5722; color: white; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0;">
+                <i class="fa-solid fa-gift"></i>
+            </div>
+            <div>
+                <span style="background: #ff5722; color: white; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 800; text-transform: uppercase;">Ưu đãi TMĐT</span>
+                <h4 style="margin: 4px 0 2px; font-size: 18px; font-weight: 900; color: #9a3412;">
+                    {{ ads_banners.first.tieu_de }}
+                </h4>
+                <p style="margin: 0; font-size: 13.5px; color: #c2410c;">
+                    {{ ads_banners.first.mo_ta }} - Nhập mã: <b style="background: white; padding: 2px 8px; border-radius: 6px; border: 1px dashed #ff5722; color: #ff5722;">{{ ads_banners.first.ma_voucher }}</b>
+                </p>
+            </div>
+        </div>
+        <div>
+            <a href="{% url 'core:checkout' %}" style="background: #ff5722; color: white; padding: 12px 24px; border-radius: 30px; text-decoration: none; font-weight: 800; font-size: 14px; display: inline-flex; align-items: center; gap: 8px;">
+                Áp dụng ngay &rarr;
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if user.is_authenticated and user.is_staff %}
+    <!-- 5. DASHBOARD DOANH THU TMĐT VÀ LOGISTICS KPI (Dành riêng cho Quản trị viên) -->
+    <div id="dashboard" style="margin-bottom: 25px; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 15px;">
+        <div>
+            <span style="color: #ff5722; font-weight: 800; font-size: 12px; letter-spacing: 1px; text-transform: uppercase;">
+                <i class="fa-solid fa-chart-line"></i> TMĐT và LOGISTICS KPI (QUẢN TRỊ)
+            </span>
+            <h2 style="font-size: 24px; font-weight: 900; color: #1e293b; margin: 4px 0 0;">
+                Báo Cáo Doanh Thu Nền Tảng TMĐT và Điều Phối
+            </h2>
+        </div>
+        <a href="{% url 'core:admin_dashboard' %}" style="display: inline-flex; align-items: center; gap: 8px; background: #eef2ff; color: #4f46e5; padding: 8px 18px; border-radius: 20px; text-decoration: none; font-weight: 800; font-size: 13px; transition: 0.2s;">
+            <i class="fa-solid fa-chart-pie"></i> Xem Dashboard Quản Trị Đầy Đủ &rarr;
+        </a>
+    </div>
+
+    <div class="swiper kpiSwiper">
+        <div class="swiper-wrapper">
+            <!-- GMV -->
+            <div class="swiper-slide">
+                <div class="kpi-card">
+                    <div class="kpi-icon bg-gmv">
+                        <i class="fa-solid fa-sack-dollar"></i>
+                    </div>
+                    <div class="kpi-info">
+                        <h4>Tổng Doanh Thu GMV</h4>
+                        <h2>{{ stats.tong_gmv|dinh_dang_tien }}đ</h2>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hoa hồng sàn -->
+            <div class="swiper-slide">
+                <div class="kpi-card">
+                    <div class="kpi-icon bg-san">
+                        <i class="fa-solid fa-building-columns"></i>
+                    </div>
+                    <div class="kpi-info">
+                        <h4>Hoa Hồng Sàn (15%)</h4>
+                        <h2>{{ stats.hoa_hong_san|dinh_dang_tien }}đ</h2>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Doanh thu quảng cáo Ads -->
+            <div class="swiper-slide">
+                <div class="kpi-card">
+                    <div class="kpi-icon bg-ads">
+                        <i class="fa-solid fa-rectangle-ad"></i>
+                    </div>
+                    <div class="kpi-info">
+                        <h4>Doanh Thu Ads Đối Tác</h4>
+                        <h2>{{ stats.doanh_thu_ads|dinh_dang_tien }}đ</h2>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lương Shipper -->
+            <div class="swiper-slide">
+                <div class="kpi-card">
+                    <div class="kpi-icon bg-shipper">
+                        <i class="fa-solid fa-motorcycle"></i>
+                    </div>
+                    <div class="kpi-info">
+                        <h4>Thu Nhập Shipper</h4>
+                        <h2>{{ stats.tong_doanh_thu_shipper|dinh_dang_tien }}đ</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="swiper-pagination"></div>
+    </div>
+
+    <!-- BIỂU ĐỒ DOANH THU và TRẠNG THÁI -->
+    <div style="display: flex; gap: 25px; margin-bottom: 40px; flex-wrap: wrap;">
+        <div class="card-box" style="flex: 2; min-width: 400px; display: flex; flex-direction: column;">
+            <h4 style="color: #64748b; font-size: 13.5px; text-transform: uppercase; margin-bottom: 20px; text-align: center; font-weight: 800;">
+                🏆 Top 5 Shipper Doanh Thu Vận Chuyển Cao Nhất
+            </h4>
+            <div style="position: relative; flex-grow: 1; min-height: 280px;">
+                <canvas id="revenueChart"></canvas>
+            </div>
+        </div>
+
+        <div class="card-box" style="flex: 1; min-width: 300px; display: flex; flex-direction: column;">
+            <h4 style="color: #64748b; font-size: 13.5px; text-transform: uppercase; margin-bottom: 20px; text-align: center; font-weight: 800;">
+                📦 Tỉ Lệ Trạng Thái Đơn Hàng
+            </h4>
+            <div style="position: relative; flex-grow: 1; min-height: 280px; display: flex; justify-content: center; align-items: center;">
+                <canvas id="statusChart"></canvas>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 6. TRA CỨU VẬN ĐƠN và DANH SÁCH ĐƠN HÀNG -->
+    <div class="card-box" style="padding: 30px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+            <h3 style="margin: 0; font-size: 20px; font-weight: 800; color: #1e293b; display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-box-open" style="color: #ff5722;"></i> 
+                Tra cứu và Danh sách Đơn hàng
+            </h3>
+
+            <form method="GET" action="{% url 'core:home' %}" style="display: flex; width: 100%; max-width: 420px; border: 2px solid #e2e8f0; border-radius: 30px; overflow: hidden; background: white;">
+                <input type="text" name="q" value="{{ q }}" placeholder="Nhập mã đơn (#DH001) hoặc SĐT..." title="Nhập mã đơn hoặc số điện thoại" aria-label="Tìm kiếm đơn hàng" style="flex: 1; padding: 10px 18px; border: none; outline: none; font-size: 13.5px;">
+                <button type="submit" title="Tìm kiếm vận đơn" aria-label="Tìm kiếm vận đơn" style="background: #ff5722; color: white; border: none; padding: 0 20px; font-weight: 700; cursor: pointer;">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </button>
+            </form>
+        </div>
+
+        {% if don_hangs %}
+        <div style="overflow-x: auto;">
+            <table class="custom-table">
+                <thead>
+                    <tr>
+                        <th>Mã Đơn</th>
+                        <th>Khách Hàng</th>
+                        <th>Địa Chỉ Giao</th>
+                        <th>Loại Giao</th>
+                        <th>Tổng Tiền</th>
+                        <th>Trạng Thái</th>
+                        <th style="text-align: center;">Hành Trình</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for dh in don_hangs %}
+                    <tr>
+                        <td><strong style="color: #1e293b;">#{{ dh.ma_don }}</strong></td>
+                        <td>
+                            <div style="font-weight: 700; color: #1e293b;">{{ dh.ten_nguoi_nhan }}</div>
+                            <small style="color: #94a3b8;">{{ dh.sdt_nguoi_nhan }}</small>
+                        </td>
+                        <td>
+                            <i class="fa-solid fa-location-dot" style="color: #ef4444; margin-right: 4px;"></i>
+                            {{ dh.dia_chi_nguoi_nhan|truncatechars:45 }}
+                        </td>
+                        <td>
+                            {% if dh.loai_giao_hang == 'HOA_TOC' %}
+                            <span style="background: #fff7ed; color: #ea580c; font-weight: 800; font-size: 11px; padding: 4px 10px; border-radius: 12px; border: 1px solid #fed7aa;">
+                                ⚡ HỎA TỐC
+                            </span>
+                            {% else %}
+                            <span style="background: #f1f5f9; color: #64748b; font-weight: 700; font-size: 11px; padding: 4px 10px; border-radius: 12px;">
+                                🛵 Tiêu chuẩn
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <strong style="color: #ff5722;">{{ dh.tong_tien|dinh_dang_tien }}đ</strong>
+                        </td>
+                        <td>
+                            <span style="background: #e2e8f0; color: #475569; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700;">
+                                {{ dh.trang_thai }}
+                            </span>
+                        </td>
+                        <td style="text-align: center;">
+                            <a href="{% url 'core:chi_tiet' dh.ma_don %}" style="display: inline-flex; align-items: center; gap: 5px; background: linear-gradient(135deg, #0284c7, #0369a1); color: white; padding: 7px 14px; border-radius: 8px; text-decoration: none; font-size: 12.5px; font-weight: 700;">
+                                <i class="fa-solid fa-map-location-dot"></i> Lộ trình
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 50px 20px; color: #94a3b8;">
+            <i class="fa-solid fa-box-open" style="font-size: 45px; color: #cbd5e1; margin-bottom: 12px;"></i>
+            <p style="margin: 0;">{% if q %}Không tìm thấy đơn hàng khớp với "{{ q }}"{% else %}Nhập mã vận đơn hoặc số điện thoại để tra cứu hành trình giao món{% endif %}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+
+{% if user.is_authenticated %}
+<script id="home-chart-data" type="application/json">
+{
+    "labelsTaiXe": {{ labels_tai_xe|default:"[]"|safe }},
+    "dataDoanhThu": {{ data_doanh_thu|default:"[]"|safe }},
+    "labelsTrangThai": {{ labels_trang_thai|default:"[]"|safe }},
+    "dataTrangThai": {{ data_trang_thai|default:"[]"|safe }}
+}
+</script>
+{% endif %}
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Khởi tạo Swiper Banner tự động chuyển động mượt mà
+        var bannerSwiperEl = document.querySelector(".bannerSwiper");
+        if (bannerSwiperEl) {
+            new Swiper(".bannerSwiper", {
+                loop: true,
+                grabCursor: true,
+                speed: 800,
+                autoplay: {
+                    delay: 4000,
+                    disableOnInteraction: false
+                },
+                pagination: {
+                    el: ".banner-pagination",
+                    clickable: true
+                },
+                navigation: {
+                    nextEl: ".banner-next",
+                    prevEl: ".banner-prev"
+                }
+            });
+        }
+
+        var chartDataEl = document.getElementById('home-chart-data');
+        if (chartDataEl) {
+            try {
+                var chartData = JSON.parse(chartDataEl.textContent);
+                var labelsTaiXe = chartData.labelsTaiXe || [];
+                var dataDoanhThu = chartData.dataDoanhThu || [];
+                var labelsTrangThai = chartData.labelsTrangThai || [];
+                var dataTrangThai = chartData.dataTrangThai || [];
+
+                var kpiSwiperEl = document.querySelector(".kpiSwiper");
+                if (kpiSwiperEl) {
+                    new Swiper(".kpiSwiper", {
+                        slidesPerView: 4,
+                        spaceBetween: 20,
+                        grabCursor: true,
+                        autoplay: { delay: 3500, disableOnInteraction: false },
+                        pagination: { el: ".swiper-pagination", clickable: true },
+                        breakpoints: {
+                            320: { slidesPerView: 1.2 },
+                            768: { slidesPerView: 2.2 },
+                            1024: { slidesPerView: 4 }
+                        }
+                    });
+                }
+
+                // Biểu đồ Doanh thu Shipper
+                var ctxRev = document.getElementById('revenueChart');
+                if (ctxRev) {
+                    new Chart(ctxRev.getContext('2d'), {
+                        type: 'bar',
+                        data: {
+                            labels: labelsTaiXe,
+                            datasets: [{
+                                label: 'Doanh thu cước phí (VNĐ)',
+                                data: dataDoanhThu,
+                                backgroundColor: 'rgba(255, 87, 34, 0.85)',
+                                borderRadius: 8,
+                                barPercentage: 0.5
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
+                            scales: {
+                                y: {
+                                    ticks: { callback: function(v) { return formatVND(v); } }
+                                }
+                            }
+                        }
+                    });
+                }
+
+                // Biểu đồ trạng thái đơn hàng
+                var ctxStat = document.getElementById('statusChart');
+                if (ctxStat) {
+                    new Chart(ctxStat.getContext('2d'), {
+                        type: 'doughnut',
+                        data: {
+                            labels: labelsTrangThai,
+                            datasets: [{
+                                data: dataTrangThai,
+                                backgroundColor: ['#ff5722', '#0284c7', '#10b981', '#ef4444', '#8b5cf6'],
+                                borderWidth: 0
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            cutout: '65%',
+                            plugins: { legend: { position: 'bottom' } }
+                        }
+                    });
+                }
+            } catch (e) {
+                console.error("Lỗi khởi tạo biểu đồ:", e);
+            }
+        }
+    });
+</script>
+{% endblock %}

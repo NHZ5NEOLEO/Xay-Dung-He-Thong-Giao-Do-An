@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+    <title>Đăng ký tài khoản - FoodDelivery Hệ Thống Đặt Món và Logistics</title>
+    
+    <!-- Google Fonts & Font Awesome Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary: #ff5722;
+            --primary-hover: #f4511e;
+            --primary-light: #fff2ed;
+            --primary-gradient: linear-gradient(135deg, #ff5722 0%, #ff7043 100%);
+            --dark-bg: #0f172a;
+            --text-dark: #0f172a;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --radius-md: 12px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, sans-serif;
+            min-height: 100vh;
+            background-color: #f8fafc;
+            color: var(--text-dark);
+            display: flex;
+            align-items: stretch;
+            overflow-x: hidden;
+        }
+
+        .auth-wrapper {
+            display: flex;
+            width: 100vw;
+            min-height: 100vh;
+        }
+
+        /* LEFT HERO PANEL */
+        .auth-hero-panel {
+            flex: 1;
+            position: relative;
+            background: linear-gradient(145deg, #0f172a 0%, #1e1b4b 60%, #31102b 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 60px 70px;
+            overflow: hidden;
+            color: white;
+        }
+
+        .hero-bg-overlay {
+            position: absolute;
+            inset: 0;
+            background-image: url('https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=1600&auto=format&fit=crop&q=80');
+            background-size: cover;
+            background-position: center;
+            opacity: 0.18;
+            mix-blend-mode: luminosity;
+        }
+
+        .hero-glow {
+            position: absolute;
+            top: -120px;
+            left: -120px;
+            width: 480px;
+            height: 480px;
+            background: radial-gradient(circle, rgba(255, 87, 34, 0.35) 0%, transparent 70%);
+            filter: blur(50px);
+            pointer-events: none;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero-brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: white;
+            font-size: 26px;
+            font-weight: 900;
+            margin-bottom: 50px;
+        }
+
+        .hero-brand i {
+            color: var(--primary);
+            font-size: 30px;
+        }
+
+        .hero-headline {
+            font-size: 40px;
+            font-weight: 900;
+            line-height: 1.25;
+            margin-bottom: 20px;
+        }
+
+        .hero-headline span.gradient-text {
+            background: linear-gradient(135deg, #ff7043, #fbbf24);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-desc {
+            font-size: 15.5px;
+            line-height: 1.6;
+            color: #94a3b8;
+            max-width: 500px;
+            margin-bottom: 45px;
+        }
+
+        .features-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            max-width: 480px;
+        }
+
+        .feature-card {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 16px 20px;
+            border-radius: 16px;
+        }
+
+        .feature-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+            background: rgba(255, 87, 34, 0.2);
+            color: #ff7043;
+        }
+
+        .feature-card h4 {
+            font-size: 14.5px;
+            font-weight: 700;
+            color: #f8fafc;
+            margin-bottom: 2px;
+        }
+
+        .feature-card p {
+            font-size: 12.5px;
+            color: #94a3b8;
+            margin: 0;
+        }
+
+        /* RIGHT FORM PANEL */
+        .auth-form-panel {
+            flex: 1.2;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 50px 40px;
+            background: #ffffff;
+            overflow-y: auto;
+        }
+
+        .form-container {
+            width: 100%;
+            max-width: 480px;
+        }
+
+        .form-top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .btn-back-home {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #64748b;
+            text-decoration: none;
+            font-size: 13.5px;
+            font-weight: 600;
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: #f1f5f9;
+            transition: all 0.25s ease;
+        }
+
+        .btn-back-home:hover {
+            color: var(--primary);
+            background: var(--primary-light);
+            transform: translateX(-3px);
+        }
+
+        .auth-header {
+            margin-bottom: 25px;
+        }
+
+        .auth-header h2 {
+            font-size: 28px;
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 6px;
+        }
+
+        .auth-header p {
+            font-size: 14px;
+            color: #64748b;
+        }
+
+        /* Alerts */
+        .alert-box {
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13.5px;
+            font-weight: 600;
+        }
+        .alert-error {
+            background: #fef2f2;
+            border-left: 4px solid #ef4444;
+            color: #b91c1c;
+        }
+        .alert-success {
+            background: #f0fdf4;
+            border-left: 4px solid #22c55e;
+            color: #15803d;
+        }
+
+        /* Form Inputs */
+        .form-grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .input-group {
+            margin-bottom: 18px;
+            text-align: left;
+        }
+
+        .input-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 700;
+            color: #334155;
+            margin-bottom: 7px;
+        }
+
+        .input-box-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-box-wrapper i.leading-icon {
+            position: absolute;
+            left: 15px;
+            color: #94a3b8;
+            font-size: 15px;
+            pointer-events: none;
+        }
+
+        .input-field {
+            width: 100%;
+            height: 48px;
+            padding: 0 40px 0 42px;
+            border: 1.8px solid #e2e8f0;
+            background-color: #f8fafc;
+            border-radius: var(--radius-md);
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 500;
+            color: #0f172a;
+            transition: all 0.25s ease;
+            outline: none;
+        }
+
+        .input-field:focus {
+            background-color: #ffffff;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(255, 87, 34, 0.12);
+        }
+
+        .btn-toggle-eye {
+            position: absolute;
+            right: 12px;
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            font-size: 15px;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        /* Role Selector Pills */
+        .role-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .role-option {
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 12px 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #f8fafc;
+            transition: all 0.25s ease;
+        }
+
+        .role-option.active {
+            border-color: var(--primary);
+            background: var(--primary-light);
+        }
+
+        .role-option input[type="radio"] {
+            display: none;
+        }
+
+        .role-icon {
+            font-size: 20px;
+        }
+
+        .role-title {
+            font-size: 13px;
+            font-weight: 800;
+            color: #1e293b;
+        }
+
+        .role-subtitle {
+            font-size: 11px;
+            color: #64748b;
+        }
+
+        /* Terms Checkbox */
+        .terms-checkbox {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 22px;
+            font-size: 13px;
+            color: #475569;
+            line-height: 1.4;
+        }
+
+        .terms-checkbox input[type="checkbox"] {
+            margin-top: 3px;
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
+
+        /* Submit Button */
+        .btn-submit-auth {
+            width: 100%;
+            height: 50px;
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 15px;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(255, 87, 34, 0.28);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-submit-auth:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 25px rgba(255, 87, 34, 0.38);
+        }
+
+        .auth-switch-link {
+            text-align: center;
+            margin-top: 24px;
+            font-size: 14px;
+            color: #64748b;
+        }
+
+        .auth-switch-link a {
+            color: var(--primary);
+            font-weight: 800;
+            text-decoration: none;
+        }
+
+        .auth-switch-link a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 900px) {
+            .auth-hero-panel { display: none; }
+            .auth-form-panel { padding: 40px 20px; }
+            .form-grid-2 { grid-template-columns: 1fr; gap: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="auth-wrapper">
+        <!-- LEFT HERO -->
+        <div class="auth-hero-panel">
+            <div class="hero-bg-overlay"></div>
+            <div class="hero-glow"></div>
+
+            <div class="hero-content">
+                <a href="{% url 'core:home' %}" class="hero-brand">
+                    <i class="fa-solid fa-burger"></i>
+                    <span>Food<span style="color: var(--primary);">Delivery</span></span>
+                </a>
+
+                <h1 class="hero-headline">
+                    Gia nhập nền tảng ẩm thực và <br>
+                    <span class="gradient-text">Logistics Hỏa Tốc</span>
+                </h1>
+
+                <p class="hero-desc">
+                    Đăng ký tài khoản để khám phá hàng trăm món ngon hấp dẫn, tích lũy điểm thưởng và nhận đồ ăn nóng hổi trong 15 phút!
+                </p>
+
+                <div class="features-list">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fa-solid fa-gift"></i>
+                        </div>
+                        <div>
+                            <h4>Tặng Voucher Giảm 50K</h4>
+                            <p>Tặng ngay voucher giảm giá cho đơn hàng đầu tiên của bạn.</p>
+                        </div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fa-solid fa-motorcycle"></i>
+                        </div>
+                        <div>
+                            <h4>Thu Nhập Hấp Dẫn Cho Tài Xế</h4>
+                            <p>Đăng ký đối tác Shipper nhận đơn linh hoạt, chiết khấu cực tốt.</p>
+                        </div>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fa-solid fa-shield-halved"></i>
+                        </div>
+                        <div>
+                            <h4>Bảo Mật và Thanh Toán Tiện Lợi</h4>
+                            <p>Hỗ trợ thanh toán VietQR động chuẩn Napas247, MoMo và COD.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="font-size: 13px; color: #94a3b8; position: relative; z-index: 2;">
+                &copy; 2026 FoodDelivery. Toàn bộ quyền được bảo lưu.
+            </div>
+        </div>
+
+        <!-- RIGHT FORM -->
+        <div class="auth-form-panel">
+            <div class="form-container">
+                
+                <div class="form-top-bar">
+                    <a href="{% url 'core:home' %}" class="btn-back-home">
+                        <i class="fa-solid fa-arrow-left"></i> Trang chủ
+                    </a>
+                    <span style="font-size: 13px; color: #64748b;">
+                        Đã có tài khoản? <a href="{% url 'core:login' %}" style="color: var(--primary); font-weight: 700; text-decoration: none;">Đăng nhập</a>
+                    </span>
+                </div>
+
+                <div class="auth-header">
+                    <h2>Tạo Tài Khoản Mới 🚀</h2>
+                    <p>Điền thông tin bên dưới để đăng ký tài khoản trải nghiệm dịch vụ.</p>
+                </div>
+
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert-box alert-error">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                            <span>{{ message }}</span>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                <form method="POST" action="{% url 'core:dang_ky' %}" id="register-form">
+                    {% csrf_token %}
+
+                    <!-- Vai trò người dùng -->
+                    <div style="margin-bottom: 8px;">
+                        <label class="input-label">Bạn muốn đăng ký với vai trò:</label>
+                        <div class="role-selector">
+                            <label class="role-option active" id="opt-khach" onclick="selectRole('KHACH_HANG')">
+                                <input type="radio" name="role" value="KHACH_HANG" checked>
+                                <span class="role-icon">🛒</span>
+                                <div>
+                                    <div class="role-title">Khách Đặt Món</div>
+                                    <div class="role-subtitle">Thưởng thức món ngon</div>
+                                </div>
+                            </label>
+
+                            <label class="role-option" id="opt-shipper" onclick="selectRole('SHIPPER')">
+                                <input type="radio" name="role" value="SHIPPER">
+                                <span class="role-icon">🛵</span>
+                                <div>
+                                    <div class="role-title">Tài Xế Shipper</div>
+                                    <div class="role-subtitle">Nhận đơn giao vận</div>
+                                </div>
+                            </label>
+
+                            <label class="role-option" id="opt-b2b" onclick="selectRole('B2B_PARTNER')">
+                                <input type="radio" name="role" value="B2B_PARTNER">
+                                <span class="role-icon">🏪</span>
+                                <div>
+                                    <div class="role-title">Đối Tác B2B</div>
+                                    <div class="role-subtitle">Quán ăn & Thực đơn</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- THÔNG TIN RIÊNG NẾU LÀ ĐỐI TÁC B2B (QUÁN ĂN) -->
+                    <div id="b2b-extra-fields" style="display: none; background: #fff7ed; padding: 15px; border-radius: 12px; border: 1.5px dashed #fed7aa; margin-bottom: 18px;">
+                        <div style="font-size: 13px; font-weight: 800; color: #ea580c; margin-bottom: 10px;">
+                            <i class="fa-solid fa-store"></i> Thông tin Quán Ăn / Cửa Hàng B2B
+                        </div>
+                        <div class="input-group" style="margin-bottom: 10px;">
+                            <label for="ten_quan" class="input-label" style="font-size: 12px;">Tên Quán Ăn / Nhà Hàng (*)</label>
+                            <div class="input-box-wrapper">
+                                <i class="fa-solid fa-utensils leading-icon"></i>
+                                <input type="text" name="ten_quan" id="ten_quan" class="input-field" placeholder="VD: Quán Cơm Tấm Ba Ghiền...">
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label for="dia_chi_quan" class="input-label" style="font-size: 12px;">Địa chỉ quán ăn (*)</label>
+                            <div class="input-box-wrapper">
+                                <i class="fa-solid fa-location-dot leading-icon"></i>
+                                <input type="text" name="dia_chi_quan" id="dia_chi_quan" class="input-field" placeholder="VD: 84 Đặng Văn Ngữ, Phú Nhuận...">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Họ tên và Tên đăng nhập -->
+                    <div class="form-grid-2">
+                        <div class="input-group">
+                            <label for="full_name" class="input-label">Họ và tên</label>
+                            <div class="input-box-wrapper">
+                                <i class="fa-solid fa-id-card leading-icon"></i>
+                                <input type="text" name="full_name" id="full_name" class="input-field" placeholder="Nguyễn Văn A" required>
+                            </div>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="username" class="input-label">Tên đăng nhập</label>
+                            <div class="input-box-wrapper">
+                                <i class="fa-solid fa-user leading-icon"></i>
+                                <input type="text" name="username" id="username" class="input-field" placeholder="username..." required autocomplete="username">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Email và Số điện thoại -->
+                    <div class="form-grid-2">
+                        <div class="input-group">
+                            <label for="email" class="input-label">Địa chỉ Email</label>
+                            <div class="input-box-wrapper">
+                                <i class="fa-solid fa-envelope leading-icon"></i>
+                                <input type="email" name="email" id="email" class="input-field" placeholder="email@example.com" required>
+                            </div>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="sdt" class="input-label">Số điện thoại</label>
+                            <div class="input-box-wrapper">
+                                <i class="fa-solid fa-phone leading-icon"></i>
+                                <input type="text" name="sdt" id="sdt" class="input-field" placeholder="0901234567" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mật khẩu và Nhập lại mật khẩu -->
+                    <div class="form-grid-2">
+                        <div class="input-group">
+                            <label for="password" class="input-label">Mật khẩu</label>
+                            <div class="input-box-wrapper">
+                                <i class="fa-solid fa-lock leading-icon"></i>
+                                <input type="password" name="password" id="password" class="input-field" placeholder="Tối thiểu 6 ký tự" required autocomplete="new-password">
+                                <button type="button" class="btn-toggle-eye" onclick="togglePass('password', 'eye1')">
+                                    <i class="fa-solid fa-eye" id="eye1"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="confirm_password" class="input-label">Xác nhận mật khẩu</label>
+                            <div class="input-box-wrapper">
+                                <i class="fa-solid fa-shield-check leading-icon"></i>
+                                <input type="password" name="confirm_password" id="confirm_password" class="input-field" placeholder="Nhập lại mật khẩu" required autocomplete="new-password">
+                                <button type="button" class="btn-toggle-eye" onclick="togglePass('confirm_password', 'eye2')">
+                                    <i class="fa-solid fa-eye" id="eye2"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Điều khoản -->
+                    <label class="terms-checkbox">
+                        <input type="checkbox" required checked>
+                        <span>Tôi đồng ý với <a href="javascript:void(0)" style="color: var(--primary);">Điều khoản dịch vụ</a> và <a href="javascript:void(0)" style="color: var(--primary);">Chính sách bảo mật</a> của FoodDelivery.</span>
+                    </label>
+
+                    <button type="submit" class="btn-submit-auth" id="btn-submit-reg">
+                        <i class="fa-solid fa-user-plus"></i> ĐĂNG KÝ TÀI KHOẢN
+                    </button>
+                </form>
+
+                <div class="auth-switch-link">
+                    Đã có tài khoản? <a href="{% url 'core:login' %}">Đăng nhập ngay &rarr;</a>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function selectRole(role) {
+            document.getElementById('opt-khach').classList.toggle('active', role === 'KHACH_HANG');
+            document.getElementById('opt-shipper').classList.toggle('active', role === 'SHIPPER');
+            document.getElementById('opt-b2b').classList.toggle('active', role === 'B2B_PARTNER');
+            document.querySelector(`input[name="role"][value="${role}"]`).checked = true;
+
+            const b2bFields = document.getElementById('b2b-extra-fields');
+            if (b2bFields) {
+                b2bFields.style.display = (role === 'B2B_PARTNER') ? 'block' : 'none';
+            }
+        }
+
+        function togglePass(inputId, eyeId) {
+            const input = document.getElementById(inputId);
+            const eye = document.getElementById(eyeId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                eye.classList.remove('fa-eye');
+                eye.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                eye.classList.remove('fa-eye-slash');
+                eye.classList.add('fa-eye');
+            }
+        }
+
+        document.getElementById('register-form').addEventListener('submit', function() {
+            const btn = document.getElementById('btn-submit-reg');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ĐANG TẠO TÀI KHOẢN...';
+        });
+    </script>
+</body>
+</html>

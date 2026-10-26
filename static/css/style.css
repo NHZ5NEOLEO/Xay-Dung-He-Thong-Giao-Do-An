@@ -1,0 +1,142 @@
+/* Import Font Poppins hiện đại */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+
+/* --- GLOBAL STYLES (VIP PRO UPGRADE) --- */
+* {
+    /* Làm mượt font chữ sắc nét như trên màn hình Retina của Apple */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Tùy chỉnh màu khi bôi đen văn bản */
+::selection {
+    background-color: #5e72e4;
+    color: #ffffff;
+}
+
+body {
+    margin: 0;
+    font-family: 'Poppins', sans-serif;
+    background-color: #f8fafc;
+    /* Nền Mesh Gradient giờ đây to hơn để chuẩn bị cho hiệu ứng chuyển động */
+    background-image: radial-gradient(at 0% 0%, hsla(253,16%,7%,0.03) 0, transparent 50%), 
+                      radial-gradient(at 50% 0%, hsla(225,39%,30%,0.03) 0, transparent 50%), 
+                      radial-gradient(at 100% 0%, hsla(339,49%,30%,0.03) 0, transparent 50%);
+    background-size: 200% 200%;
+    background-attachment: fixed;
+    color: #334155;
+    overflow-x: hidden;
+    /* Hiệu ứng nền thở (Breathe Animation) */
+    animation: gradientMove 15s ease infinite alternate;
+}
+
+@keyframes gradientMove {
+    0% { background-position: 0% 0%; }
+    100% { background-position: 100% 100%; }
+}
+
+/* --- NAVBAR (ULTRA GLASSMORPHISM) --- */
+.navbar {
+    background: rgba(255, 255, 255, 0.7);
+    /* Thêm saturate để màu phía sau kính rực rỡ hơn */
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    padding: 15px 30px;
+    /* Đổ bóng tầng sâu + viền trong lấp lánh (Inner light) */
+    box-shadow: 0 10px 30px rgba(94, 114, 228, 0.05), inset 0 -1px 0 rgba(255,255,255,0.5);
+    border-bottom: 1px solid rgba(255,255,255,0.6);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+}
+
+.navbar a {
+    color: #64748b;
+    margin-right: 15px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 10px 16px;
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Hiệu ứng thanh gạch chân chạy từ giữa ra */
+.navbar a::after {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    width: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #5e72e4, #825ee4);
+    border-radius: 3px;
+    transition: all 0.3s ease;
+    transform: translateX(-50%);
+    opacity: 0;
+}
+
+.navbar a:hover {
+    color: #1e293b;
+    background-color: rgba(94, 114, 228, 0.05);
+}
+
+.navbar a:hover::after {
+    width: 60%;
+    opacity: 1;
+}
+
+/* --- CONTAINER (Hiệu ứng SlideUp mượt) --- */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 30px 20px;
+    animation: fadeInSlideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeInSlideUp {
+    from { opacity: 0; transform: translateY(30px); filter: blur(5px); }
+    to { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+
+/* --- BẢN ĐỒ MAP (3D Levitation và Glow Effect) --- */
+#map {
+    height: 600px;
+    width: 100%;
+    background: #fff; 
+    border-radius: 24px; 
+    margin-top: 20px;
+    /* Viền kép: Viền trắng mờ bên ngoài, bóng đổ bên trong */
+    border: 1px solid rgba(255,255,255,0.8);
+    box-shadow:
+        0 20px 50px rgba(0,0,0,0.05),
+        0 0 0 6px rgba(255,255,255,0.6); 
+    overflow: hidden; 
+    /* Thuật toán nảy (Bouncy) khi hover */
+    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transform: translateZ(0); /* Kích hoạt tăng tốc phần cứng mượt hơn */
+}
+
+/* Khởi động hiệu ứng bay lên và tỏa sáng hào quang */
+#map:hover {
+    transform: translateY(-8px) scale(1.005);
+    border-color: rgba(94, 114, 228, 0.3);
+    box-shadow:
+        0 30px 60px rgba(94, 114, 228, 0.15),
+        0 0 0 6px rgba(255,255,255,0.9),
+        0 0 30px rgba(94, 114, 228, 0.2); /* Glow phát sáng */
+}
+
+/* --- TÙY CHỈNH THANH CUỘN (SCROLLBAR) --- */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { 
+    background: #cbd5e1; 
+    border-radius: 10px; 
+    border: 2px solid #f8fafc; /* Tạo hiệu ứng thanh cuộn nổi */
+}
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }

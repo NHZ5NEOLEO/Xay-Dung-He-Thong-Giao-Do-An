@@ -1,0 +1,756 @@
+{% extends "base.html" %}
+{% load static currency_filters %}
+
+{% block title %}Đơn Hàng Của Tôi - FoodDelivery{% endblock %}
+
+{% block content %}
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+    :root {
+        --primary: #ff5722;
+        --primary-dark: #ea580c;
+        --accent-green: #10b981;
+        --accent-indigo: #4f46e5;
+        --border-color: #e2e8f0;
+        --bg-page: #f8fafc;
+        --text-dark: #0f172a;
+        --text-muted: #64748b;
+    }
+
+    body {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        background-color: var(--bg-page);
+    }
+
+    .orders-page-container {
+        max-width: 1200px;
+        margin: 20px auto 80px;
+        padding: 0 16px;
+    }
+
+    /* TOP HEADER & STATS BANNER */
+    .orders-hero {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        border-radius: 24px;
+        padding: 30px;
+        color: white;
+        margin-bottom: 25px;
+        box-shadow: 0 15px 40px rgba(15, 23, 42, 0.12);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 20px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .orders-hero::after {
+        content: '';
+        position: absolute;
+        top: -50px;
+        right: -50px;
+        width: 200px;
+        height: 200px;
+        background: radial-gradient(circle, rgba(255, 87, 34, 0.25) 0%, rgba(255, 87, 34, 0) 70%);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+
+    .orders-hero-left h1 {
+        font-size: 26px;
+        font-weight: 900;
+        margin: 0 0 6px;
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .orders-hero-left p {
+        color: #94a3b8;
+        font-size: 14px;
+        margin: 0;
+    }
+
+    .orders-hero-stats {
+        display: flex;
+        gap: 16px;
+    }
+
+    .stat-pill-box {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        -webkit-backdrop-filter: blur(12px);
+        backdrop-filter: blur(12px);
+        padding: 12px 20px;
+        border-radius: 16px;
+        text-align: right;
+    }
+
+    .stat-pill-label {
+        font-size: 11px;
+        text-transform: uppercase;
+        color: #cbd5e1;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        margin-bottom: 2px;
+    }
+
+    .stat-pill-value {
+        font-size: 20px;
+        font-weight: 900;
+        color: #ff5722;
+    }
+
+    /* SEARCH & FILTER BAR */
+    .filter-card {
+        background: #ffffff;
+        border-radius: 20px;
+        padding: 18px 24px;
+        margin-bottom: 25px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+        border: 1.5px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .search-input-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex: 1;
+        max-width: 480px;
+        position: relative;
+    }
+
+    .search-input-group i {
+        position: absolute;
+        left: 16px;
+        color: #94a3b8;
+        font-size: 15px;
+    }
+
+    .search-input-field {
+        width: 100%;
+        padding: 12px 16px 12px 42px;
+        border-radius: 12px;
+        border: 1.5px solid var(--border-color);
+        background: #f8fafc;
+        font-size: 13.5px;
+        outline: none;
+        transition: 0.2s;
+    }
+
+    .search-input-field:focus {
+        border-color: var(--primary);
+        background: #ffffff;
+        box-shadow: 0 0 0 3px rgba(255, 87, 34, 0.15);
+    }
+
+    .status-filter-pills {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .filter-pill-btn {
+        padding: 9px 16px;
+        border-radius: 12px;
+        font-size: 12.5px;
+        font-weight: 700;
+        text-decoration: none;
+        color: #64748b;
+        background: #f1f5f9;
+        border: 1.5px solid transparent;
+        transition: all 0.2s;
+    }
+
+    .filter-pill-btn:hover {
+        background: #e2e8f0;
+        color: #0f172a;
+    }
+
+    .filter-pill-btn.active {
+        background: #fff7ed;
+        color: var(--primary);
+        border-color: #ffccbc;
+    }
+
+    /* ORDER CARDS LIST */
+    .orders-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+    }
+
+    .order-card {
+        background: #ffffff;
+        border-radius: 20px;
+        border: 1.5px solid var(--border-color);
+        padding: 22px 26px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+        transition: all 0.25s ease;
+    }
+
+    .order-card:hover {
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+        border-color: #cbd5e1;
+        transform: translateY(-2px);
+    }
+
+    .order-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-bottom: 15px;
+        border-bottom: 1.5px dashed var(--border-color);
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .order-id-group {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .order-code {
+        font-size: 18px;
+        font-weight: 900;
+        color: var(--text-dark);
+        margin: 0;
+    }
+
+    .order-date-text {
+        font-size: 12.5px;
+        color: var(--text-muted);
+        font-weight: 600;
+    }
+
+    .order-status-badge {
+        padding: 6px 14px;
+        border-radius: 999px;
+        font-size: 11.5px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .badge-success { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+    .badge-delivering { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+    .badge-pending { background: #fef9c3; color: #854d0e; border: 1px solid #fef08a; }
+    .badge-cooking { background: #ffedd5; color: #c2410c; border: 1px solid #fed7aa; }
+
+    /* ORDER BODY / ITEMS */
+    .order-items-preview {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 18px;
+    }
+
+    .order-item-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 14px;
+    }
+
+    .order-item-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .order-item-thumb {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        object-fit: cover;
+        border: 1px solid var(--border-color);
+    }
+
+    .order-item-qty {
+        font-weight: 900;
+        color: var(--primary);
+    }
+
+    .order-item-name {
+        font-weight: 700;
+        color: #1e293b;
+    }
+
+    .order-item-price {
+        font-weight: 800;
+        color: var(--text-dark);
+    }
+
+    /* CARD FOOTER */
+    .order-card-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 15px;
+        border-top: 1px solid #f1f5f9;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .order-total-group {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+    }
+
+    .order-total-label {
+        font-size: 13px;
+        color: var(--text-muted);
+        font-weight: 700;
+    }
+
+    .order-total-val {
+        font-size: 20px;
+        font-weight: 900;
+        color: var(--primary);
+    }
+
+    .order-actions-group {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .btn-action-track {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 9px 16px;
+        border-radius: 12px;
+        background: #f1f5f9;
+        border: 1.5px solid var(--border-color);
+        color: #1e293b;
+        font-weight: 800;
+        font-size: 13px;
+        text-decoration: none;
+        transition: 0.2s;
+    }
+
+    .btn-action-track:hover {
+        background: #e2e8f0;
+        color: #0f172a;
+    }
+
+    .btn-action-reorder {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 9px 18px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #ff5722, #ea580c);
+        color: #ffffff;
+        font-weight: 800;
+        font-size: 13px;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+        box-shadow: 0 4px 12px rgba(255, 87, 34, 0.25);
+    }
+
+    .btn-action-reorder:hover {
+        background: linear-gradient(135deg, #ea580c, #c2410c);
+        transform: translateY(-1px);
+    }
+
+    .btn-action-invoice {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 9px 14px;
+        border-radius: 12px;
+        background: #f8fafc;
+        border: 1.5px solid #cbd5e1;
+        color: #475569;
+        font-weight: 700;
+        font-size: 13px;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+    .btn-action-invoice:hover {
+        background: #f1f5f9;
+        color: #0f172a;
+    }
+
+    /* MODAL HÓA ĐƠN ĐIỆN TỬ E-INVOICE */
+    .invoice-modal-backdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        -webkit-backdrop-filter: blur(5px);
+        backdrop-filter: blur(5px);
+        z-index: 99998;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+    }
+
+    .invoice-modal-card {
+        background: #ffffff;
+        width: 100%;
+        max-width: 520px;
+        border-radius: 24px;
+        box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25);
+        overflow: hidden;
+        animation: modalZoomIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes modalZoomIn {
+        from { opacity: 0; transform: scale(0.92); }
+        to { opacity: 1; transform: scale(1); }
+    }
+
+    .invoice-header {
+        background: linear-gradient(135deg, #1e293b, #0f172a);
+        color: white;
+        padding: 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .invoice-body {
+        padding: 24px;
+        max-height: 480px;
+        overflow-y: auto;
+    }
+
+    .invoice-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 13.5px;
+        margin-bottom: 8px;
+        color: #475569;
+    }
+
+    .invoice-row strong {
+        color: #0f172a;
+    }
+
+    /* EMPTY STATE */
+    .empty-orders-box {
+        text-align: center;
+        padding: 60px 20px;
+        background: #ffffff;
+        border-radius: 24px;
+        border: 2px dashed #e2e8f0;
+    }
+
+    .empty-orders-box i {
+        font-size: 55px;
+        color: #cbd5e1;
+        margin-bottom: 16px;
+    }
+
+    .empty-orders-box h3 {
+        font-size: 18px;
+        font-weight: 800;
+        color: #1e293b;
+        margin: 0 0 8px;
+    }
+
+    .empty-orders-box p {
+        color: #64748b;
+        font-size: 14px;
+        margin: 0 0 20px;
+    }
+</style>
+
+<div class="orders-page-container">
+    <!-- HERO STATS BANNER -->
+    <div class="orders-hero">
+        <div class="orders-hero-left">
+            <h1><i class="fa-solid fa-clock-rotate-left" style="color: #ff5722;"></i> Lịch Sử Đơn Hàng Của Tôi</h1>
+            <p>Quản lý toàn bộ đơn đặt món, theo dõi hành trình và đặt lại món yêu thích chỉ với 1-Click.</p>
+        </div>
+        <div class="orders-hero-stats">
+            <div class="stat-pill-box">
+                <div class="stat-pill-label">Đơn đã đặt</div>
+                <div class="stat-pill-value">{{ tong_don }}</div>
+            </div>
+            <div class="stat-pill-box">
+                <div class="stat-pill-label">Tổng chi tiêu</div>
+                <div class="stat-pill-value">{{ tong_chi_tieu|dinh_dang_tien }}đ</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SEARCH & FILTER BAR -->
+    <div class="filter-card">
+        <form method="GET" class="search-input-group">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" name="sdt" value="{{ sdt }}" class="search-input-field" placeholder="Tra cứu theo Số điện thoại hoặc Mã đơn...">
+            {% if trang_thai %}
+            <input type="hidden" name="trang_thai" value="{{ trang_thai }}">
+            {% endif %}
+        </form>
+
+        <div class="status-filter-pills">
+            <a href="?{% if sdt %}sdt={{ sdt }}{% endif %}" class="filter-pill-btn {% if not trang_thai %}active{% endif %}">
+                Tất cả ({{ tong_don }})
+            </a>
+            <a href="?trang_thai=ĐANG VẬN CHUYỂN{% if sdt %}&sdt={{ sdt }}{% endif %}" class="filter-pill-btn {% if 'VẬN CHUYỂN' in trang_thai %}active{% endif %}">
+                <i class="fa-solid fa-motorcycle"></i> Đang giao
+            </a>
+            <a href="?trang_thai=ĐÃ GIAO THÀNH CÔNG{% if sdt %}&sdt={{ sdt }}{% endif %}" class="filter-pill-btn {% if 'THÀNH CÔNG' in trang_thai %}active{% endif %}">
+                <i class="fa-solid fa-circle-check"></i> Đã hoàn thành
+            </a>
+            <a href="?trang_thai=CHỜ TÀI XẾ{% if sdt %}&sdt={{ sdt }}{% endif %}" class="filter-pill-btn {% if 'CHỜ' in trang_thai %}active{% endif %}">
+                <i class="fa-solid fa-clock"></i> Chờ tiếp nhận
+            </a>
+        </div>
+    </div>
+
+    <!-- ORDER CARDS LIST -->
+    <div class="orders-grid">
+        {% for order in orders %}
+        <div class="order-card">
+            <div class="order-card-header">
+                <div class="order-id-group">
+                    <h3 class="order-code">#{{ order.ma_don }}</h3>
+                    <span class="order-date-text">
+                        <i class="fa-regular fa-calendar-days"></i> {{ order.ngay_tao|date:"H:i • d/m/Y" }}
+                    </span>
+                    {% if order.loai_giao_hang == 'HOA_TOC' %}
+                    <span style="font-size: 11px; font-weight: 800; color: #ff5722; background: #fff7ed; padding: 3px 8px; border-radius: 6px; border: 1px solid #fed7aa;">
+                        <i class="fa-solid fa-bolt"></i> HỎA TỐC
+                    </span>
+                    {% endif %}
+                </div>
+
+                <div>
+                    {% if 'THÀNH CÔNG' in order.trang_thai or 'ĐÃ GIAO' in order.trang_thai %}
+                    <span class="order-status-badge badge-success">
+                        <i class="fa-solid fa-circle-check"></i> {{ order.trang_thai }}
+                    </span>
+                    {% elif 'VẬN CHUYỂN' in order.trang_thai or 'GIAO' in order.trang_thai %}
+                    <span class="order-status-badge badge-delivering">
+                        <i class="fa-solid fa-motorcycle"></i> {{ order.trang_thai }}
+                    </span>
+                    {% elif 'CHẾ BIẾN' in order.trang_thai or 'NẤU' in order.trang_thai %}
+                    <span class="order-status-badge badge-cooking">
+                        <i class="fa-solid fa-fire-burner"></i> {{ order.trang_thai }}
+                    </span>
+                    {% else %}
+                    <span class="order-status-badge badge-pending">
+                        <i class="fa-solid fa-clock"></i> {{ order.trang_thai }}
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- PREVIEW CÁC MÓN ĂN TRONG ĐƠN -->
+            <div class="order-items-preview">
+                {% for item in order.chi_tiet_mon.all %}
+                <div class="order-item-row">
+                    <div class="order-item-left">
+                        <img src="{{ item.mon_an.hinh_anh }}" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400';" class="order-item-thumb" alt="{{ item.mon_an.ten_mon }}">
+                        <div>
+                            <span class="order-item-qty">{{ item.so_luong }}x</span>
+                            <span class="order-item-name">{{ item.mon_an.ten_mon }}</span>
+                        </div>
+                    </div>
+                    <div class="order-item-price">{{ item.thanh_tien|dinh_dang_tien }}đ</div>
+                </div>
+                {% empty %}
+                <div style="font-size: 13px; color: #94a3b8; font-style: italic;">
+                    Thông tin món: Đặt món trực tiếp tại quầy / B2B.
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- FOOTER VÀ CÁC NÚT THAO TÁC 1-CLICK -->
+            <div class="order-card-footer">
+                <div class="order-total-group">
+                    <span class="order-total-label">Tổng thanh toán:</span>
+                    <span class="order-total-val">{{ order.tong_tien|dinh_dang_tien }}đ</span>
+                    <span style="font-size: 11.5px; color: #64748b; font-weight: 600;">({{ order.get_phuong_thuc_thanh_toan_display }})</span>
+                </div>
+
+                <div class="order-actions-group">
+                    <!-- Nút Hóa đơn điện tử -->
+                    <button type="button" class="btn-action-invoice" onclick="openInvoiceModal('{{ order.ma_don }}', '{{ order.ten_nguoi_nhan }}', '{{ order.sdt_nguoi_nhan }}', '{{ order.dia_chi_nguoi_nhan|escapejs }}', '{{ order.tien_mon_an|dinh_dang_tien }}đ', '{{ order.phi_van_chuyen|dinh_dang_tien }}đ', '{{ order.giam_gia|dinh_dang_tien }}đ', '{{ order.tong_tien|dinh_dang_tien }}đ', '{{ order.ngay_tao|date:"H:i - d/m/Y" }}')">
+                        <i class="fa-solid fa-file-invoice"></i> Hóa đơn
+                    </button>
+
+                    <!-- Nút Theo dõi lộ trình Live -->
+                    <a href="{% url 'core:chi_tiet' order.ma_don %}" class="btn-action-track">
+                        <i class="fa-solid fa-location-crosshairs"></i> Theo dõi live
+                    </a>
+
+                    <!-- Nút Đặt lại món 1-Click (Re-order) -->
+                    <button type="button" class="btn-action-reorder" onclick="reorderOrder('{{ order.ma_don }}')">
+                        <i class="fa-solid fa-rotate-right"></i> Đặt lại đơn này
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="empty-orders-box">
+            <i class="fa-solid fa-receipt"></i>
+            <h3>Bạn chưa có đơn đặt món nào</h3>
+            <p>Hãy khám phá thực đơn đa dạng món ngon nóng sốt và nhận voucher Freeship ngay hôm nay!</p>
+            <a href="{% url 'core:thuc_don' %}" style="display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #ff5722, #ea580c); color: white; padding: 12px 24px; border-radius: 12px; font-weight: 800; font-size: 14px; text-decoration: none; box-shadow: 0 4px 14px rgba(255, 87, 34, 0.3);">
+                <i class="fa-solid fa-utensils"></i> Xem Thực Đơn Đặt Món
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- PHÂN TRANG -->
+    {% if orders.has_other_pages %}
+    <div style="display: flex; justify-content: center; gap: 8px; margin-top: 30px;">
+        {% if orders.has_previous %}
+        <a href="?page={{ orders.previous_page_number }}{% if sdt %}&sdt={{ sdt }}{% endif %}{% if trang_thai %}&trang_thai={{ trang_thai }}{% endif %}" class="filter-pill-btn">
+            <i class="fa-solid fa-chevron-left"></i> Trước
+        </a>
+        {% endif %}
+        <span class="filter-pill-btn active">Trang {{ orders.number }} / {{ orders.paginator.num_pages }}</span>
+        {% if orders.has_next %}
+        <a href="?page={{ orders.next_page_number }}{% if sdt %}&sdt={{ sdt }}{% endif %}{% if trang_thai %}&trang_thai={{ trang_thai }}{% endif %}" class="filter-pill-btn">
+            Sau <i class="fa-solid fa-chevron-right"></i>
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<!-- MODAL HÓA ĐƠN ĐIỆN TỬ E-INVOICE -->
+<div id="invoice-modal" class="invoice-modal-backdrop" onclick="closeInvoiceModal(event)">
+    <div class="invoice-modal-card" onclick="event.stopPropagation()">
+        <div class="invoice-header">
+            <div>
+                <h3 style="margin: 0; font-size: 18px; font-weight: 900; color: white;" id="inv-code">Hóa Đơn #DH001</h3>
+                <span style="font-size: 12px; color: #94a3b8;" id="inv-date">Thời gian đặt</span>
+            </div>
+            <button type="button" onclick="closeInvoiceModalDirect()" style="background: rgba(255, 255, 255, 0.15); border: none; color: white; width: 34px; height: 34px; border-radius: 50%; cursor: pointer;">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div class="invoice-body">
+            <div class="invoice-row"><span>Khách hàng:</span> <strong id="inv-name">...</strong></div>
+            <div class="invoice-row"><span>Số điện thoại:</span> <strong id="inv-phone">...</strong></div>
+            <div class="invoice-row"><span>Địa chỉ nhận:</span> <strong id="inv-address" style="text-align: right; max-width: 60%;">...</strong></div>
+            <div style="border-top: 1.5px dashed #cbd5e1; margin: 16px 0;"></div>
+            <div class="invoice-row"><span>Tiền món ăn:</span> <strong id="inv-food-total">0đ</strong></div>
+            <div class="invoice-row"><span>Phí vận chuyển:</span> <strong id="inv-ship-fee">0đ</strong></div>
+            <div class="invoice-row"><span>Giảm giá voucher:</span> <strong id="inv-discount" style="color: #10b981;">0đ</strong></div>
+            <div style="border-top: 2px solid #0f172a; margin: 16px 0;"></div>
+            <div class="invoice-row" style="font-size: 16px;">
+                <span style="font-weight: 800; color: #0f172a;">TỔNG THANH TOÁN:</span>
+                <strong id="inv-final-total" style="color: #ff5722; font-size: 20px;">0đ</strong>
+            </div>
+            <div style="margin-top: 20px; display: flex; gap: 10px;">
+                <button type="button" onclick="window.print()" style="flex: 1; padding: 12px; border-radius: 12px; background: #0f172a; color: white; border: none; font-weight: 800; font-size: 13.5px; cursor: pointer;">
+                    <i class="fa-solid fa-print"></i> In Hóa Đơn
+                </button>
+                <button type="button" onclick="closeInvoiceModalDirect()" style="flex: 1; padding: 12px; border-radius: 12px; background: #f1f5f9; color: #475569; border: 1.5px solid #cbd5e1; font-weight: 800; font-size: 13.5px; cursor: pointer;">
+                    Đóng
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 1-CLICK RE-ORDER FUNCTION
+    function reorderOrder(maDon) {
+        if (typeof showToast === 'function') {
+            showToast(`Đang tải món ăn từ đơn #${maDon}...`, 'info', 'Đang xử lý');
+        }
+
+        fetch(`/api/don-hang/${maDon}/items/`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success' && data.items && data.items.length > 0) {
+                    let cart = (typeof getCart === 'function') ? getCart() : [];
+
+                    data.items.forEach(item => {
+                        let existing = cart.find(i => i.id == item.id);
+                        if (existing) {
+                            existing.quantity += item.quantity;
+                        } else {
+                            cart.push({
+                                id: item.id,
+                                name: item.name,
+                                price: item.price,
+                                img: item.img,
+                                quantity: item.quantity,
+                                kho_id: item.kho_id,
+                                kho_name: item.kho_name
+                            });
+                        }
+                    });
+
+                    if (typeof saveCart === 'function') {
+                        saveCart(cart);
+                    } else {
+                        localStorage.setItem('food_delivery_cart', JSON.stringify(cart));
+                    }
+
+                    if (typeof showToast === 'function') {
+                        showToast(`Đã thêm ${data.items.length} món từ đơn #${maDon} vào giỏ hàng!`, 'cart', 'Đặt lại món thành công');
+                    }
+
+                    // Tự động mở Cart Drawer
+                    if (typeof toggleCartDrawer === 'function') {
+                        setTimeout(toggleCartDrawer, 400);
+                    }
+                } else {
+                    if (typeof showToast === 'function') {
+                        showToast("Không tìm thấy thông tin món ăn để đặt lại!", "warning", "Thông báo");
+                    }
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                if (typeof showToast === 'function') {
+                    showToast("Có lỗi xảy ra khi nạp lại đơn hàng!", "error", "Lỗi");
+                }
+            });
+    }
+
+    // MODAL HÓA ĐƠN ĐIỆN TỬ
+    function openInvoiceModal(code, name, phone, address, foodTotal, shipFee, discount, total, date) {
+        document.getElementById('inv-code').innerText = `Hóa Đơn #${code}`;
+        document.getElementById('inv-date').innerText = `Đặt lúc: ${date}`;
+        document.getElementById('inv-name').innerText = name;
+        document.getElementById('inv-phone').innerText = phone;
+        document.getElementById('inv-address').innerText = address;
+        document.getElementById('inv-food-total').innerText = foodTotal;
+        document.getElementById('inv-ship-fee').innerText = shipFee;
+        document.getElementById('inv-discount').innerText = discount;
+        document.getElementById('inv-final-total').innerText = total;
+
+        const modal = document.getElementById('invoice-modal');
+        modal.style.display = 'flex';
+    }
+
+    function closeInvoiceModal(e) {
+        if (e.target.id === 'invoice-modal') {
+            document.getElementById('invoice-modal').style.display = 'none';
+        }
+    }
+
+    function closeInvoiceModalDirect() {
+        document.getElementById('invoice-modal').style.display = 'none';
+    }
+</script>
+{% endblock %}

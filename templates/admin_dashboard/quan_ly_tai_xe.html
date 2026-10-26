@@ -1,0 +1,508 @@
+{% extends "admin_dashboard/admin_base.html" %}
+{% load static currency_filters %}
+
+{% block title %}Quản Lý Đội Ngũ Tài Xế Shipper - Logistics Pro Admin{% endblock %}
+
+{% block page_title %}Quản Lý Đội Ngũ Tài Xế & Điều Phối Shipper{% endblock %}
+
+{% block breadcrumb %}
+<span class="sep">/</span>
+<a href="{% url 'core:quan_ly_tai_xe' %}" style="color: var(--admin-primary); text-decoration: none; font-weight: 600;">Đội Ngũ Tài Xế</a>
+{% endblock %}
+
+{% block admin_content %}
+<!-- ==============================================================================
+     1. KPI THỐNG KÊ SHIPPER
+     ============================================================================== -->
+<div class="admin-kpi-grid" style="margin-bottom: 24px;">
+    <!-- KPI 1: Tổng số tài xế -->
+    <div class="admin-kpi-card">
+        <div class="admin-kpi-header">
+            <div>
+                <div class="admin-kpi-title">Tổng Số Tài Xế Shipper</div>
+                <div class="admin-kpi-value">{{ stats.tong_so_tx }}</div>
+            </div>
+            <div class="admin-kpi-icon-box admin-kpi-icon-blue">
+                <i class="fa-solid fa-motorcycle"></i>
+            </div>
+        </div>
+        <div class="admin-kpi-footer">
+            <span class="admin-kpi-subtext">Đội xe giao nhận trong hệ thống</span>
+        </div>
+    </div>
+
+    <!-- KPI 2: Đang online -->
+    <div class="admin-kpi-card">
+        <div class="admin-kpi-header">
+            <div>
+                <div class="admin-kpi-title">Shipper Đang Online</div>
+                <div class="admin-kpi-value" style="color: #059669;">{{ stats.dang_online }}</div>
+            </div>
+            <div class="admin-kpi-icon-box admin-kpi-icon-green">
+                <i class="fa-solid fa-signal"></i>
+            </div>
+        </div>
+        <div class="admin-kpi-footer">
+            <span class="admin-kpi-subtext">Sẵn sàng nhận cuốc hỏa tốc</span>
+        </div>
+    </div>
+
+    <!-- KPI 3: Phân bổ ca trực -->
+    <div class="admin-kpi-card">
+        <div class="admin-kpi-header">
+            <div>
+                <div class="admin-kpi-title">Shipper Ca Sáng / Tối</div>
+                <div class="admin-kpi-value" style="color: #d97706;">{{ stats.ca_sang }} / {{ stats.ca_toi }}</div>
+            </div>
+            <div class="admin-kpi-icon-box admin-kpi-icon-amber">
+                <i class="fa-solid fa-clock"></i>
+            </div>
+        </div>
+        <div class="admin-kpi-footer">
+            <span class="admin-kpi-subtext">Phân bố đều các khung giờ cao điểm</span>
+        </div>
+    </div>
+
+    <!-- KPI 4: Tổng doanh thu tích lũy đội xe -->
+    <div class="admin-kpi-card">
+        <div class="admin-kpi-header">
+            <div>
+                <div class="admin-kpi-title">Tổng Doanh Thu Đội Xe</div>
+                <div class="admin-kpi-value" style="color: #6366f1;">{{ stats.tong_doanh_thu|currency_vn }}</div>
+            </div>
+            <div class="admin-kpi-icon-box admin-kpi-icon-purple">
+                <i class="fa-solid fa-wallet"></i>
+            </div>
+        </div>
+        <div class="admin-kpi-footer">
+            <span class="admin-kpi-subtext">Thu nhập cước phí và phụ phí</span>
+        </div>
+    </div>
+</div>
+
+<!-- ==============================================================================
+     2. THANH CÔNG CỤ TÌM KIẾM & NÚT THÊM TÀI XẾ TẠI CHỖ
+     ============================================================================== -->
+<div class="admin-card" style="margin-bottom: 24px;">
+    <div style="padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+        <form method="GET" action="{% url 'core:quan_ly_tai_xe' %}" id="filterDriverForm" style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center; flex: 1;">
+            <div style="position: relative; min-width: 260px; flex: 1;">
+                <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 13.5px;"></i>
+                <input type="text" name="q" id="driverSearchInput" value="{{ q }}" placeholder="Tìm theo tên tài xế, SĐT, biển số xe..." style="width: 100%; padding: 10px 14px 10px 38px; border-radius: 10px; border: 1.5px solid #e2e8f0; font-size: 13.5px; outline: none; background: #f8fafc; color: #1e293b;">
+            </div>
+
+            <select name="sort" onchange="this.form.submit()" style="padding: 10px 14px; border-radius: 10px; border: 1.5px solid #e2e8f0; font-size: 13px; font-weight: 600; color: #334155; background: #f8fafc; outline: none; cursor: pointer;">
+                <option value="">⚡ Mặc định</option>
+                <option value="ten_az" {% if sort == 'ten_az' %}selected{% endif %}>🔤 Tên tài xế (A-Z)</option>
+                <option value="luong_cao" {% if sort == 'luong_cao' %}selected{% endif %}>💰 Doanh thu tích lũy cao nhất</option>
+            </select>
+
+            {% if q or sort %}
+                <a href="{% url 'core:quan_ly_tai_xe' %}" class="admin-btn-action admin-btn-action-secondary" style="padding: 9px 14px; font-size: 13px;">
+                    <i class="fa-solid fa-rotate-left"></i> Đặt lại
+                </a>
+            {% endif %}
+        </form>
+
+        <button type="button" class="admin-btn-action admin-btn-action-primary" onclick="openAddDriverModal()" style="box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35); font-size: 13.5px; padding: 10px 18px;">
+            <i class="fa-solid fa-plus-circle"></i>
+            <span>Thêm Tài Xế Mới</span>
+        </button>
+    </div>
+</div>
+
+<!-- ==============================================================================
+     3. BẢNG DỮ LIỆU TÀI XẾ SHIPPER
+     ============================================================================== -->
+<div class="admin-card">
+    <div class="admin-card-header" style="flex-wrap: wrap; gap: 12px;">
+        <div class="admin-card-title-box">
+            <i class="fa-solid fa-id-card admin-card-title-icon" style="color: #6366f1;"></i>
+            <h3 class="admin-card-title">Danh Sách Tài Xế & Hồ Sơ Giao Hàng</h3>
+            <span class="admin-card-badge">{{ ds_tai_xe|length }} Tài Xế</span>
+        </div>
+    </div>
+
+    <div class="admin-table-container">
+        <table class="admin-table" id="driverTable">
+            <thead>
+                <tr>
+                    <th>Họ & Tên Shipper</th>
+                    <th>Số Điện Thoại</th>
+                    <th>Biển Số Xe</th>
+                    <th>Loại Phương Tiện</th>
+                    <th>Ca Làm Việc</th>
+                    <th>Trạng Thái</th>
+                    <th>Đơn Tháng Này</th>
+                    <th>Doanh Thu Tích Lũy</th>
+                    <th style="text-align: right; width: 120px;">Thao Tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tx in ds_tai_xe %}
+                <tr id="row-driver-{{ tx.id }}">
+                    <!-- Tên Shipper -->
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div style="width: 36px; height: 36px; border-radius: 50%; background: #e0e7ff; color: #4338ca; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; font-weight: 800;">
+                                {{ tx.ten_tai_xe|slice:":1"|upper }}
+                            </div>
+                            <div>
+                                <div style="font-weight: 700; color: #1e293b; font-size: 13.5px;">{{ tx.ten_tai_xe }}</div>
+                                <div style="font-size: 11px; color: #64748b;">ID: #{{ tx.id }}</div>
+                            </div>
+                        </div>
+                    </td>
+
+                    <!-- SĐT -->
+                    <td>
+                        <div style="font-weight: 600; color: #334155; font-size: 13px;">
+                            <i class="fa-solid fa-phone" style="color: #6366f1; font-size: 10.5px; margin-right: 4px;"></i>
+                            {{ tx.sdt }}
+                        </div>
+                    </td>
+
+                    <!-- Biển số -->
+                    <td>
+                        <span style="font-family: monospace; font-weight: 800; background: #f8fafc; border: 1px solid #cbd5e1; padding: 3px 8px; border-radius: 6px; font-size: 12.5px; color: #0f172a;">
+                            {{ tx.bien_so }}
+                        </span>
+                    </td>
+
+                    <!-- Loại xe -->
+                    <td>
+                        <span class="admin-badge admin-badge-neutral" style="font-size: 11.5px;">
+                            <i class="fa-solid fa-motorcycle"></i> {{ tx.loai_xe }}
+                        </span>
+                    </td>
+
+                    <!-- Ca làm việc -->
+                    <td>
+                        <span class="admin-badge {% if tx.ca_lam_viec == 'SANG' %}admin-badge-warning{% else %}admin-badge-info{% endif %}" style="font-size: 11px;">
+                            {{ tx.get_ca_lam_viec_display }}
+                        </span>
+                    </td>
+
+                    <!-- Trạng thái -->
+                    <td>
+                        {% if tx.dang_lam_viec %}
+                            <span class="admin-badge admin-badge-success" style="font-size: 11px;">
+                                <i class="fa-solid fa-circle" style="font-size: 8px;"></i> Online
+                            </span>
+                        {% else %}
+                            <span class="admin-badge admin-badge-neutral" style="font-size: 11px;">
+                                <i class="fa-regular fa-circle" style="font-size: 8px;"></i> Nghỉ ca
+                            </span>
+                        {% endif %}
+                    </td>
+
+                    <!-- KPI đơn -->
+                    <td>
+                        <strong style="color: #0f172a; font-size: 13.5px;">{{ tx.tong_don_thang_nay }}</strong>
+                        <span style="font-size: 11.5px; color: #64748b;">đơn</span>
+                    </td>
+
+                    <!-- Doanh thu -->
+                    <td>
+                        <strong style="color: #16a34a; font-size: 13.5px;">{{ tx.doanh_thu_tich_luy|currency_vn }}</strong>
+                    </td>
+
+                    <!-- Thao tác -->
+                    <td style="text-align: right;">
+                        <div class="admin-row-actions" style="justify-content: flex-end;">
+                            <!-- Nút sửa tại chỗ -->
+                            <button type="button" class="admin-btn-icon-sm" title="Chỉnh sửa hồ sơ tài xế" onclick="openEditDriverModal('{{ tx.id }}', '{{ tx.ten_tai_xe|escapejs }}', '{{ tx.sdt }}', '{{ tx.bien_so|escapejs }}', '{{ tx.loai_xe|escapejs }}', '{{ tx.ca_lam_viec }}', '{{ tx.dang_lam_viec|yesno:'1,0' }}')">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </button>
+                            <!-- Nút xóa -->
+                            <button type="button" class="admin-btn-icon-sm" style="color: #ef4444; border-color: #fecaca; background: #fef2f2;" title="Xóa tài xế này" onclick="confirmDeleteDriver('{{ tx.id }}', '{{ tx.ten_tai_xe|escapejs }}')">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9">
+                        <div class="admin-empty-state" style="padding: 50px 20px;">
+                            <i class="fa-solid fa-motorcycle admin-empty-icon"></i>
+                            <h4 style="margin: 0 0 6px 0; color: #1e293b; font-weight: 700; font-size: 16px;">Chưa Có Tài Xế Nào</h4>
+                            <p style="margin: 0 0 16px 0; color: #64748b; font-size: 13.5px;">Thêm tài xế giao nhận vào hệ thống để bắt đầu điều phối vận đơn.</p>
+                            <button type="button" class="admin-btn-action admin-btn-action-primary" onclick="openAddDriverModal()">
+                                <i class="fa-solid fa-plus"></i> Thêm Tài Xế Ngay
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ==============================================================================
+     MODAL 1: THÊM TÀI XẾ MỚI TẠI CHỖ
+     ============================================================================== -->
+<div id="addDriverModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); z-index: 99999; backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 16px;">
+    <div style="background: white; border-radius: 20px; max-width: 500px; width: 100%; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35); overflow: hidden; animation: qdModalFade 0.2s ease-out;">
+        <div style="background: linear-gradient(135deg, #1e293b, #0f172a); color: white; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 38px; height: 38px; border-radius: 12px; background: rgba(99, 102, 241, 0.2); border: 1px solid rgba(99, 102, 241, 0.3); display: flex; align-items: center; justify-content: center; font-size: 18px; color: #818cf8;">
+                    <i class="fa-solid fa-motorcycle"></i>
+                </div>
+                <div>
+                    <h3 style="margin: 0; font-size: 17px; font-weight: 800; color: white;">Thêm Tài Xế Shipper Mới</h3>
+                    <div style="font-size: 12px; opacity: 0.8; margin-top: 2px;">Tạo hồ sơ tài xế và phương tiện vận chuyển</div>
+                </div>
+            </div>
+            <button type="button" onclick="closeAddDriverModal()" style="background: rgba(255,255,255,0.12); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px;">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <form action="{% url 'core:them_tai_xe' %}" method="POST" style="padding: 22px 24px;">
+            {% csrf_token %}
+            <div style="margin-bottom: 14px;">
+                <label style="display: block; font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 5px;">
+                    Họ & Tên Tài Xế <span style="color: #ef4444;">*</span>
+                </label>
+                <input type="text" name="ten_tai_xe" required placeholder="VD: Trần Văn Mạnh" style="width: 100%; padding: 9px 12px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 13px; outline: none; background: #f8fafc; box-sizing: border-box;">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+                <div>
+                    <label style="display: block; font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 5px;">
+                        Số Điện Thoại <span style="color: #ef4444;">*</span>
+                    </label>
+                    <input type="tel" name="sdt" required placeholder="0901234567" style="width: 100%; padding: 9px 12px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 13px; outline: none; background: #f8fafc; box-sizing: border-box;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 5px;">
+                        Biển Số Xe <span style="color: #ef4444;">*</span>
+                    </label>
+                    <input type="text" name="bien_so" required placeholder="59P1-123.45" style="width: 100%; padding: 9px 12px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 13px; outline: none; background: #f8fafc; box-sizing: border-box;">
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+                <div>
+                    <label style="display: block; font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 5px;">
+                        Loại Phương Tiện
+                    </label>
+                    <select name="loai_xe" style="width: 100%; padding: 9px 12px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 13px; outline: none; background: #f8fafc;">
+                        <option value="Xe máy" selected>Xe máy</option>
+                        <option value="Xe tải">Xe tải</option>
+                        <option value="Xe bán tải">Xe bán tải</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="display: block; font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 5px;">
+                        Ca Làm Việc
+                    </label>
+                    <select name="ca_lam_viec" style="width: 100%; padding: 9px 12px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 13px; outline: none; background: #f8fafc;">
+                        <option value="SANG" selected>Ca Sáng (06:00 - 14:00)</option>
+                        <option value="TOI">Ca Tối (14:00 - 22:00)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; font-weight: 600; color: #334155;">
+                    <input type="checkbox" name="dang_lam_viec" checked style="width: 16px; height: 16px; accent-color: var(--admin-primary);">
+                    Kích hoạt trạng thái làm việc (Online nhận đơn ngay)
+                </label>
+            </div>
+
+            <div style="display: flex; gap: 10px; justify-content: flex-end; border-top: 1px solid #f1f5f9; padding-top: 14px;">
+                <button type="button" onclick="closeAddDriverModal()" style="padding: 9px 18px; border-radius: 10px; border: 1px solid #e2e8f0; background: #f8fafc; color: #64748b; font-weight: 700; font-size: 13px; cursor: pointer;">
+                    Hủy Bỏ
+                </button>
+                <button type="submit" style="padding: 9px 24px; border-radius: 10px; border: none; background: linear-gradient(135deg, #4f46e5, #4338ca); color: white; font-weight: 700; font-size: 13px; cursor: pointer; box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);">
+                    <i class="fa-solid fa-check"></i> Lưu Tài Xế Ngay
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ==============================================================================
+     MODAL 2: SỬA HỒ SƠ TÀI XẾ TẠI CHỖ
+     ============================================================================== -->
+<div id="editDriverModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); z-index: 99999; backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 16px;">
+    <div style="background: white; border-radius: 20px; max-width: 500px; width: 100%; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35); overflow: hidden; animation: qdModalFade 0.2s ease-out;">
+        <div style="background: linear-gradient(135deg, #1e293b, #0f172a); color: white; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 38px; height: 38px; border-radius: 12px; background: rgba(99, 102, 241, 0.2); border: 1px solid rgba(99, 102, 241, 0.3); display: flex; align-items: center; justify-content: center; font-size: 18px; color: #818cf8;">
+                    <i class="fa-solid fa-user-pen"></i>
+                </div>
+                <div>
+                    <h3 style="margin: 0; font-size: 17px; font-weight: 800; color: white;">Cập Nhật Tài Xế: <span id="edit-driver-title"></span></h3>
+                    <div style="font-size: 12px; opacity: 0.8; margin-top: 2px;">Chỉnh sửa thông tin liên hệ và trạng thái trực</div>
+                </div>
+            </div>
+            <button type="button" onclick="closeEditDriverModal()" style="background: rgba(255,255,255,0.12); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px;">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <form id="editDriverForm" method="POST" style="padding: 22px 24px;">
+            {% csrf_token %}
+            <div style="margin-bottom: 14px;">
+                <label style="display: block; font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 5px;">
+                    Họ & Tên Tài Xế <span style="color: #ef4444;">*</span>
+                </label>
+                <input type="text" name="ten_tai_xe" id="edit-ten-tai-xe" required style="width: 100%; padding: 9px 12px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 13px; outline: none; background: #f8fafc; box-sizing: border-box;">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+                <div>
+                    <label style="display: block; font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 5px;">
+                        Số Điện Thoại <span style="color: #ef4444;">*</span>
+                    </label>
+                    <input type="tel" name="sdt" id="edit-sdt" required style="width: 100%; padding: 9px 12px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 13px; outline: none; background: #f8fafc; box-sizing: border-box;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 5px;">
+                        Biển Số Xe <span style="color: #ef4444;">*</span>
+                    </label>
+                    <input type="text" name="bien_so" id="edit-bien-so" required style="width: 100%; padding: 9px 12px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 13px; outline: none; background: #f8fafc; box-sizing: border-box;">
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+                <div>
+                    <label style="display: block; font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 5px;">
+                        Loại Phương Tiện
+                    </label>
+                    <select name="loai_xe" id="edit-loai-xe" style="width: 100%; padding: 9px 12px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 13px; outline: none; background: #f8fafc;">
+                        <option value="Xe máy">Xe máy</option>
+                        <option value="Xe tải">Xe tải</option>
+                        <option value="Xe bán tải">Xe bán tải</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="display: block; font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 5px;">
+                        Ca Làm Việc
+                    </label>
+                    <select name="ca_lam_viec" id="edit-ca-lam-viec" style="width: 100%; padding: 9px 12px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 13px; outline: none; background: #f8fafc;">
+                        <option value="SANG">Ca Sáng (06:00 - 14:00)</option>
+                        <option value="TOI">Ca Tối (14:00 - 22:00)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; font-weight: 600; color: #334155;">
+                    <input type="checkbox" name="dang_lam_viec" id="edit-dang-lam-viec" style="width: 16px; height: 16px; accent-color: var(--admin-primary);">
+                    Đang làm việc (Online nhận đơn)
+                </label>
+            </div>
+
+            <div style="display: flex; gap: 10px; justify-content: flex-end; border-top: 1px solid #f1f5f9; padding-top: 14px;">
+                <button type="button" onclick="closeEditDriverModal()" style="padding: 9px 18px; border-radius: 10px; border: 1px solid #e2e8f0; background: #f8fafc; color: #64748b; font-weight: 700; font-size: 13px; cursor: pointer;">
+                    Hủy Bỏ
+                </button>
+                <button type="submit" style="padding: 9px 24px; border-radius: 10px; border: none; background: linear-gradient(135deg, #4f46e5, #4338ca); color: white; font-weight: 700; font-size: 13px; cursor: pointer;">
+                    <i class="fa-solid fa-floppy-disk"></i> Lưu Thay Đổi
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ==============================================================================
+     MODAL 3: XÁC NHẬN XÓA TÀI XẾ
+     ============================================================================== -->
+<div id="deleteDriverModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); z-index: 99999; backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 16px;">
+    <div style="background: white; border-radius: 20px; max-width: 420px; width: 100%; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35); overflow: hidden; animation: qdModalFade 0.2s ease-out; text-align: center; padding: 28px 24px;">
+        <div style="width: 60px; height: 60px; border-radius: 50%; background: #fee2e2; color: #ef4444; font-size: 26px; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+            <i class="fa-solid fa-trash-can"></i>
+        </div>
+        <h3 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 800; color: #1e293b;">Xác Nhận Xóa Tài Xế?</h3>
+        <p style="margin: 0 0 24px 0; font-size: 13.5px; color: #64748b; line-height: 1.5;">
+            Bạn có chắc chắn muốn xóa hồ sơ tài xế <b id="deleteDriverTen" style="color: var(--admin-primary);"></b> không?
+        </p>
+        <div style="display: flex; gap: 12px; justify-content: center;">
+            <button type="button" onclick="closeDeleteDriverModal()" class="admin-btn-action admin-btn-action-secondary" style="padding: 10px 20px; font-size: 13.5px;">
+                Hủy Bỏ
+            </button>
+            <a id="deleteDriverConfirmBtn" href="#" class="admin-btn-action" style="background: #ef4444; color: white; padding: 10px 22px; font-size: 13.5px; border-radius: 10px; text-decoration: none; font-weight: 700;">
+                <i class="fa-solid fa-trash"></i> Xóa Vĩnh Viễn
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes qdModalFade {
+    from { opacity: 0; transform: scale(0.96) translateY(-10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+</style>
+
+<script>
+// Live Search
+document.addEventListener('DOMContentLoaded', function() {
+    const input = document.getElementById('driverSearchInput');
+    if (input) {
+        input.addEventListener('input', function() {
+            const term = this.value.toLowerCase().trim();
+            const rows = document.querySelectorAll('#driverTable tbody tr[id^="row-driver-"]');
+            rows.forEach(row => {
+                row.style.display = row.innerText.toLowerCase().includes(term) ? '' : 'none';
+            });
+        });
+    }
+});
+
+// Add Modal
+function openAddDriverModal() {
+    document.getElementById('addDriverModal').style.display = 'flex';
+}
+function closeAddDriverModal() {
+    document.getElementById('addDriverModal').style.display = 'none';
+}
+
+// Edit Modal
+function openEditDriverModal(id, ten, sdt, bienSo, loaiXe, caLamViec, dangLamViec) {
+    document.getElementById('edit-driver-title').textContent = ten;
+    document.getElementById('edit-ten-tai-xe').value = ten;
+    document.getElementById('edit-sdt').value = sdt;
+    document.getElementById('edit-bien-so').value = bienSo;
+    document.getElementById('edit-loai-xe').value = loaiXe;
+    document.getElementById('edit-ca-lam-viec').value = caLamViec;
+    document.getElementById('edit-dang-lam-viec').checked = (dangLamViec === '1');
+    document.getElementById('editDriverForm').action = '/sua-tai-xe/' + id + '/';
+    document.getElementById('editDriverModal').style.display = 'flex';
+}
+function closeEditDriverModal() {
+    document.getElementById('editDriverModal').style.display = 'none';
+}
+
+// Delete Modal
+function confirmDeleteDriver(id, ten) {
+    document.getElementById('deleteDriverTen').textContent = ten;
+    document.getElementById('deleteDriverConfirmBtn').href = '/xoa-tai-xe/' + id + '/';
+    document.getElementById('deleteDriverModal').style.display = 'flex';
+}
+function closeDeleteDriverModal() {
+    document.getElementById('deleteDriverModal').style.display = 'none';
+}
+
+// Backdrop and Escape handlers
+window.addEventListener('click', function(e) {
+    ['addDriverModal', 'editDriverModal', 'deleteDriverModal'].forEach(id => {
+        const m = document.getElementById(id);
+        if (m && e.target === m) m.style.display = 'none';
+    });
+});
+window.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        ['addDriverModal', 'editDriverModal', 'deleteDriverModal'].forEach(id => {
+            const m = document.getElementById(id);
+            if (m) m.style.display = 'none';
+        });
+    }
+});
+</script>
+{% endblock %}

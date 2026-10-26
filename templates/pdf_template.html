@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+    /* KHAI BÁO FONT TIẾNG VIỆT CHO PDF */
+    @font-face {
+        font-family: 'ArialCustom';
+        /* Chỗ này ông phải ghi đúng đường dẫn vật lý trên máy ông hoặc dùng path tương đối */
+        src: url('C:/Users/Tan Nguyen/DoAn/static/fonts/Arial.ttf'); 
+    }
+
+    body { 
+        font-family: 'ArialCustom', sans-serif; 
+        font-size: 12px; 
+        color: #333; 
+    }
+
+    /* Các phần còn lại giữ nguyên */
+    .header { text-align: center; margin-bottom: 30px; }
+    .title { font-size: 22px; font-weight: bold; color: #5e72e4; }
+    
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th { background-color: #5e72e4; color: white; padding: 10px; border: 1px solid #ddd; }
+    td { padding: 8px; border: 1px solid #ddd; text-align: left; }
+</style>
+</head>
+<body>
+    <div class="header">
+        <div class="title">Danh Sách Đơn Hàng Logistics</div>
+        <p>Ngày xuất báo cáo: {% now "d/m/Y H:i" %}</p>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Mã Đơn</th>
+                <th>Người Nhận</th>
+                <th>Địa Chỉ Giao</th>
+                <th>Số Điện Thoại</th>
+                <th>Trạng Thái</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for dh in don_hangs %}
+            <tr>
+                <td>#{{ dh.ma_don }}</td>
+                <td>{{ dh.ten_nguoi_nhan }}</td>
+                <td>{{ dh.dia_chi_nguoi_nhan }}</td>
+                <td>{{ dh.sdt_nguoi_nhan }}</td>
+                <td>{{ dh.trang_thai }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="footer">
+        <p>Hệ thống quản lý Logistics Pro</p>
+    </div>
+</body>
+</html>

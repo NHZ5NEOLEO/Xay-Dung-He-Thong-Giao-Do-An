@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Bảng Điều Khiển Quản Trị - Logistics Pro{% endblock %}</title>
+
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- FontAwesome 6 Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Chart.js 4 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+    <!-- Dedicated Scoped Admin CSS -->
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'admin_dashboard/css/admin_dashboard.css' %}">
+    
+    {% block admin_extra_head %}{% endblock %}
+</head>
+<body>
+    <div class="admin-app-wrapper">
+        <!-- Mobile Sidebar Backdrop -->
+        <div class="admin-sidebar-backdrop" id="adminSidebarBackdrop"></div>
+
+        <!-- ==============================================================================
+             1. LEFT SIDEBAR NAVIGATION
+             ============================================================================== -->
+        <aside class="admin-sidebar" id="adminSidebar">
+            <!-- Brand Header -->
+            <div class="admin-sidebar-brand">
+                <a href="{% url 'core:admin_dashboard' %}" class="admin-brand-logo" title="Logistics Pro Admin Portal">
+                    <div class="admin-brand-icon-box">
+                        <i class="fa-solid fa-boxes-stacked"></i>
+                    </div>
+                    <div class="admin-brand-text">
+                        <span class="admin-brand-name">Logistics Pro</span>
+                        <span class="admin-brand-sub">Hệ Thống Quản Trị</span>
+                    </div>
+                </a>
+                <button type="button" class="admin-sidebar-toggle-btn" id="adminSidebarToggle" title="Thu gọn/Mở rộng Sidebar" aria-label="Thu gọn/Mở rộng Sidebar">
+                    <i class="fa-solid fa-bars-staggered"></i>
+                </button>
+            </div>
+
+            <!-- Navigation Links -->
+            <nav class="admin-sidebar-nav">
+                <!-- Group 1: Tổng quan -->
+                <div class="admin-nav-group">
+                    <div class="admin-nav-group-title">Tổng quan</div>
+                    <ul class="admin-nav-list">
+                        <li class="admin-nav-item {% if active_menu == 'dashboard' %}active{% endif %}">
+                            <a href="{% url 'core:admin_dashboard' %}" class="admin-nav-link">
+                                <i class="fa-solid fa-chart-pie admin-nav-icon"></i>
+                                <span class="admin-nav-text">Bảng Điều Khiển</span>
+                            </a>
+                        </li>
+                        <li class="admin-nav-item {% if active_menu == 'reports' %}active{% endif %}">
+                            <a href="{% url 'core:export_excel' %}" class="admin-nav-link" title="Xuất báo cáo dữ liệu định dạng Excel">
+                                <i class="fa-solid fa-file-excel admin-nav-icon"></i>
+                                <span class="admin-nav-text">Báo Cáo & Phân Tích</span>
+                                <span class="admin-nav-badge admin-nav-badge-disabled">XLSX</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Group 2: Vận hành Logistics -->
+                <div class="admin-nav-group">
+                    <div class="admin-nav-group-title">Vận hành Logistics</div>
+                    <ul class="admin-nav-list">
+                        <li class="admin-nav-item {% if active_menu == 'don_hang' %}active{% endif %}">
+                            <a href="{% url 'core:quan_ly_don_hang' %}" class="admin-nav-link">
+                                <i class="fa-solid fa-truck-ramp-box admin-nav-icon"></i>
+                                <span class="admin-nav-text">Quản Lý Đơn Vận Chuyển</span>
+                                {% if pending_orders_count > 0 %}
+                                    <span class="admin-nav-badge admin-nav-badge-count">{{ pending_orders_count }}</span>
+                                {% endif %}
+                            </a>
+                        </li>
+                        <li class="admin-nav-item {% if active_menu == 'kho_hang' %}active{% endif %}">
+                            <a href="{% url 'core:quan_ly_kho' %}" class="admin-nav-link">
+                                <i class="fa-solid fa-warehouse admin-nav-icon"></i>
+                                <span class="admin-nav-text">Quản Lý Cơ Sở & Kho</span>
+                            </a>
+                        </li>
+                        <li class="admin-nav-item {% if active_menu == 'tai_xe' %}active{% endif %}">
+                            <a href="{% url 'core:quan_ly_tai_xe' %}" class="admin-nav-link">
+                                <i class="fa-solid fa-motorcycle admin-nav-icon"></i>
+                                <span class="admin-nav-text">Quản Lý Tài Xế Shipper</span>
+                            </a>
+                        </li>
+                        <li class="admin-nav-item {% if active_menu == 'lich_su' %}active{% endif %}">
+                            <a href="{% url 'core:quan_ly_lich_su' %}" class="admin-nav-link">
+                                <i class="fa-solid fa-timeline admin-nav-icon"></i>
+                                <span class="admin-nav-text">Lịch Sử Vận Chuyển</span>
+                            </a>
+                        </li>
+                        <li class="admin-nav-item {% if active_menu == 'gis_map' %}active{% endif %}">
+                            <a href="{% url 'core:ban_do_chung' %}" class="admin-nav-link">
+                                <i class="fa-solid fa-map-location-dot admin-nav-icon"></i>
+                                <span class="admin-nav-text">Bản Đồ GIS Giám Sát</span>
+                            </a>
+                        </li>
+                        <li class="admin-nav-item {% if active_menu == 'toi_uu' %}active{% endif %}">
+                            <a href="{% url 'core:toi_uu' %}" class="admin-nav-link">
+                                <i class="fa-solid fa-route admin-nav-icon"></i>
+                                <span class="admin-nav-text">Tối Ưu Tuyến Đường</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Group 3: Dịch vụ đặt món -->
+                <div class="admin-nav-group">
+                    <div class="admin-nav-group-title">Dịch vụ đặt món</div>
+                    <ul class="admin-nav-list">
+                        <li class="admin-nav-item {% if active_menu == 'mon_an' %}active{% endif %}">
+                            <a href="{% url 'core:admin_quan_ly_mon_an' %}" class="admin-nav-link" title="Quản lý thực đơn và kho món ăn">
+                                <i class="fa-solid fa-bowl-rice admin-nav-icon"></i>
+                                <span class="admin-nav-text">Thực Đơn Món Ăn</span>
+                            </a>
+                        </li>
+                        <li class="admin-nav-item {% if active_menu == 'don_dat_mon' %}active{% endif %}">
+                            <a href="{% url 'core:quan_ly_don_hang' %}?sort=hoa_toc" class="admin-nav-link">
+                                <i class="fa-solid fa-receipt admin-nav-icon"></i>
+                                <span class="admin-nav-text">Đơn Đặt Món Hỏa Tốc</span>
+                            </a>
+                        </li>
+                        <li class="admin-nav-item {% if active_menu == 'app_shipper' %}active{% endif %}">
+                            <a href="{% url 'core:app_shipper' %}" class="admin-nav-link" title="Mở ứng dụng Shipper">
+                                <i class="fa-solid fa-mobile-screen-button admin-nav-icon"></i>
+                                <span class="admin-nav-text">Theo Dõi Giao Hàng</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Group 4: Quản trị hệ thống -->
+                <div class="admin-nav-group">
+                    <div class="admin-nav-group-title">Quản trị hệ thống</div>
+                    <ul class="admin-nav-list">
+                        <li class="admin-nav-item {% if active_menu == 'tai_khoan' %}active{% endif %}">
+                            <a href="{% url 'core:quan_ly_tai_khoan' %}" class="admin-nav-link">
+                                <i class="fa-solid fa-users-gear admin-nav-icon"></i>
+                                <span class="admin-nav-text">Quản Lý Người Dùng</span>
+                            </a>
+                        </li>
+                        <li class="admin-nav-item {% if active_menu == 'partner' %}active{% endif %}">
+                            <a href="{% url 'core:partner_demo' %}" class="admin-nav-link">
+                                <i class="fa-solid fa-handshake admin-nav-icon"></i>
+                                <span class="admin-nav-text">Đối Tác B2B Demo</span>
+                            </a>
+                        </li>
+                        <li class="admin-nav-item disabled">
+                            <a href="javascript:void(0);" class="admin-nav-link" title="Tính năng đang được phát triển">
+                                <i class="fa-solid fa-sliders admin-nav-icon"></i>
+                                <span class="admin-nav-text">Cấu Hình Hệ Thống</span>
+                                <span class="admin-nav-badge admin-nav-badge-disabled">Sắp ra mắt</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Sidebar User Snapshot Footer -->
+            <div class="admin-sidebar-footer">
+                <div class="admin-sidebar-user">
+                    <div class="admin-sidebar-avatar">
+                        {{ request.user.username|make_list|first|upper }}
+                    </div>
+                    <div class="admin-sidebar-userinfo">
+                        <span class="admin-sidebar-username">{{ request.user.username }}</span>
+                        <span class="admin-sidebar-role">
+                            <span class="status-dot"></span>
+                            {% if request.user.is_superuser %}Super Admin{% else %}Quản Trị Viên{% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ==============================================================================
+             2. MAIN CONTENT WRAPPER & TOP HEADER
+             ============================================================================== -->
+        <div class="admin-main-container">
+            <!-- Top Header -->
+            <header class="admin-header">
+                <div class="admin-header-left">
+                    <button type="button" class="admin-mobile-toggle-btn" id="adminMobileToggle" aria-label="Mở Sidebar">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                    <div class="admin-header-title-box">
+                        <h1 class="admin-header-title">{% block page_title %}Bảng Điều Khiển Tổng Quan{% endblock %}</h1>
+                        <div class="admin-breadcrumb">
+                            <a href="{% url 'core:home' %}"><i class="fa-solid fa-house" style="font-size: 11px;"></i> Hệ Thống</a>
+                            <span class="sep">/</span>
+                            <a href="{% url 'core:admin_dashboard' %}">Quản Trị</a>
+                            {% block breadcrumb %}{% endblock %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="admin-header-right">
+                    <!-- Prominent "Về Trang Chủ" Button (Navigates cleanly without clearing session) -->
+                    <a href="{% url 'core:home' %}" class="admin-btn-back-home" title="Quay về trang giao diện người dùng">
+                        <i class="fa-solid fa-arrow-left"></i>
+                        <span>Về Trang Chủ</span>
+                    </a>
+
+                    <!-- Notification Button with Real Pending Orders Badge -->
+                    <a href="{% url 'core:quan_ly_don_hang' %}" class="admin-header-action-btn" title="Đơn hàng chờ xử lý">
+                        <i class="fa-regular fa-bell"></i>
+                        {% if pending_orders_count > 0 %}
+                            <span class="badge-dot">{{ pending_orders_count }}</span>
+                        {% endif %}
+                    </a>
+
+                    <!-- Logged-in User Profile -->
+                    <div class="admin-user-menu">
+                        <div class="admin-user-avatar">
+                            {{ request.user.username|make_list|first|upper }}
+                        </div>
+                        <div class="admin-user-details">
+                            <span class="admin-user-name">{{ request.user.username }}</span>
+                            <span class="admin-user-role-badge">
+                                {% if request.user.is_superuser %}Admin Cấp Cao{% else %}Nhân Viên Vận Hành{% endif %}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Logout Button (Safe redirect) -->
+                    <a href="{% url 'core:logout' %}" class="admin-btn-logout" title="Đăng xuất khỏi hệ thống">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                        <span>Đăng Xuất</span>
+                    </a>
+                </div>
+            </header>
+
+            <!-- Main Page Content Body -->
+            <main class="admin-page-content">
+                {% block admin_content %}{% endblock %}
+            </main>
+
+            <!-- Footer -->
+            <footer class="admin-footer">
+                <div>
+                    <strong>Logistics Pro</strong> &copy; 2026. Nền tảng điều phối vận tải & giao đồ ăn trực tuyến.
+                </div>
+                <div>
+                    Phiên bản 2.5 &bull; <a href="{% url 'core:home' %}">Trang chủ</a> &bull; <a href="{% url 'core:ban_do_chung' %}">Bản đồ GIS</a>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Scoped JS -->
+    <script src="{% static 'admin_dashboard/js/admin_dashboard.js' %}"></script>
+    {% block admin_scripts %}{% endblock %}
+</body>
+</html>

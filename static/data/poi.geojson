@@ -1,0 +1,26 @@
+
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Kho hàng Quận 1"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [106.70098, 10.77689]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Kho hàng Quận 7"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [106.72179, 10.73785]
+      }
+    }
+  ]
+}
