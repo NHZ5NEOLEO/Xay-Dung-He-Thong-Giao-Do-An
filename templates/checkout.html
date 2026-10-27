@@ -46,8 +46,10 @@
         color: #1e293b;
     }
 
+    /* FORM INPUT VÀ SELECT ĐỒNG ĐỀU 100% LAYOUT */
     .form-group {
         margin-bottom: 18px;
+        width: 100%;
     }
 
     .form-group label {
@@ -58,6 +60,37 @@
         text-transform: uppercase;
         margin-bottom: 7px;
         letter-spacing: 0.5px;
+    }
+
+    .checkout-card .form-group input,
+    .checkout-card .form-group select,
+    .checkout-card .form-group textarea,
+    .checkout-card input.form-control,
+    .checkout-card select.form-control,
+    .checkout-card textarea.form-control {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        display: block !important;
+        padding: 12px 16px;
+        border: 1.5px solid #cbd5e1;
+        border-radius: 12px;
+        font-size: 14px;
+        font-family: inherit;
+        color: #1e293b;
+        background-color: #fff;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .checkout-card .form-group input:focus,
+    .checkout-card .form-group select:focus,
+    .checkout-card .form-group textarea:focus,
+    .checkout-card input.form-control:focus,
+    .checkout-card select.form-control:focus,
+    .checkout-card textarea.form-control:focus {
+        outline: none;
+        border-color: #ff5722 !important;
+        box-shadow: 0 0 0 3px rgba(255, 87, 34, 0.15) !important;
     }
 
     .shipping-method-box {
@@ -124,7 +157,34 @@
         box-shadow: 0 6px 20px rgba(0,0,0,0.06);
     }
 
-    /* GPS Button on map */
+    /* GPS & NHÀ BÈ BUTTONS */
+    .btn-nhabe-locate {
+        background: #fff7f5;
+        color: #ff5722;
+        border: 2px solid #ff5722;
+        padding: 8px 14px;
+        border-radius: 20px;
+        font-weight: 800;
+        font-size: 12px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        box-shadow: 0 4px 12px rgba(255, 87, 34, 0.2);
+        transition: all 0.25s ease;
+    }
+
+    .btn-nhabe-locate:hover {
+        background: #ff5722;
+        color: white;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(255, 87, 34, 0.35);
+    }
+
+    .btn-nhabe-locate:hover i {
+        color: white !important;
+    }
+
     .btn-gps-locate {
         background: white;
         color: #0284c7;
@@ -144,6 +204,7 @@
     .btn-gps-locate:hover {
         background: #0284c7;
         color: white;
+        transform: translateY(-1px);
     }
 
     .btn-location-chip {
@@ -278,28 +339,28 @@
                     <h3>1. Thông tin giao hàng và Mailbox</h3>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                    <div class="form-group">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%;">
+                    <div class="form-group" style="width: 100%;">
                         <label for="ten_nguoi_nhan">Họ và tên người nhận *</label>
-                        <input type="text" name="ten_nguoi_nhan" id="ten_nguoi_nhan" class="form-control" required placeholder="VD: Nguyễn Văn An" value="Nguyễn Văn An" title="Họ và tên người nhận">
+                        <input type="text" name="ten_nguoi_nhan" id="ten_nguoi_nhan" class="form-control" required placeholder="VD: Nguyễn Văn An" value="Nguyễn Văn An" title="Họ và tên người nhận" style="width: 100%; box-sizing: border-box;">
                     </div>
-                    <div class="form-group">
+                    <div class="form-group" style="width: 100%;">
                         <label for="sdt_nguoi_nhan">Số điện thoại liên hệ *</label>
-                        <input type="tel" name="sdt_nguoi_nhan" id="sdt_nguoi_nhan" class="form-control" required placeholder="VD: 0901234567" value="0901234567" title="Số điện thoại liên hệ">
+                        <input type="tel" name="sdt_nguoi_nhan" id="sdt_nguoi_nhan" class="form-control" required placeholder="VD: 0901234567" value="0901234567" title="Số điện thoại liên hệ" style="width: 100%; box-sizing: border-box;">
                     </div>
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" style="width: 100%;">
                     <label for="email_nguoi_nhan">Email nhận hóa đơn và QR (Mailbox) *</label>
-                    <input type="email" name="email_nguoi_nhan" id="email_nguoi_nhan" class="form-control" required placeholder="khachhang_test@gmail.com" value="khachhang_test@gmail.com" title="Email nhận hóa đơn">
+                    <input type="email" name="email_nguoi_nhan" id="email_nguoi_nhan" class="form-control" required placeholder="khachhang_test@gmail.com" value="khachhang_test@gmail.com" title="Email nhận hóa đơn" style="width: 100%; box-sizing: border-box;">
                     <small style="color: #94a3b8; font-size: 11.5px; display: block; margin-top: 4px;">
                         <i class="fa-solid fa-envelope-circle-check" style="color: #22c55e;"></i> Hệ thống sẽ gửi hóa đơn điện tử và xác nhận thanh toán trực tiếp về email này.
                     </small>
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" style="width: 100%;">
                     <label for="kho_select">Bếp / Quán chế biến xuất phát *</label>
-                    <select name="kho_xuat_phat" id="kho_select" class="form-control" title="Chọn Bếp / Quán chế biến xuất phát" aria-label="Bếp / Quán chế biến xuất phát" onchange="onRestaurantChanged()">
+                    <select name="kho_xuat_phat" id="kho_select" class="form-control" title="Chọn Bếp / Quán chế biến xuất phát" aria-label="Bếp / Quán chế biến xuất phát" onchange="onRestaurantChanged()" style="width: 100%; box-sizing: border-box;">
                         {% for k in ds_kho %}
                             <option value="{{ k.id }}" data-lat="{{ k.lat }}" data-lng="{{ k.lng }}" data-name="{{ k.ten_kho }}" {% if forloop.first %}selected{% endif %}>
                                 🏪 {{ k.ten_kho }} ({{ k.dia_chi }})
@@ -308,9 +369,9 @@
                     </select>
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" style="width: 100%;">
                     <label for="dia_chi_nguoi_nhan">Địa chỉ nhận hàng chi tiết *</label>
-                    <input type="text" name="dia_chi_nguoi_nhan" id="dia_chi_nguoi_nhan" class="form-control" required placeholder="Nhập số nhà, tên đường, phường, quận..." value="Đường Huỳnh Tấn Phát, Thị trấn Nhà Bè, Huyện Nhà Bè, TP.HCM" title="Địa chỉ nhận hàng chi tiết">
+                    <input type="text" name="dia_chi_nguoi_nhan" id="dia_chi_nguoi_nhan" class="form-control" required placeholder="Nhập số nhà, tên đường, phường, quận..." value="Đường Huỳnh Tấn Phát, Thị trấn Nhà Bè, Huyện Nhà Bè, TP.HCM" title="Địa chỉ nhận hàng chi tiết" style="width: 100%; box-sizing: border-box;">
                 </div>
 
                 <div class="card-title-box" style="margin-top: 30px;">
@@ -371,14 +432,19 @@
             <!-- CỘT BÊN PHẢI: BẢN ĐỒ LEAFLET GPS và TÍNH CƯỚC THEO KM -->
             <div>
                 <div class="checkout-card" style="margin-bottom: 25px;">
-                    <div class="card-title-box" style="justify-content: space-between;">
+                    <div class="card-title-box" style="justify-content: space-between; flex-wrap: wrap; gap: 8px;">
                         <div style="display: flex; align-items: center; gap: 10px;">
                             <i class="fa-solid fa-map-location-dot" style="color: #0284c7; font-size: 20px;"></i>
                             <h3>Bản đồ Lộ trình và Định vị GPS</h3>
                         </div>
-                        <button type="button" class="btn-gps-locate" onclick="getMyGPSLocation()">
-                            <i class="fa-solid fa-location-crosshairs"></i> Vị trí GPS của tôi
-                        </button>
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <button type="button" class="btn-nhabe-locate" onclick="setMyLocationNhaBe()" title="Đặt vị trí chính xác tại Nhà Bè của bạn">
+                                <i class="fa-solid fa-location-crosshairs" style="color: #ff5722;"></i> <b>Vị trí Nhà Bè của tôi</b>
+                            </button>
+                            <button type="button" class="btn-gps-locate" onclick="getMyGPSLocation()" title="Dò GPS từ trình duyệt thiết bị">
+                                <i class="fa-solid fa-satellite-dish"></i> Dò GPS thiết bị
+                            </button>
+                        </div>
                     </div>
 
                     <div style="position: relative; margin-bottom: 10px;">
@@ -840,44 +906,76 @@
     }
 
     // ==========================================
-    // 📍 ĐỊNH VỊ GPS THỰC TẾ (KÈM BẢO VỆ CHỐNG LỖI IP TRÌNH DUYỆT NGOÀI TP.HCM)
+    // 🎯 VỊ TRÍ NHÀ BÈ CỦA TÔI (ĐỊNH VỊ CHUẨN XÁC NHÀ BÈ KHÔNG BỊ TRÔI VÀO THÀNH PHỐ)
+    // ==========================================
+    function setMyLocationNhaBe() {
+        const chipNhaBe = document.getElementById('chip-nhabe-tt');
+        quickSetLocation(10.6945, 106.7335, 'Đường Huỳnh Tấn Phát, Thị trấn Nhà Bè, Huyện Nhà Bè, TP.HCM', 'Thị trấn Nhà Bè', chipNhaBe);
+        showToast("🎯 Đã định vị chính xác tại Nhà Bè của bạn!");
+    }
+
+    // ==========================================
+    // 📍 ĐỊNH VỊ GPS THỰC TẾ (BẢO VỆ CHỐNG LỖI IP MÁY TÍNH NHẢY VÀO TRUNG TÂM QUẬN 1 HOẶC TỈNH KHÁC)
     // ==========================================
     function getMyGPSLocation() {
         if (!navigator.geolocation) {
-            alert("Trình duyệt của bạn không hỗ trợ định vị GPS!");
+            alert("Trình duyệt không hỗ trợ định vị GPS! Hệ thống định vị ngay tại Nhà Bè của bạn.");
+            setMyLocationNhaBe();
             return;
         }
 
         const btn = document.querySelector('.btn-gps-locate');
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang dò sóng GPS...';
+        const oldHtml = btn ? btn.innerHTML : '<i class="fa-solid fa-satellite-dish"></i> Dò GPS thiết bị';
+        if (btn) btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang dò GPS...';
 
         navigator.geolocation.getCurrentPosition(
             function(position) {
                 const lat = position.coords.latitude;
                 const lng = position.coords.longitude;
-                btn.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> Vị trí GPS của tôi';
+                if (btn) btn.innerHTML = oldHtml;
 
-                // ⚠️ BẢO VỆ CHỐNG LỖI IP MẠNG NGOÀI TP.HCM:
-                // Nếu trình duyệt desktop định vị theo IP mạng ra ngoài TP.HCM (>35km tính từ Nhà Bè / Quận 1, ví dụ Cần Thơ / Trà Vinh 156km)
-                const distFromNhaBe = calculateHaversine(lat, lng, 10.6945, 106.7335);
-                if (distFromNhaBe > 35) {
-                    if (confirm(`⚠️ CẢNH BÁO ĐỊNH VỊ IP MÁY TÍNH:\nTrình duyệt đang lấy vị trí theo IP mạng internet của nhà mạng (cách TP.HCM ~${distFromNhaBe.toFixed(0)} km - ngoài phạm vi giao đồ ăn).\n\nBạn có muốn đặt vị trí chính xác tại NHÀ BÈ, TP.HCM để tính đúng phí giao hàng không?`)) {
-                        quickSetLocation(10.6945, 106.7335, 'Đường Huỳnh Tấn Phát, Thị trấn Nhà Bè, Huyện Nhà Bè, TP.HCM', 'Thị trấn Nhà Bè');
+                // ⚠️ BẢO VỆ CHỐNG LỖI IP MẠNG MÁY TÍNH BÀN / LAPTOP:
+                // Máy tính không có chip GPS vệ tinh nên trình duyệt lấy trạm IP mạng (Quận 1 / Quận 3 / Tân Bình hoặc ngoài tỉnh)
+                const distFromQ1 = calculateHaversine(lat, lng, 10.7769, 106.7009); // Khoảng cách tới Quận 1
+                const distFromNhaBe = calculateHaversine(lat, lng, 10.6945, 106.7335); // Khoảng cách tới Nhà Bè
+
+                // Nếu vị trí trả về rơi vào trung tâm TP.HCM (Quận 1 / Quận 3 cách Nhà Bè 7 - 15km):
+                if (distFromQ1 < 7 && distFromNhaBe > 5) {
+                    const confirmNhaBe = confirm(
+                        "💡 THÔNG BÁO ĐỊNH VỊ THIẾT BỊ MÁY TÍNH:\n\n" +
+                        "Trình duyệt máy tính của bạn đang lấy vị trí theo trạm mạng IP tại TRUNG TÂM THÀNH PHỐ (Quận 1 - cách Nhà Bè ~" + distFromNhaBe.toFixed(1) + " km).\n\n" +
+                        "👉 Bấm [OK] để GIỮ VỊ TRÍ CHÍNH XÁC TẠI NHÀ BÈ của bạn.\n" +
+                        "👉 Bấm [Cancel / Hủy] nếu bạn muốn giao hàng tại trung tâm Thành phố."
+                    );
+
+                    if (confirmNhaBe) {
+                        setMyLocationNhaBe();
+                        return;
+                    }
+                } else if (distFromNhaBe > 35) {
+                    // Nếu IP mạng nhảy ra ngoài tỉnh
+                    const confirmNhaBe = confirm(
+                        "⚠️ CẢNH BÁO ĐỊNH VỊ IP MÁY TÍNH:\n\n" +
+                        "Trình duyệt đang lấy vị trí theo IP mạng internet ngoài TP.HCM (~" + distFromNhaBe.toFixed(0) + " km).\n\n" +
+                        "Bạn có muốn đặt vị trí chính xác tại NHÀ BÈ, TP.HCM để tính đúng phí giao hàng không?"
+                    );
+                    if (confirmNhaBe) {
+                        setMyLocationNhaBe();
                         return;
                     }
                 }
 
-                showToast("📍 Đã tìm thấy vị trí GPS chính xác của bạn!");
+                showToast("📍 Đã cập nhật vị trí GPS của bạn!");
                 customerMarker.setLatLng([lat, lng]);
                 map.setView([lat, lng], 15);
                 onCustomerCoordsChanged(lat, lng);
             },
             function(err) {
-                btn.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> Vị trí GPS của tôi';
-                alert("Không thể lấy vị trí GPS từ trình duyệt! Hệ thống đã đặt vị trí của bạn tại Nhà Bè, TP.HCM.");
-                quickSetLocation(10.6945, 106.7335, 'Đường Huỳnh Tấn Phát, Thị trấn Nhà Bè, Huyện Nhà Bè, TP.HCM', 'Thị trấn Nhà Bè');
+                if (btn) btn.innerHTML = oldHtml;
+                showToast("🎯 Không thể truy cập GPS phần cứng. Đã đặt vị trí của bạn tại Nhà Bè!");
+                setMyLocationNhaBe();
             },
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
         );
     }
 
