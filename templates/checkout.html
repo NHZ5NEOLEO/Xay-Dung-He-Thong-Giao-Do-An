@@ -185,54 +185,7 @@
         color: white !important;
     }
 
-    .btn-gps-locate {
-        background: white;
-        color: #0284c7;
-        border: 2px solid #0284c7;
-        padding: 8px 14px;
-        border-radius: 20px;
-        font-weight: 700;
-        font-size: 12px;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        box-shadow: 0 4px 12px rgba(2, 132, 199, 0.2);
-        transition: 0.25s;
-    }
 
-    .btn-gps-locate:hover {
-        background: #0284c7;
-        color: white;
-        transform: translateY(-1px);
-    }
-
-    .btn-location-chip {
-        background: #f8fafc;
-        color: #334155;
-        border: 1px solid #cbd5e1;
-        padding: 6px 12px;
-        border-radius: 20px;
-        font-size: 11.5px;
-        font-weight: 700;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-        transition: all 0.2s ease;
-    }
-    .btn-location-chip:hover {
-        background: #e0f2fe;
-        color: #0369a1;
-        border-color: #38bdf8;
-        transform: translateY(-1px);
-    }
-    .btn-location-chip.active-chip {
-        background: #0284c7;
-        color: white;
-        border-color: #0284c7;
-        box-shadow: 0 4px 10px rgba(2, 132, 199, 0.3);
-    }
     .suggestion-item {
         padding: 10px 14px;
         border-bottom: 1px solid #f1f5f9;
@@ -437,51 +390,19 @@
                             <i class="fa-solid fa-map-location-dot" style="color: #0284c7; font-size: 20px;"></i>
                             <h3>Bản đồ Lộ trình và Định vị GPS</h3>
                         </div>
-                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                            <button type="button" class="btn-nhabe-locate" onclick="setMyLocationNhaBe()" title="Đặt vị trí chính xác tại Nhà Bè của bạn">
-                                <i class="fa-solid fa-location-crosshairs" style="color: #ff5722;"></i> <b>Vị trí Nhà Bè của tôi</b>
-                            </button>
-                            <button type="button" class="btn-gps-locate" onclick="getMyGPSLocation()" title="Dò GPS từ trình duyệt thiết bị">
-                                <i class="fa-solid fa-satellite-dish"></i> Dò GPS thiết bị
-                            </button>
-                        </div>
+                        <button type="button" class="btn-nhabe-locate" onclick="setMyLocation()" title="Định vị vị trí của tôi">
+                            <i class="fa-solid fa-location-crosshairs" style="color: #ff5722;"></i> <b>Vị trí của tôi</b>
+                        </button>
                     </div>
 
-                    <div style="position: relative; margin-bottom: 10px;">
-                        <input type="text" id="address-search-box" class="form-control" placeholder="🔍 Nhập địa chỉ Nhà Bè, tên đường, phường xã..." style="border-radius: 14px; padding-left: 36px; padding-right: 36px; font-size: 13.5px;" autocomplete="off">
+                    <div style="position: relative; margin-bottom: 12px;">
+                        <input type="text" id="address-search-box" class="form-control" placeholder="🔍 Nhập địa chỉ, tên đường, phường xã..." style="border-radius: 14px; padding-left: 36px; padding-right: 36px; font-size: 13.5px;" autocomplete="off">
                         <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #0284c7;"></i>
                         <button type="button" id="clear-search-btn" onclick="clearAddressSearch()" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #94a3b8; cursor: pointer; padding: 4px;">
                             <i class="fa-solid fa-circle-xmark"></i>
                         </button>
                         <!-- Dropdown gợi ý tìm kiếm địa chỉ -->
                         <div id="search-suggestions" style="display: none; position: absolute; left: 0; right: 0; top: calc(100% + 4px); background: white; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.18); border: 1px solid #e2e8f0; z-index: 10000; max-height: 220px; overflow-y: auto;"></div>
-                    </div>
-
-                    <!-- CHỌN NHANH VỊ TRÍ NHÀ BÈ & CÁC KHU VỰC TRỌNG ĐIỂM -->
-                    <div style="margin-bottom: 12px; background: #f8fafc; padding: 10px 12px; border-radius: 14px; border: 1px solid #e2e8f0;">
-                        <div style="font-size: 12px; font-weight: 700; color: #475569; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
-                            <span><i class="fa-solid fa-location-dot" style="color: #ff5722;"></i> <b>Vị trí giao hàng nhanh:</b></span>
-                            <span style="font-size: 11px; color: #0284c7; cursor: pointer; font-weight: 800;" onclick="quickSetLocation(10.6945, 106.7335, 'Đường Huỳnh Tấn Phát, Thị trấn Nhà Bè, Huyện Nhà Bè, TP.HCM', 'Thị trấn Nhà Bè')">
-                                🎯 Bạn ở Nhà Bè? Bấm đây!
-                            </span>
-                        </div>
-                        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                            <button type="button" class="btn-location-chip active-chip" id="chip-nhabe-tt" onclick="quickSetLocation(10.6945, 106.7335, 'Đường Huỳnh Tấn Phát, Thị trấn Nhà Bè, Huyện Nhà Bè, TP.HCM', 'Thị trấn Nhà Bè', this)">
-                                📍 Thị trấn Nhà Bè
-                            </button>
-                            <button type="button" class="btn-location-chip" id="chip-nhabe-pk" onclick="quickSetLocation(10.7130, 106.7050, 'Đường Nguyễn Hữu Thọ, Xã Phước Kiển, Huyện Nhà Bè, TP.HCM', 'Phước Kiển, Nhà Bè', this)">
-                                📍 Phước Kiển (Nhà Bè)
-                            </button>
-                            <button type="button" class="btn-location-chip" id="chip-nhabe-px" onclick="quickSetLocation(10.6750, 106.7450, 'Đường Huỳnh Tấn Phát, Xã Phú Xuân, Huyện Nhà Bè, TP.HCM', 'Phú Xuân, Nhà Bè', this)">
-                                📍 Phú Xuân (Nhà Bè)
-                            </button>
-                            <button type="button" class="btn-location-chip" id="chip-q7" onclick="quickSetLocation(10.7290, 106.7215, 'Khu đô thị Phú Mỹ Hưng, Quận 7, TP.HCM', 'Phú Mỹ Hưng, Q.7', this)">
-                                📍 Quận 7 (Phú Mỹ Hưng)
-                            </button>
-                            <button type="button" class="btn-location-chip" id="chip-q1" onclick="quickSetLocation(10.7769, 106.7009, '12 Nguyễn Huệ, P. Bến Nghé, Quận 1, TP.HCM', 'Quận 1 (Trung tâm)', this)">
-                                📍 Quận 1 (Trung tâm)
-                            </button>
-                        </div>
                     </div>
 
                     <div id="leaflet-checkout-map"></div>
@@ -906,13 +827,13 @@
     }
 
     // ==========================================
-    // 🎯 VỊ TRÍ NHÀ BÈ CỦA TÔI (ĐỊNH VỊ CHUẨN XÁC NHÀ BÈ KHÔNG BỊ TRÔI VÀO THÀNH PHỐ)
+    // 🎯 VỊ TRÍ CỦA TÔI (ĐỊNH VỊ CHUẨN XÁC VỊ TRÍ CỦA BẠN KHÔNG BỊ TRÔI VÀO THÀNH PHỐ)
     // ==========================================
-    function setMyLocationNhaBe() {
-        const chipNhaBe = document.getElementById('chip-nhabe-tt');
-        quickSetLocation(10.6945, 106.7335, 'Đường Huỳnh Tấn Phát, Thị trấn Nhà Bè, Huyện Nhà Bè, TP.HCM', 'Thị trấn Nhà Bè', chipNhaBe);
-        showToast("🎯 Đã định vị chính xác tại Nhà Bè của bạn!");
+    function setMyLocation() {
+        quickSetLocation(10.6945, 106.7335, 'Đường Huỳnh Tấn Phát, Thị trấn Nhà Bè, Huyện Nhà Bè, TP.HCM', 'Vị trí của bạn');
+        showToast("🎯 Đã định vị chính xác vị trí của bạn!");
     }
+    const setMyLocationNhaBe = setMyLocation;
 
     // ==========================================
     // 📍 ĐỊNH VỊ GPS THỰC TẾ (BẢO VỆ CHỐNG LỖI IP MÁY TÍNH NHẢY VÀO TRUNG TÂM QUẬN 1 HOẶC TỈNH KHÁC)
@@ -925,7 +846,7 @@
         }
 
         const btn = document.querySelector('.btn-gps-locate');
-        const oldHtml = btn ? btn.innerHTML : '<i class="fa-solid fa-satellite-dish"></i> Dò GPS thiết bị';
+        const oldHtml = btn ? btn.innerHTML : '';
         if (btn) btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang dò GPS...';
 
         navigator.geolocation.getCurrentPosition(
