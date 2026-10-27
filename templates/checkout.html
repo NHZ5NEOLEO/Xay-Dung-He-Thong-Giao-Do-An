@@ -146,6 +146,51 @@
         color: white;
     }
 
+    .btn-location-chip {
+        background: #f8fafc;
+        color: #334155;
+        border: 1px solid #cbd5e1;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 11.5px;
+        font-weight: 700;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        transition: all 0.2s ease;
+    }
+    .btn-location-chip:hover {
+        background: #e0f2fe;
+        color: #0369a1;
+        border-color: #38bdf8;
+        transform: translateY(-1px);
+    }
+    .btn-location-chip.active-chip {
+        background: #0284c7;
+        color: white;
+        border-color: #0284c7;
+        box-shadow: 0 4px 10px rgba(2, 132, 199, 0.3);
+    }
+    .suggestion-item {
+        padding: 10px 14px;
+        border-bottom: 1px solid #f1f5f9;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 12.5px;
+        color: #334155;
+        transition: background 0.15s;
+    }
+    .suggestion-item:last-child {
+        border-bottom: none;
+    }
+    .suggestion-item:hover {
+        background: #f0f9ff;
+        color: #0284c7;
+    }
+
     .trip-summary-box {
         background: linear-gradient(135deg, #f8fafc, #edf2f7);
         border-radius: 16px;
@@ -217,9 +262,9 @@
     <form method="POST" action="{% url 'core:tao_don_hang_mon_an' %}" id="checkout-form">
         {% csrf_token %}
         <input type="hidden" name="cart_data" id="hidden_cart_data" value="[]">
-        <input type="hidden" name="lat_khach" id="lat_khach" value="10.7769">
-        <input type="hidden" name="lng_khach" id="lng_khach" value="106.7009">
-        <input type="hidden" name="khoang_cach_km" id="hidden_km" value="2.5">
+        <input type="hidden" name="lat_khach" id="lat_khach" value="10.6945">
+        <input type="hidden" name="lng_khach" id="lng_khach" value="106.7335">
+        <input type="hidden" name="khoang_cach_km" id="hidden_km" value="1.2">
         <input type="hidden" name="phi_ship" id="hidden_phi_ship" value="15000">
         <input type="hidden" name="phu_phi_hoa_toc" id="hidden_phu_phi" value="10000">
         <input type="hidden" name="loai_giao_hang" id="loai_giao_hang" value="HOA_TOC">
@@ -265,7 +310,7 @@
 
                 <div class="form-group">
                     <label for="dia_chi_nguoi_nhan">Địa chỉ nhận hàng chi tiết *</label>
-                    <input type="text" name="dia_chi_nguoi_nhan" id="dia_chi_nguoi_nhan" class="form-control" required placeholder="Nhập số nhà, tên đường, phường, quận..." value="12 Nguyễn Huệ, P. Bến Nghé, Quận 1, TP.HCM" title="Địa chỉ nhận hàng chi tiết">
+                    <input type="text" name="dia_chi_nguoi_nhan" id="dia_chi_nguoi_nhan" class="form-control" required placeholder="Nhập số nhà, tên đường, phường, quận..." value="Đường Huỳnh Tấn Phát, Thị trấn Nhà Bè, Huyện Nhà Bè, TP.HCM" title="Địa chỉ nhận hàng chi tiết">
                 </div>
 
                 <div class="card-title-box" style="margin-top: 30px;">
@@ -336,9 +381,41 @@
                         </button>
                     </div>
 
-                    <div style="position: relative; margin-bottom: 12px;">
-                        <input type="text" id="address-search-box" class="form-control" placeholder="🔍 Tìm địa chỉ giao hàng trên bản đồ..." style="border-radius: 20px; padding-left: 36px;">
-                        <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #94a3b8;"></i>
+                    <div style="position: relative; margin-bottom: 10px;">
+                        <input type="text" id="address-search-box" class="form-control" placeholder="🔍 Nhập địa chỉ Nhà Bè, tên đường, phường xã..." style="border-radius: 14px; padding-left: 36px; padding-right: 36px; font-size: 13.5px;" autocomplete="off">
+                        <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #0284c7;"></i>
+                        <button type="button" id="clear-search-btn" onclick="clearAddressSearch()" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #94a3b8; cursor: pointer; padding: 4px;">
+                            <i class="fa-solid fa-circle-xmark"></i>
+                        </button>
+                        <!-- Dropdown gợi ý tìm kiếm địa chỉ -->
+                        <div id="search-suggestions" style="display: none; position: absolute; left: 0; right: 0; top: calc(100% + 4px); background: white; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.18); border: 1px solid #e2e8f0; z-index: 10000; max-height: 220px; overflow-y: auto;"></div>
+                    </div>
+
+                    <!-- CHỌN NHANH VỊ TRÍ NHÀ BÈ & CÁC KHU VỰC TRỌNG ĐIỂM -->
+                    <div style="margin-bottom: 12px; background: #f8fafc; padding: 10px 12px; border-radius: 14px; border: 1px solid #e2e8f0;">
+                        <div style="font-size: 12px; font-weight: 700; color: #475569; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
+                            <span><i class="fa-solid fa-location-dot" style="color: #ff5722;"></i> <b>Vị trí giao hàng nhanh:</b></span>
+                            <span style="font-size: 11px; color: #0284c7; cursor: pointer; font-weight: 800;" onclick="quickSetLocation(10.6945, 106.7335, 'Đường Huỳnh Tấn Phát, Thị trấn Nhà Bè, Huyện Nhà Bè, TP.HCM', 'Thị trấn Nhà Bè')">
+                                🎯 Bạn ở Nhà Bè? Bấm đây!
+                            </span>
+                        </div>
+                        <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                            <button type="button" class="btn-location-chip active-chip" id="chip-nhabe-tt" onclick="quickSetLocation(10.6945, 106.7335, 'Đường Huỳnh Tấn Phát, Thị trấn Nhà Bè, Huyện Nhà Bè, TP.HCM', 'Thị trấn Nhà Bè', this)">
+                                📍 Thị trấn Nhà Bè
+                            </button>
+                            <button type="button" class="btn-location-chip" id="chip-nhabe-pk" onclick="quickSetLocation(10.7130, 106.7050, 'Đường Nguyễn Hữu Thọ, Xã Phước Kiển, Huyện Nhà Bè, TP.HCM', 'Phước Kiển, Nhà Bè', this)">
+                                📍 Phước Kiển (Nhà Bè)
+                            </button>
+                            <button type="button" class="btn-location-chip" id="chip-nhabe-px" onclick="quickSetLocation(10.6750, 106.7450, 'Đường Huỳnh Tấn Phát, Xã Phú Xuân, Huyện Nhà Bè, TP.HCM', 'Phú Xuân, Nhà Bè', this)">
+                                📍 Phú Xuân (Nhà Bè)
+                            </button>
+                            <button type="button" class="btn-location-chip" id="chip-q7" onclick="quickSetLocation(10.7290, 106.7215, 'Khu đô thị Phú Mỹ Hưng, Quận 7, TP.HCM', 'Phú Mỹ Hưng, Q.7', this)">
+                                📍 Quận 7 (Phú Mỹ Hưng)
+                            </button>
+                            <button type="button" class="btn-location-chip" id="chip-q1" onclick="quickSetLocation(10.7769, 106.7009, '12 Nguyễn Huệ, P. Bến Nghé, Quận 1, TP.HCM', 'Quận 1 (Trung tâm)', this)">
+                                📍 Quận 1 (Trung tâm)
+                            </button>
+                        </div>
                     </div>
 
                     <div id="leaflet-checkout-map"></div>
@@ -426,9 +503,10 @@
     const KHO_DATA = JSON.parse('{{ kho_json|escapejs }}');
     const VOUCHERS = JSON.parse('{{ vouchers_json|escapejs }}');
 
-    let currentLat = 10.7769;
-    let currentLng = 106.7009;
-    let currentKm = 2.5;
+    // Mặc định vị trí Nhà Bè (Thị trấn Nhà Bè, Huỳnh Tấn Phát)
+    let currentLat = 10.6945;
+    let currentLng = 106.7335;
+    let currentKm = 1.2;
     let foodSubtotal = 0;
     let discountAmount = 0;
     let isExpress = true;
@@ -441,6 +519,7 @@
     document.addEventListener("DOMContentLoaded", function() {
         initCheckoutCart();
         initLeafletMap();
+        initAddressSearch();
     });
 
     function initCheckoutCart() {
@@ -487,10 +566,10 @@
     function initLeafletMap() {
         const khoSelect = document.getElementById('kho_select');
         const selectedOpt = khoSelect.options[khoSelect.selectedIndex];
-        let originLat = parseFloat(selectedOpt.dataset.lat || 10.7721);
-        let originLng = parseFloat(selectedOpt.dataset.lng || 106.6983);
+        let originLat = parseFloat(selectedOpt ? selectedOpt.dataset.lat : 10.6950);
+        let originLng = parseFloat(selectedOpt ? selectedOpt.dataset.lng : 106.7320);
 
-        map = L.map('leaflet-checkout-map').setView([originLat, originLng], 14);
+        map = L.map('leaflet-checkout-map').setView([currentLat, currentLng], 14);
 
         L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
@@ -514,7 +593,7 @@
         });
 
         restaurantMarker = L.marker([originLat, originLng], {icon: restaurantIcon}).addTo(map).bindPopup("<b>Bếp / Quán xuất phát</b>");
-        customerMarker = L.marker([currentLat, currentLng], {icon: customerIcon, draggable: true}).addTo(map).bindPopup("<b>Điểm nhận món của bạn</b>");
+        customerMarker = L.marker([currentLat, currentLng], {icon: customerIcon, draggable: true}).addTo(map).bindPopup("<b>Điểm nhận món của bạn (Nhà Bè)</b>");
 
         updateRoute(originLat, originLng, currentLat, currentLng);
 
@@ -536,7 +615,7 @@
         const selectedOpt = khoSelect.options[khoSelect.selectedIndex];
         let originLat = parseFloat(selectedOpt.dataset.lat);
         let originLng = parseFloat(selectedOpt.dataset.lng);
-        restaurantMarker.setLatLng([originLat, originLng]);
+        if (restaurantMarker) restaurantMarker.setLatLng([originLat, originLng]);
         updateRoute(originLat, originLng, currentLat, currentLng);
     }
 
@@ -594,7 +673,174 @@
     }
 
     // ==========================================
-    // 📍 ĐỊNH VỊ GPS THỰC TẾ (HTML5 GEOLOCATION API)
+    // 🎯 CHỌN NHANH VỊ TRÍ (NHÀ BÈ, QUẬN 7, QUẬN 1)
+    // ==========================================
+    function quickSetLocation(lat, lng, address, label, clickedBtn) {
+        currentLat = lat;
+        currentLng = lng;
+
+        if (customerMarker) {
+            customerMarker.setLatLng([lat, lng]);
+            map.setView([lat, lng], 14);
+        }
+
+        const addrInput = document.getElementById('dia_chi_nguoi_nhan');
+        if (addrInput) addrInput.value = address;
+        const latInput = document.getElementById('lat_khach');
+        if (latInput) latInput.value = lat.toFixed(6);
+        const lngInput = document.getElementById('lng_khach');
+        if (lngInput) lngInput.value = lng.toFixed(6);
+
+        // Đổi trạng thái active chip
+        document.querySelectorAll('.btn-location-chip').forEach(c => c.classList.remove('active-chip'));
+        if (clickedBtn) {
+            clickedBtn.classList.add('active-chip');
+        }
+
+        // Tự động tìm Quán ăn / Bếp đối tác gần nhất
+        const khoSelect = document.getElementById('kho_select');
+        if (khoSelect && typeof KHO_DATA !== 'undefined' && Array.isArray(KHO_DATA)) {
+            let nearestShop = null;
+            let minDistance = 999999;
+            KHO_DATA.forEach(k => {
+                if (k.lat && k.lng) {
+                    let d = calculateHaversine(lat, lng, parseFloat(k.lat), parseFloat(k.lng));
+                    if (d < minDistance) {
+                        minDistance = d;
+                        nearestShop = k;
+                    }
+                }
+            });
+
+            if (nearestShop) {
+                khoSelect.value = nearestShop.id;
+                const selectedOpt = khoSelect.options[khoSelect.selectedIndex];
+                if (selectedOpt) {
+                    let originLat = parseFloat(selectedOpt.dataset.lat);
+                    let originLng = parseFloat(selectedOpt.dataset.lng);
+                    if (restaurantMarker) restaurantMarker.setLatLng([originLat, originLng]);
+                    updateRoute(originLat, originLng, lat, lng);
+                }
+            } else {
+                const selectedOpt = khoSelect.options[khoSelect.selectedIndex];
+                let originLat = parseFloat(selectedOpt.dataset.lat);
+                let originLng = parseFloat(selectedOpt.dataset.lng);
+                updateRoute(originLat, originLng, lat, lng);
+            }
+        }
+
+        showToast(`📍 Đã định vị tại: ${label}!`);
+    }
+
+    // ==========================================
+    // 🔍 TÌM KIẾM ĐỊA CHỈ TRỰC TIẾP TRÊN BẢN ĐỒ (AUTOCOMPLETE)
+    // ==========================================
+    function initAddressSearch() {
+        const searchInput = document.getElementById('address-search-box');
+        const suggestionsBox = document.getElementById('search-suggestions');
+        const clearBtn = document.getElementById('clear-search-btn');
+        let searchTimeout = null;
+
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                const query = this.value.trim();
+                if (clearBtn) clearBtn.style.display = query ? 'block' : 'none';
+
+                if (query.length < 2) {
+                    if (suggestionsBox) suggestionsBox.style.display = 'none';
+                    return;
+                }
+
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    const searchUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ', TP Hồ Chí Minh')}&addressdetails=1&limit=5&countrycodes=vn`;
+                    
+                    fetch(searchUrl)
+                        .then(r => r.json())
+                        .then(results => {
+                            if (results && results.length > 0) {
+                                suggestionsBox.innerHTML = results.map(item => `
+                                    <div class="suggestion-item" onclick="selectSearchedAddress(${item.lat}, ${item.lon}, '${item.display_name.replace(/'/g, "\\'")}')">
+                                        <i class="fa-solid fa-location-dot" style="color: #ff5722; font-size: 14px; flex-shrink: 0;"></i>
+                                        <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                            <b>${item.name || item.display_name.split(',')[0]}</b>
+                                            <div style="font-size: 11px; color: #64748b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item.display_name}</div>
+                                        </div>
+                                    </div>
+                                `).join('');
+                                suggestionsBox.style.display = 'block';
+                            } else {
+                                suggestionsBox.innerHTML = `<div style="padding: 12px; text-align: center; color: #94a3b8; font-size: 12px;">Không tìm thấy địa chỉ phù hợp. Thử gõ "Nhà Bè", "Huỳnh Tấn Phát", v.v.</div>`;
+                                suggestionsBox.style.display = 'block';
+                            }
+                        })
+                        .catch(() => {
+                            if (suggestionsBox) suggestionsBox.style.display = 'none';
+                        });
+                }, 300);
+            });
+
+            searchInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const firstItem = suggestionsBox ? suggestionsBox.querySelector('.suggestion-item') : null;
+                    if (firstItem) firstItem.click();
+                }
+            });
+        }
+
+        // Nhập trực tiếp vào ô địa chỉ chi tiết cũng tự động tìm kiếm vị trí
+        const mainAddrInput = document.getElementById('dia_chi_nguoi_nhan');
+        if (mainAddrInput) {
+            mainAddrInput.addEventListener('change', function() {
+                const val = this.value.trim();
+                if (val.length >= 4) {
+                    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(val + ', TP Hồ Chí Minh')}&limit=1&countrycodes=vn`)
+                        .then(r => r.json())
+                        .then(res => {
+                            if (res && res.length > 0) {
+                                const lat = parseFloat(res[0].lat);
+                                const lng = parseFloat(res[0].lon);
+                                onCustomerCoordsChanged(lat, lng);
+                                if (customerMarker) {
+                                    customerMarker.setLatLng([lat, lng]);
+                                    map.setView([lat, lng], 14);
+                                }
+                            }
+                        })
+                        .catch(() => {});
+                }
+            });
+        }
+
+        document.addEventListener('click', function(e) {
+            if (suggestionsBox && !suggestionsBox.contains(e.target) && e.target !== searchInput) {
+                suggestionsBox.style.display = 'none';
+            }
+        });
+    }
+
+    function selectSearchedAddress(lat, lng, displayName) {
+        lat = parseFloat(lat);
+        lng = parseFloat(lng);
+        const searchInput = document.getElementById('address-search-box');
+        if (searchInput) searchInput.value = displayName.split(',')[0] || displayName;
+        const suggestionsBox = document.getElementById('search-suggestions');
+        if (suggestionsBox) suggestionsBox.style.display = 'none';
+        quickSetLocation(lat, lng, displayName, displayName.split(',')[0] || 'Địa chỉ tìm kiếm');
+    }
+
+    function clearAddressSearch() {
+        const input = document.getElementById('address-search-box');
+        if (input) input.value = '';
+        const clearBtn = document.getElementById('clear-search-btn');
+        if (clearBtn) clearBtn.style.display = 'none';
+        const suggestionsBox = document.getElementById('search-suggestions');
+        if (suggestionsBox) suggestionsBox.style.display = 'none';
+    }
+
+    // ==========================================
+    // 📍 ĐỊNH VỊ GPS THỰC TẾ (KÈM BẢO VỆ CHỐNG LỖI IP TRÌNH DUYỆT NGOÀI TP.HCM)
     // ==========================================
     function getMyGPSLocation() {
         if (!navigator.geolocation) {
@@ -610,15 +856,26 @@
                 const lat = position.coords.latitude;
                 const lng = position.coords.longitude;
                 btn.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> Vị trí GPS của tôi';
-                showToast("📍 Đã tìm thấy vị trí GPS chính xác của bạn!");
 
+                // ⚠️ BẢO VỆ CHỐNG LỖI IP MẠNG NGOÀI TP.HCM:
+                // Nếu trình duyệt desktop định vị theo IP mạng ra ngoài TP.HCM (>35km tính từ Nhà Bè / Quận 1, ví dụ Cần Thơ / Trà Vinh 156km)
+                const distFromNhaBe = calculateHaversine(lat, lng, 10.6945, 106.7335);
+                if (distFromNhaBe > 35) {
+                    if (confirm(`⚠️ CẢNH BÁO ĐỊNH VỊ IP MÁY TÍNH:\nTrình duyệt đang lấy vị trí theo IP mạng internet của nhà mạng (cách TP.HCM ~${distFromNhaBe.toFixed(0)} km - ngoài phạm vi giao đồ ăn).\n\nBạn có muốn đặt vị trí chính xác tại NHÀ BÈ, TP.HCM để tính đúng phí giao hàng không?`)) {
+                        quickSetLocation(10.6945, 106.7335, 'Đường Huỳnh Tấn Phát, Thị trấn Nhà Bè, Huyện Nhà Bè, TP.HCM', 'Thị trấn Nhà Bè');
+                        return;
+                    }
+                }
+
+                showToast("📍 Đã tìm thấy vị trí GPS chính xác của bạn!");
                 customerMarker.setLatLng([lat, lng]);
                 map.setView([lat, lng], 15);
                 onCustomerCoordsChanged(lat, lng);
             },
             function(err) {
                 btn.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> Vị trí GPS của tôi';
-                alert("Không thể lấy vị trí GPS! Hãy cấp quyền truy cập vị trí cho trình duyệt.");
+                alert("Không thể lấy vị trí GPS từ trình duyệt! Hệ thống đã đặt vị trí của bạn tại Nhà Bè, TP.HCM.");
+                quickSetLocation(10.6945, 106.7335, 'Đường Huỳnh Tấn Phát, Thị trấn Nhà Bè, Huyện Nhà Bè, TP.HCM', 'Thị trấn Nhà Bè');
             },
             { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );

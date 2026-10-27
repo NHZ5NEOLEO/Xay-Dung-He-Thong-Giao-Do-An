@@ -1118,7 +1118,7 @@ def checkout_view(request):
     - Chọn giao hỏa tốc hoặc giao tiêu chuẩn
     - Tạo mã QR VietQR thanh toán
     """
-    ds_kho = KhoHang.objects.all()
+    ds_kho = KhoHang.objects.all().order_by('-id')
     kho_mac_dinh = ds_kho.first()
 
     # Dữ liệu truyền sang để vẽ bản đồ
@@ -1159,8 +1159,8 @@ def tao_don_hang_mon_an(request):
     sdt_nguoi_nhan = request.POST.get('sdt_nguoi_nhan')
     email_nguoi_nhan = request.POST.get('email_nguoi_nhan', 'khachhang_test@gmail.com')
     dia_chi_nguoi_nhan = request.POST.get('dia_chi_nguoi_nhan')
-    lat_khach = float(request.POST.get('lat_khach', 10.7769))
-    lng_khach = float(request.POST.get('lng_khach', 106.7009))
+    lat_khach = float(request.POST.get('lat_khach', 10.6945))
+    lng_khach = float(request.POST.get('lng_khach', 106.7335))
     kho_id = request.POST.get('kho_xuat_phat')
     loai_giao_hang = request.POST.get('loai_giao_hang', 'HOA_TOC')
     phuong_thuc_thanh_toan = request.POST.get('phuong_thuc_thanh_toan', 'QR_VIETQR')
