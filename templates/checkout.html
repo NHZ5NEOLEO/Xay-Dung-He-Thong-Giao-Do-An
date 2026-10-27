@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static l10n %}
 
 {% block content %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -312,10 +312,15 @@
                 </div>
 
                 <div class="form-group" style="width: 100%;">
-                    <label for="kho_select">Bếp / Quán chế biến xuất phát *</label>
-                    <select name="kho_xuat_phat" id="kho_select" class="form-control" title="Chọn Bếp / Quán chế biến xuất phát" aria-label="Bếp / Quán chế biến xuất phát" onchange="onRestaurantChanged()" style="width: 100%; box-sizing: border-box;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                        <label for="kho_select" style="margin-bottom: 0;">Bếp / Quán chế biến xuất phát *</label>
+                        <button type="button" onclick="selectNearestShop()" style="background: #eef2ff; border: 1px solid #c7d2fe; color: #4f46e5; font-size: 11.5px; font-weight: 700; padding: 3px 8px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+                            <i class="fa-solid fa-location-crosshairs"></i> Chọn quán gần tôi nhất
+                        </button>
+                    </div>
+                    <select name="kho_xuat_phat" id="kho_select" class="form-control" title="Chọn Bếp / Quán chế biến xuất phát" aria-label="Bếp / Quán chế biến xuất phát" onchange="onRestaurantChanged(true)" style="width: 100%; box-sizing: border-box;">
                         {% for k in ds_kho %}
-                            <option value="{{ k.id }}" data-lat="{{ k.lat }}" data-lng="{{ k.lng }}" data-name="{{ k.ten_kho }}" {% if forloop.first %}selected{% endif %}>
+                            <option value="{{ k.id }}" data-lat="{{ k.lat|unlocalize }}" data-lng="{{ k.lng|unlocalize }}" data-name="{{ k.ten_kho }}" {% if forloop.first %}selected{% endif %}>
                                 🏪 {{ k.ten_kho }} ({{ k.dia_chi }})
                             </option>
                         {% endfor %}
@@ -324,7 +329,7 @@
 
                 <div class="form-group" style="width: 100%;">
                     <label for="dia_chi_nguoi_nhan">Địa chỉ nhận hàng chi tiết *</label>
-                    <input type="text" name="dia_chi_nguoi_nhan" id="dia_chi_nguoi_nhan" class="form-control" required placeholder="Nhập số nhà, tên đường, phường, quận..." value="Đường Huỳnh Tấn Phát, Thị trấn Nhà Bè, Huyện Nhà Bè, TP.HCM" title="Địa chỉ nhận hàng chi tiết" style="width: 100%; box-sizing: border-box;">
+                    <input type="text" name="dia_chi_nguoi_nhan" id="dia_chi_nguoi_nhan" class="form-control" required placeholder="Nhập số nhà, tên đường, phường xã, tỉnh thành..." value="" title="Địa chỉ nhận hàng chi tiết" style="width: 100%; box-sizing: border-box;">
                 </div>
 
                 <div class="card-title-box" style="margin-top: 30px;">
@@ -390,7 +395,7 @@
                             <i class="fa-solid fa-map-location-dot" style="color: #0284c7; font-size: 20px;"></i>
                             <h3>Bản đồ Lộ trình và Định vị GPS</h3>
                         </div>
-                        <button type="button" class="btn-nhabe-locate" onclick="setMyLocation()" title="Định vị vị trí của tôi">
+                        <button type="button" class="btn-nhabe-locate btn-gps-locate" onclick="getMyGPSLocation()" title="Định vị vị trí GPS của tôi">
                             <i class="fa-solid fa-location-crosshairs" style="color: #ff5722;"></i> <b>Vị trí của tôi</b>
                         </button>
                     </div>
@@ -490,9 +495,11 @@
     const KHO_DATA = JSON.parse('{{ kho_json|escapejs }}');
     const VOUCHERS = JSON.parse('{{ vouchers_json|escapejs }}');
 
-    // Mặc định vị trí Nhà Bè (Thị trấn Nhà Bè, Huỳnh Tấn Phát)
-    let currentLat = 10.6945;
-    let currentLng = 106.7335;
+    // Khởi tạo tọa độ: Ưu tiên lấy vị trí đã lưu trong localStorage, hoặc vị trí trung tâm
+    let savedLat = localStorage.getItem('food_delivery_lat');
+    let savedLng = localStorage.getItem('food_delivery_lng');
+    let currentLat = savedLat ? parseFloat(savedLat) : 10.7769;
+    let currentLng = savedLng ? parseFloat(savedLng) : 106.7009;
     let currentKm = 1.2;
     let foodSubtotal = 0;
     let discountAmount = 0;
@@ -504,6 +511,11 @@
     var restaurantMarker = null;
 
     document.addEventListener("DOMContentLoaded", function() {
+        const savedAddr = localStorage.getItem('food_delivery_addr');
+        const addrField = document.getElementById('dia_chi_nguoi_nhan');
+        if (savedAddr && addrField && !addrField.value) {
+            addrField.value = savedAddr;
+        }
         initCheckoutCart();
         initLeafletMap();
         initAddressSearch();
@@ -553,8 +565,8 @@
     function initLeafletMap() {
         const khoSelect = document.getElementById('kho_select');
         const selectedOpt = khoSelect.options[khoSelect.selectedIndex];
-        let originLat = parseFloat(selectedOpt ? selectedOpt.dataset.lat : 10.6950);
-        let originLng = parseFloat(selectedOpt ? selectedOpt.dataset.lng : 106.7320);
+        let originLat = parseFloat(String(selectedOpt ? selectedOpt.dataset.lat : 10.7769).replace(',', '.'));
+        let originLng = parseFloat(String(selectedOpt ? selectedOpt.dataset.lng : 106.7009).replace(',', '.'));
 
         map = L.map('leaflet-checkout-map').setView([currentLat, currentLng], 14);
 
@@ -581,7 +593,7 @@
         });
 
         restaurantMarker = L.marker([originLat, originLng], {icon: restaurantIcon}).addTo(map).bindPopup("<b>Bếp / Quán xuất phát</b>");
-        customerMarker = L.marker([currentLat, currentLng], {icon: customerIcon, draggable: true}).addTo(map).bindPopup("<b>Điểm nhận món của bạn (Nhà Bè)</b>");
+        customerMarker = L.marker([currentLat, currentLng], {icon: customerIcon, draggable: true}).addTo(map).bindPopup("<b>Điểm nhận món của bạn</b>");
 
         updateRoute(originLat, originLng, currentLat, currentLng);
 
@@ -598,13 +610,42 @@
         });
     }
 
-    function onRestaurantChanged() {
+    let userManuallySelectedShop = false;
+
+    function onRestaurantChanged(isManual = false) {
+        if (isManual) {
+            userManuallySelectedShop = true;
+        }
         const khoSelect = document.getElementById('kho_select');
         const selectedOpt = khoSelect.options[khoSelect.selectedIndex];
-        let originLat = parseFloat(selectedOpt.dataset.lat);
-        let originLng = parseFloat(selectedOpt.dataset.lng);
+        let originLat = parseFloat(String(selectedOpt.dataset.lat).replace(',', '.'));
+        let originLng = parseFloat(String(selectedOpt.dataset.lng).replace(',', '.'));
         if (restaurantMarker) restaurantMarker.setLatLng([originLat, originLng]);
         updateRoute(originLat, originLng, currentLat, currentLng);
+    }
+
+    function selectNearestShop() {
+        if (typeof KHO_DATA === 'undefined' || !Array.isArray(KHO_DATA)) return;
+        let nearest = null;
+        let minD = 999999;
+        KHO_DATA.forEach(k => {
+            if (k.lat && k.lng) {
+                let kLat = parseFloat(String(k.lat).replace(',', '.'));
+                let kLng = parseFloat(String(k.lng).replace(',', '.'));
+                let d = calculateHaversine(currentLat, currentLng, kLat, kLng);
+                if (d < minD) {
+                    minD = d;
+                    nearest = k;
+                }
+            }
+        });
+        if (nearest) {
+            const khoSelect = document.getElementById('kho_select');
+            khoSelect.value = nearest.id;
+            userManuallySelectedShop = false;
+            onRestaurantChanged(false);
+            showToast(`🏪 Đã chọn quán gần nhất: ${nearest.ten} (~${minD.toFixed(1)} km)`);
+        }
     }
 
     function onCustomerCoordsChanged(lat, lng) {
@@ -612,12 +653,35 @@
         currentLng = lng;
         document.getElementById('lat_khach').value = lat.toFixed(6);
         document.getElementById('lng_khach').value = lng.toFixed(6);
+        localStorage.setItem('food_delivery_lat', lat.toFixed(6));
+        localStorage.setItem('food_delivery_lng', lng.toFixed(6));
 
+        // Nếu người dùng CHƯA chủ động chọn quán, tự động tìm và chuyển sang quán gần nhất
         const khoSelect = document.getElementById('kho_select');
-        const selectedOpt = khoSelect.options[khoSelect.selectedIndex];
-        let originLat = parseFloat(selectedOpt.dataset.lat);
-        let originLng = parseFloat(selectedOpt.dataset.lng);
+        if (!userManuallySelectedShop && typeof KHO_DATA !== 'undefined' && Array.isArray(KHO_DATA)) {
+            let nearest = null;
+            let minD = 999999;
+            KHO_DATA.forEach(k => {
+                if (k.lat && k.lng) {
+                    let kLat = parseFloat(String(k.lat).replace(',', '.'));
+                    let kLng = parseFloat(String(k.lng).replace(',', '.'));
+                    let d = calculateHaversine(lat, lng, kLat, kLng);
+                    if (d < minD) {
+                        minD = d;
+                        nearest = k;
+                    }
+                }
+            });
+            if (nearest && khoSelect) {
+                khoSelect.value = nearest.id;
+            }
+        }
 
+        const selectedOpt = khoSelect.options[khoSelect.selectedIndex];
+        let originLat = parseFloat(String(selectedOpt.dataset.lat).replace(',', '.'));
+        let originLng = parseFloat(String(selectedOpt.dataset.lng).replace(',', '.'));
+
+        if (restaurantMarker) restaurantMarker.setLatLng([originLat, originLng]);
         updateRoute(originLat, originLng, lat, lng);
 
         // Reverse geocode lấy địa chỉ tự động
@@ -626,6 +690,7 @@
             .then(data => {
                 if (data && data.display_name) {
                     document.getElementById('dia_chi_nguoi_nhan').value = data.display_name;
+                    localStorage.setItem('food_delivery_addr', data.display_name);
                 }
             })
             .catch(() => {});
@@ -679,40 +744,23 @@
         const lngInput = document.getElementById('lng_khach');
         if (lngInput) lngInput.value = lng.toFixed(6);
 
+        localStorage.setItem('food_delivery_lat', lat.toFixed(6));
+        localStorage.setItem('food_delivery_lng', lng.toFixed(6));
+        localStorage.setItem('food_delivery_addr', address);
+
         // Đổi trạng thái active chip
         document.querySelectorAll('.btn-location-chip').forEach(c => c.classList.remove('active-chip'));
         if (clickedBtn) {
             clickedBtn.classList.add('active-chip');
         }
 
-        // Tự động tìm Quán ăn / Bếp đối tác gần nhất
         const khoSelect = document.getElementById('kho_select');
-        if (khoSelect && typeof KHO_DATA !== 'undefined' && Array.isArray(KHO_DATA)) {
-            let nearestShop = null;
-            let minDistance = 999999;
-            KHO_DATA.forEach(k => {
-                if (k.lat && k.lng) {
-                    let d = calculateHaversine(lat, lng, parseFloat(k.lat), parseFloat(k.lng));
-                    if (d < minDistance) {
-                        minDistance = d;
-                        nearestShop = k;
-                    }
-                }
-            });
-
-            if (nearestShop) {
-                khoSelect.value = nearestShop.id;
-                const selectedOpt = khoSelect.options[khoSelect.selectedIndex];
-                if (selectedOpt) {
-                    let originLat = parseFloat(selectedOpt.dataset.lat);
-                    let originLng = parseFloat(selectedOpt.dataset.lng);
-                    if (restaurantMarker) restaurantMarker.setLatLng([originLat, originLng]);
-                    updateRoute(originLat, originLng, lat, lng);
-                }
-            } else {
-                const selectedOpt = khoSelect.options[khoSelect.selectedIndex];
-                let originLat = parseFloat(selectedOpt.dataset.lat);
-                let originLng = parseFloat(selectedOpt.dataset.lng);
+        if (khoSelect) {
+            const selectedOpt = khoSelect.options[khoSelect.selectedIndex];
+            if (selectedOpt) {
+                let originLat = parseFloat(String(selectedOpt.dataset.lat).replace(',', '.'));
+                let originLng = parseFloat(String(selectedOpt.dataset.lng).replace(',', '.'));
+                if (restaurantMarker) restaurantMarker.setLatLng([originLat, originLng]);
                 updateRoute(originLat, originLng, lat, lng);
             }
         }
@@ -741,7 +789,7 @@
 
                 clearTimeout(searchTimeout);
                 searchTimeout = setTimeout(() => {
-                    const searchUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ', TP Hồ Chí Minh')}&addressdetails=1&limit=5&countrycodes=vn`;
+                    const searchUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&addressdetails=1&limit=5&countrycodes=vn`;
                     
                     fetch(searchUrl)
                         .then(r => r.json())
@@ -758,7 +806,7 @@
                                 `).join('');
                                 suggestionsBox.style.display = 'block';
                             } else {
-                                suggestionsBox.innerHTML = `<div style="padding: 12px; text-align: center; color: #94a3b8; font-size: 12px;">Không tìm thấy địa chỉ phù hợp. Thử gõ "Nhà Bè", "Huỳnh Tấn Phát", v.v.</div>`;
+                                suggestionsBox.innerHTML = `<div style="padding: 12px; text-align: center; color: #94a3b8; font-size: 12px;">Không tìm thấy địa chỉ phù hợp. Thử gõ tên đường, phường xã hoặc bấm chọn trên bản đồ.</div>`;
                                 suggestionsBox.style.display = 'block';
                             }
                         })
@@ -783,7 +831,7 @@
             mainAddrInput.addEventListener('change', function() {
                 const val = this.value.trim();
                 if (val.length >= 4) {
-                    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(val + ', TP Hồ Chí Minh')}&limit=1&countrycodes=vn`)
+                    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(val)}&limit=1&countrycodes=vn`)
                         .then(r => r.json())
                         .then(res => {
                             if (res && res.length > 0) {
@@ -828,21 +876,16 @@
     }
 
     // ==========================================
-    // 🎯 VỊ TRÍ CỦA TÔI (ĐỊNH VỊ CHUẨN XÁC VỊ TRÍ CỦA BẠN KHÔNG BỊ TRÔI VÀO THÀNH PHỐ)
+    // 🎯 VỊ TRÍ CỦA TÔI (ĐỊNH VỊ GPS THỰC TẾ)
     // ==========================================
     function setMyLocation() {
-        quickSetLocation(10.6945, 106.7335, 'Đường Huỳnh Tấn Phát, Thị trấn Nhà Bè, Huyện Nhà Bè, TP.HCM', 'Vị trí của bạn');
-        showToast("🎯 Đã định vị chính xác vị trí của bạn!");
+        getMyGPSLocation();
     }
     const setMyLocationNhaBe = setMyLocation;
 
-    // ==========================================
-    // 📍 ĐỊNH VỊ GPS THỰC TẾ (BẢO VỆ CHỐNG LỖI IP MÁY TÍNH NHẢY VÀO TRUNG TÂM QUẬN 1 HOẶC TỈNH KHÁC)
-    // ==========================================
     function getMyGPSLocation() {
         if (!navigator.geolocation) {
-            alert("Trình duyệt không hỗ trợ định vị GPS! Hệ thống định vị ngay tại Nhà Bè của bạn.");
-            setMyLocationNhaBe();
+            showToast("⚠️ Trình duyệt của bạn không hỗ trợ định vị GPS!");
             return;
         }
 
@@ -856,46 +899,14 @@
                 const lng = position.coords.longitude;
                 if (btn) btn.innerHTML = oldHtml;
 
-                // ⚠️ BẢO VỆ CHỐNG LỖI IP MẠNG MÁY TÍNH BÀN / LAPTOP:
-                // Máy tính không có chip GPS vệ tinh nên trình duyệt lấy trạm IP mạng (Quận 1 / Quận 3 / Tân Bình hoặc ngoài tỉnh)
-                const distFromQ1 = calculateHaversine(lat, lng, 10.7769, 106.7009); // Khoảng cách tới Quận 1
-                const distFromNhaBe = calculateHaversine(lat, lng, 10.6945, 106.7335); // Khoảng cách tới Nhà Bè
-
-                // Nếu vị trí trả về rơi vào trung tâm TP.HCM (Quận 1 / Quận 3 cách Nhà Bè 7 - 15km):
-                if (distFromQ1 < 7 && distFromNhaBe > 5) {
-                    const confirmNhaBe = confirm(
-                        "💡 THÔNG BÁO ĐỊNH VỊ THIẾT BỊ MÁY TÍNH:\n\n" +
-                        "Trình duyệt máy tính của bạn đang lấy vị trí theo trạm mạng IP tại TRUNG TÂM THÀNH PHỐ (Quận 1 - cách Nhà Bè ~" + distFromNhaBe.toFixed(1) + " km).\n\n" +
-                        "👉 Bấm [OK] để GIỮ VỊ TRÍ CHÍNH XÁC TẠI NHÀ BÈ của bạn.\n" +
-                        "👉 Bấm [Cancel / Hủy] nếu bạn muốn giao hàng tại trung tâm Thành phố."
-                    );
-
-                    if (confirmNhaBe) {
-                        setMyLocationNhaBe();
-                        return;
-                    }
-                } else if (distFromNhaBe > 35) {
-                    // Nếu IP mạng nhảy ra ngoài tỉnh
-                    const confirmNhaBe = confirm(
-                        "⚠️ CẢNH BÁO ĐỊNH VỊ IP MÁY TÍNH:\n\n" +
-                        "Trình duyệt đang lấy vị trí theo IP mạng internet ngoài TP.HCM (~" + distFromNhaBe.toFixed(0) + " km).\n\n" +
-                        "Bạn có muốn đặt vị trí chính xác tại NHÀ BÈ, TP.HCM để tính đúng phí giao hàng không?"
-                    );
-                    if (confirmNhaBe) {
-                        setMyLocationNhaBe();
-                        return;
-                    }
-                }
-
-                showToast("📍 Đã cập nhật vị trí GPS của bạn!");
-                customerMarker.setLatLng([lat, lng]);
-                map.setView([lat, lng], 15);
+                showToast("📍 Đã định vị chính xác vị trí GPS của bạn!");
+                if (customerMarker) customerMarker.setLatLng([lat, lng]);
+                if (map) map.setView([lat, lng], 15);
                 onCustomerCoordsChanged(lat, lng);
             },
             function(err) {
                 if (btn) btn.innerHTML = oldHtml;
-                showToast("🎯 Không thể truy cập GPS phần cứng. Đã đặt vị trí của bạn tại Nhà Bè!");
-                setMyLocationNhaBe();
+                showToast("📍 Không lấy được tín hiệu GPS thiết bị. Bạn có thể bấm trực tiếp lên bản đồ để chọn điểm giao!");
             },
             { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
         );

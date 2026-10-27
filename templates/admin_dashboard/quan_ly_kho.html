@@ -1,5 +1,5 @@
 {% extends "admin_dashboard/admin_base.html" %}
-{% load static currency_filters %}
+{% load static currency_filters l10n %}
 
 {% block title %}Quản Lý Quán Ăn Đối Tác & Bếp Chế Biến B2B - Logistics Pro Admin{% endblock %}
 
@@ -188,7 +188,7 @@
                     <td style="text-align: right;">
                         <div class="admin-row-actions" style="justify-content: flex-end;">
                             <!-- Nút sửa tại chỗ -->
-                            <button type="button" class="admin-btn-icon-sm" title="Chỉnh sửa cơ sở này" onclick="openEditWarehouseModal('{{ kho.id }}', '{{ kho.ten_kho|escapejs }}', '{{ kho.dia_chi|escapejs }}', '{{ kho.lat }}', '{{ kho.lng }}', '{{ kho.suc_chua_toi_da }}')">
+                            <button type="button" class="admin-btn-icon-sm" title="Chỉnh sửa cơ sở này" onclick="openEditWarehouseModal('{{ kho.id }}', '{{ kho.ten_kho|escapejs }}', '{{ kho.dia_chi|escapejs }}', '{{ kho.lat|unlocalize }}', '{{ kho.lng|unlocalize }}', '{{ kho.suc_chua_toi_da }}')">
                                 <i class="fa-solid fa-pen-to-square"></i>
                             </button>
                             <!-- Nút xóa -->
@@ -564,7 +564,7 @@ function geocodeAddress(mode) {
         return;
     }
 
-    const searchUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ', TP Hồ Chí Minh')}&limit=1`;
+    const searchUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=vn&limit=1`;
     fetch(searchUrl)
         .then(r => r.json())
         .then(results => {
@@ -610,12 +610,15 @@ function openEditWarehouseModal(id, ten, diaChi, lat, lng, sucChua) {
     document.getElementById('editWarehouseForm').action = '/sua-kho/' + id + '/';
     document.getElementById('editWarehouseModal').style.display = 'flex';
 
-    let nLat = parseFloat(lat);
-    let nLng = parseFloat(lng);
+    let nLat = parseFloat(String(lat).replace(',', '.'));
+    let nLng = parseFloat(String(lng).replace(',', '.'));
     if (isNaN(nLat) || isNaN(nLng)) {
         nLat = 10.7769;
         nLng = 106.7009;
     }
+    // Đảm bảo giá trị ô input luôn dùng dấu chấm chuẩn float
+    document.getElementById('edit-lat').value = nLat.toFixed(6);
+    document.getElementById('edit-lng').value = nLng.toFixed(6);
     setTimeout(function() {
         initEditMap(nLat, nLng);
     }, 200);

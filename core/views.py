@@ -1125,8 +1125,8 @@ def checkout_view(request):
     kho_json = json.dumps([{
         'id': k.id,
         'ten': k.ten_kho,
-        'lat': k.lat,
-        'lng': k.lng,
+        'lat': float(k.lat) if k.lat is not None else 0.0,
+        'lng': float(k.lng) if k.lng is not None else 0.0,
         'dia_chi': k.dia_chi,
         'hotline': k.hotline
     } for k in ds_kho])

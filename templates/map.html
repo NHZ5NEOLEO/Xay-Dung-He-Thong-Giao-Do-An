@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static currency_filters %}
+{% load static currency_filters l10n %}
 
 {% block content %}
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -869,10 +869,10 @@
         }
 
         // Tọa độ Bếp và Khách
-        var startLat = parseFloat("{{ dh.kho_xuat_phat.lat }}") || 10.6950;
-        var startLng = parseFloat("{{ dh.kho_xuat_phat.lng }}") || 106.7320;
-        var endLat = parseFloat("{{ dh.lat_khach }}") || 10.6945;
-        var endLng = parseFloat("{{ dh.lng_khach }}") || 106.7335;
+        var startLat = parseFloat("{{ dh.kho_xuat_phat.lat|unlocalize }}".replace(',', '.')) || 10.7769;
+        var startLng = parseFloat("{{ dh.kho_xuat_phat.lng|unlocalize }}".replace(',', '.')) || 106.7009;
+        var endLat = parseFloat("{{ dh.lat_khach|unlocalize }}".replace(',', '.')) || 10.7769;
+        var endLng = parseFloat("{{ dh.lng_khach|unlocalize }}".replace(',', '.')) || 106.7009;
 
         // Khởi tạo Map
         var map = L.map('map', {zoomControl: false}).setView([startLat, startLng], 14);

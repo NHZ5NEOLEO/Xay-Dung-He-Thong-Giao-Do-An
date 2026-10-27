@@ -58,6 +58,20 @@ class TaiXeForm(forms.ModelForm):
 # 2. Form cho Kho Hàng / Cơ sở Bếp
 class KhoHangForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
+        if 'data' in kwargs and kwargs['data']:
+            data = kwargs['data'].copy()
+            if 'lat' in data and isinstance(data['lat'], str):
+                data['lat'] = data['lat'].replace(',', '.')
+            if 'lng' in data and isinstance(data['lng'], str):
+                data['lng'] = data['lng'].replace(',', '.')
+            kwargs['data'] = data
+        elif len(args) > 0 and args[0] is not None:
+            data = args[0].copy()
+            if 'lat' in data and isinstance(data['lat'], str):
+                data['lat'] = data['lat'].replace(',', '.')
+            if 'lng' in data and isinstance(data['lng'], str):
+                data['lng'] = data['lng'].replace(',', '.')
+            args = (data,) + args[1:]
         super().__init__(*args, **kwargs)
         for field in ['loai_hinh', 'hinh_anh', 'danh_gia', 'thoi_gian_mo_cua', 'hotline', 'suc_chua_toi_da']:
             if field in self.fields:
