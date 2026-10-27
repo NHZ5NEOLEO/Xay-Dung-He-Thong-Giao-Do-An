@@ -11,6 +11,9 @@
 {% endblock %}
 
 {% block admin_content %}
+<!-- Thư viện bản đồ Leaflet phục vụ chọn Lat/Lng trực quan -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <!-- ==============================================================================
      1. KPI THỐNG KÊ CHI NHÁNH QUÁN & BẾP B2B
      ============================================================================== -->
@@ -215,11 +218,11 @@
 </div>
 
 <!-- ==============================================================================
-     MODAL 1: THÊM CƠ SỞ BẾP / KHO MỚI TẠI CHỖ
+     MODAL 1: THÊM CƠ SỞ BẾP / KHO MỚI TẠI CHỖ (KÈM BẢN ĐỒ CHỌN TỌA ĐỘ)
      ============================================================================== -->
 <div id="addWarehouseModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); z-index: 99999; backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 16px;">
-    <div style="background: white; border-radius: 20px; max-width: 500px; width: 100%; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35); overflow: hidden; animation: qdModalFade 0.2s ease-out;">
-        <div style="background: linear-gradient(135deg, #1e293b, #0f172a); color: white; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center;">
+    <div style="background: white; border-radius: 20px; max-width: 560px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35); animation: qdModalFade 0.2s ease-out;">
+        <div style="background: linear-gradient(135deg, #1e293b, #0f172a); color: white; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 20;">
             <div style="display: flex; align-items: center; gap: 12px;">
                 <div style="width: 38px; height: 38px; border-radius: 12px; background: rgba(99, 102, 241, 0.2); border: 1px solid rgba(99, 102, 241, 0.3); display: flex; align-items: center; justify-content: center; font-size: 18px; color: #818cf8;">
                     <i class="fa-solid fa-warehouse"></i>
@@ -247,7 +250,23 @@
                 <label style="display: block; font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 5px;">
                     Địa Chỉ Chi Tiết <span style="color: #ef4444;">*</span>
                 </label>
-                <input type="text" name="dia_chi" required placeholder="VD: 123 Nguyễn Thị Minh Khai, P. Bến Nghé, Q.1" style="width: 100%; padding: 9px 12px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 13px; outline: none; background: #f8fafc; box-sizing: border-box;">
+                <input type="text" name="dia_chi" id="add-dia-chi" required placeholder="VD: 123 Nguyễn Thị Minh Khai, P. Bến Nghé, Q.1" style="width: 100%; padding: 9px 12px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 13px; outline: none; background: #f8fafc; box-sizing: border-box;">
+            </div>
+
+            <!-- 🗺️ BẢN ĐỒ CHỌN TỌA ĐỘ CHO MODAL THÊM -->
+            <div style="margin-bottom: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <label style="font-size: 12.5px; font-weight: 700; color: #334155; margin: 0;">
+                        <i class="fa-solid fa-map-location-dot" style="color: #4f46e5;"></i> Bản Đồ Chọn Vị Trí (Bấm hoặc kéo ghim):
+                    </label>
+                    <button type="button" class="map-locate-btn" onclick="geocodeAddress('add')">
+                        <i class="fa-solid fa-location-crosshairs"></i> Tìm theo địa chỉ
+                    </button>
+                </div>
+                <div id="add-warehouse-map" class="modal-map-container"></div>
+                <div style="font-size: 11px; color: #64748b; margin-top: 4px;">
+                    💡 Bạn có thể bấm trực tiếp lên bản đồ hoặc kéo ghim để tự động điền Vĩ độ & Kinh độ.
+                </div>
             </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
@@ -255,13 +274,13 @@
                     <label style="display: block; font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 5px;">
                         Vĩ Độ GIS (Lat) <span style="color: #ef4444;">*</span>
                     </label>
-                    <input type="number" step="any" name="lat" value="10.7769" required style="width: 100%; padding: 9px 12px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 13px; outline: none; background: #f8fafc; box-sizing: border-box;">
+                    <input type="number" step="any" name="lat" id="add-lat" value="10.7769" required style="width: 100%; padding: 9px 12px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 13px; outline: none; background: #f8fafc; box-sizing: border-box;" oninput="onManualCoordsChange('add')">
                 </div>
                 <div>
                     <label style="display: block; font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 5px;">
                         Kinh Độ GIS (Lng) <span style="color: #ef4444;">*</span>
                     </label>
-                    <input type="number" step="any" name="lng" value="106.7009" required style="width: 100%; padding: 9px 12px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 13px; outline: none; background: #f8fafc; box-sizing: border-box;">
+                    <input type="number" step="any" name="lng" id="add-lng" value="106.7009" required style="width: 100%; padding: 9px 12px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 13px; outline: none; background: #f8fafc; box-sizing: border-box;" oninput="onManualCoordsChange('add')">
                 </div>
             </div>
 
@@ -285,11 +304,11 @@
 </div>
 
 <!-- ==============================================================================
-     MODAL 2: SỬA CƠ SỞ BẾP / KHO TẠI CHỖ
+     MODAL 2: SỬA CƠ SỞ BẾP / KHO TẠI CHỖ (KÈM BẢN ĐỒ CHỌN TỌA ĐỘ)
      ============================================================================== -->
 <div id="editWarehouseModal" style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); z-index: 99999; backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 16px;">
-    <div style="background: white; border-radius: 20px; max-width: 500px; width: 100%; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35); overflow: hidden; animation: qdModalFade 0.2s ease-out;">
-        <div style="background: linear-gradient(135deg, #1e293b, #0f172a); color: white; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center;">
+    <div style="background: white; border-radius: 20px; max-width: 560px; width: 100%; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35); animation: qdModalFade 0.2s ease-out;">
+        <div style="background: linear-gradient(135deg, #1e293b, #0f172a); color: white; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 20;">
             <div style="display: flex; align-items: center; gap: 12px;">
                 <div style="width: 38px; height: 38px; border-radius: 12px; background: rgba(99, 102, 241, 0.2); border: 1px solid rgba(99, 102, 241, 0.3); display: flex; align-items: center; justify-content: center; font-size: 18px; color: #818cf8;">
                     <i class="fa-solid fa-pen-to-square"></i>
@@ -320,18 +339,34 @@
                 <input type="text" name="dia_chi" id="edit-dia-chi" required style="width: 100%; padding: 9px 12px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 13px; outline: none; background: #f8fafc; box-sizing: border-box;">
             </div>
 
+            <!-- 🗺️ BẢN ĐỒ CHỌN TỌA ĐỘ CHO MODAL SỬA (THEO YÊU CẦU NGƯỜI DÙNG) -->
+            <div style="margin-bottom: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <label style="font-size: 12.5px; font-weight: 700; color: #334155; margin: 0;">
+                        <i class="fa-solid fa-map-location-dot" style="color: #4f46e5;"></i> Bản Đồ Chọn Vị Trí (Bấm hoặc kéo ghim):
+                    </label>
+                    <button type="button" class="map-locate-btn" onclick="geocodeAddress('edit')">
+                        <i class="fa-solid fa-location-crosshairs"></i> Tìm theo địa chỉ
+                    </button>
+                </div>
+                <div id="edit-warehouse-map" class="modal-map-container"></div>
+                <div style="font-size: 11px; color: #64748b; margin-top: 4px;">
+                    💡 Bạn có thể bấm trực tiếp lên bản đồ hoặc kéo ghim để tự động điền Vĩ độ & Kinh độ.
+                </div>
+            </div>
+
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
                 <div>
                     <label style="display: block; font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 5px;">
                         Vĩ Độ GIS (Lat) <span style="color: #ef4444;">*</span>
                     </label>
-                    <input type="number" step="any" name="lat" id="edit-lat" required style="width: 100%; padding: 9px 12px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 13px; outline: none; background: #f8fafc; box-sizing: border-box;">
+                    <input type="number" step="any" name="lat" id="edit-lat" required style="width: 100%; padding: 9px 12px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 13px; outline: none; background: #f8fafc; box-sizing: border-box;" oninput="onManualCoordsChange('edit')">
                 </div>
                 <div>
                     <label style="display: block; font-size: 12.5px; font-weight: 700; color: #334155; margin-bottom: 5px;">
                         Kinh Độ GIS (Lng) <span style="color: #ef4444;">*</span>
                     </label>
-                    <input type="number" step="any" name="lng" id="edit-lng" required style="width: 100%; padding: 9px 12px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 13px; outline: none; background: #f8fafc; box-sizing: border-box;">
+                    <input type="number" step="any" name="lng" id="edit-lng" required style="width: 100%; padding: 9px 12px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-size: 13px; outline: none; background: #f8fafc; box-sizing: border-box;" oninput="onManualCoordsChange('edit')">
                 </div>
             </div>
 
@@ -346,7 +381,7 @@
                 <button type="button" onclick="closeEditWarehouseModal()" style="padding: 9px 18px; border-radius: 10px; border: 1px solid #e2e8f0; background: #f8fafc; color: #64748b; font-weight: 700; font-size: 13px; cursor: pointer;">
                     Hủy Bỏ
                 </button>
-                <button type="submit" style="padding: 9px 24px; border-radius: 10px; border: none; background: linear-gradient(135deg, #4f46e5, #4338ca); color: white; font-weight: 700; font-size: 13px; cursor: pointer;">
+                <button type="submit" style="padding: 9px 24px; border-radius: 10px; border: none; background: linear-gradient(135deg, #4f46e5, #4338ca); color: white; font-weight: 700; font-size: 13px; cursor: pointer; box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);">
                     <i class="fa-solid fa-floppy-disk"></i> Lưu Thay Đổi
                 </button>
             </div>
@@ -382,6 +417,38 @@
     from { opacity: 0; transform: scale(0.96) translateY(-10px); }
     to { opacity: 1; transform: scale(1) translateY(0); }
 }
+
+.modal-map-container {
+    width: 100%;
+    height: 200px;
+    border-radius: 12px;
+    border: 1.5px solid #cbd5e1;
+    margin-top: 6px;
+    margin-bottom: 8px;
+    background: #f1f5f9;
+    box-sizing: border-box;
+}
+
+.map-locate-btn {
+    background: #eef2ff;
+    border: 1px solid #c7d2fe;
+    color: #4f46e5;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11.5px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s ease;
+}
+
+.map-locate-btn:hover {
+    background: #4f46e5;
+    color: white;
+    border-color: #4f46e5;
+}
 </style>
 
 <script>
@@ -399,9 +466,132 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+// ==========================================
+// 🗺️ LEAFLET MAP CHỌN VĨ ĐỘ & KINH ĐỘ
+// ==========================================
+let addMap = null;
+let addMarker = null;
+let editMap = null;
+let editMarker = null;
+
+// Khởi tạo bản đồ cho Modal Thêm Mới
+function initAddMap() {
+    let lat = parseFloat(document.getElementById('add-lat').value) || 10.7769;
+    let lng = parseFloat(document.getElementById('add-lng').value) || 106.7009;
+
+    if (!addMap) {
+        addMap = L.map('add-warehouse-map').setView([lat, lng], 14);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap'
+        }).addTo(addMap);
+
+        addMarker = L.marker([lat, lng], { draggable: true }).addTo(addMap);
+
+        addMarker.on('dragend', function(e) {
+            const pos = e.target.getLatLng();
+            document.getElementById('add-lat').value = pos.lat.toFixed(6);
+            document.getElementById('add-lng').value = pos.lng.toFixed(6);
+        });
+
+        addMap.on('click', function(e) {
+            addMarker.setLatLng(e.latlng);
+            document.getElementById('add-lat').value = e.latlng.lat.toFixed(6);
+            document.getElementById('add-lng').value = e.latlng.lng.toFixed(6);
+        });
+    } else {
+        addMap.invalidateSize();
+        addMap.setView([lat, lng], 14);
+        if (addMarker) addMarker.setLatLng([lat, lng]);
+    }
+}
+
+// Khởi tạo bản đồ cho Modal Cập Nhật
+function initEditMap(lat, lng) {
+    if (!editMap) {
+        editMap = L.map('edit-warehouse-map').setView([lat, lng], 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap'
+        }).addTo(editMap);
+
+        editMarker = L.marker([lat, lng], { draggable: true }).addTo(editMap);
+
+        editMarker.on('dragend', function(e) {
+            const pos = e.target.getLatLng();
+            document.getElementById('edit-lat').value = pos.lat.toFixed(6);
+            document.getElementById('edit-lng').value = pos.lng.toFixed(6);
+        });
+
+        editMap.on('click', function(e) {
+            editMarker.setLatLng(e.latlng);
+            document.getElementById('edit-lat').value = e.latlng.lat.toFixed(6);
+            document.getElementById('edit-lng').value = e.latlng.lng.toFixed(6);
+        });
+    } else {
+        editMap.invalidateSize();
+        editMap.setView([lat, lng], 15);
+        if (editMarker) editMarker.setLatLng([lat, lng]);
+    }
+}
+
+// Đồng bộ khi người dùng gõ tay số tọa độ vào ô input
+function onManualCoordsChange(mode) {
+    const latInput = document.getElementById(mode + '-lat');
+    const lngInput = document.getElementById(mode + '-lng');
+    const lat = parseFloat(latInput.value);
+    const lng = parseFloat(lngInput.value);
+
+    if (isNaN(lat) || isNaN(lng)) return;
+
+    if (mode === 'add' && addMap && addMarker) {
+        addMarker.setLatLng([lat, lng]);
+        addMap.panTo([lat, lng]);
+    } else if (mode === 'edit' && editMap && editMarker) {
+        editMarker.setLatLng([lat, lng]);
+        editMap.panTo([lat, lng]);
+    }
+}
+
+// Tìm kiếm tọa độ tự động theo chuỗi Địa Chỉ Chi Tiết (Geocoding)
+function geocodeAddress(mode) {
+    const addrInput = document.getElementById(mode === 'add' ? 'add-dia-chi' : 'edit-dia-chi');
+    const query = addrInput ? addrInput.value.trim() : '';
+    if (!query) {
+        alert('Vui lòng nhập Địa Chỉ Chi Tiết trước khi tìm kiếm!');
+        return;
+    }
+
+    const searchUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ', TP Hồ Chí Minh')}&limit=1`;
+    fetch(searchUrl)
+        .then(r => r.json())
+        .then(results => {
+            if (results && results.length > 0) {
+                const lat = parseFloat(results[0].lat);
+                const lng = parseFloat(results[0].lon);
+                document.getElementById(mode + '-lat').value = lat.toFixed(6);
+                document.getElementById(mode + '-lng').value = lng.toFixed(6);
+
+                if (mode === 'add' && addMap && addMarker) {
+                    addMarker.setLatLng([lat, lng]);
+                    addMap.setView([lat, lng], 16);
+                } else if (mode === 'edit' && editMap && editMarker) {
+                    editMarker.setLatLng([lat, lng]);
+                    editMap.setView([lat, lng], 16);
+                }
+            } else {
+                alert('Không tìm thấy tọa độ cho địa chỉ này trên OpenStreetMap. Bạn có thể bấm trực tiếp lên bản đồ để chọn tọa độ!');
+            }
+        })
+        .catch(() => {
+            alert('Lỗi kết nối tra cứu tọa độ. Bạn có thể bấm trực tiếp lên bản đồ để chọn tọa độ!');
+        });
+}
+
 // Add Modal
 function openAddWarehouseModal() {
     document.getElementById('addWarehouseModal').style.display = 'flex';
+    setTimeout(initAddMap, 200);
 }
 function closeAddWarehouseModal() {
     document.getElementById('addWarehouseModal').style.display = 'none';
@@ -417,6 +607,16 @@ function openEditWarehouseModal(id, ten, diaChi, lat, lng, sucChua) {
     document.getElementById('edit-suc-chua').value = sucChua;
     document.getElementById('editWarehouseForm').action = '/sua-kho/' + id + '/';
     document.getElementById('editWarehouseModal').style.display = 'flex';
+
+    let nLat = parseFloat(lat);
+    let nLng = parseFloat(lng);
+    if (isNaN(nLat) || isNaN(nLng)) {
+        nLat = 10.7769;
+        nLng = 106.7009;
+    }
+    setTimeout(function() {
+        initEditMap(nLat, nLng);
+    }, 200);
 }
 function closeEditWarehouseModal() {
     document.getElementById('editWarehouseModal').style.display = 'none';
