@@ -142,6 +142,10 @@
                 <i class="fa-solid fa-file-excel"></i> Xuất Excel
             </a>
 
+            <button type="button" onclick="dieuPhoiTatCa()" class="btn-add" style="background: linear-gradient(135deg, #ff5722 0%, #ea580c 100%); box-shadow: 0 4px 12px rgba(255, 87, 34, 0.35); border: none; cursor: pointer;">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> ⚡ Thuật Toán Phân Phối Shipper
+            </button>
+
             <a href="{% url 'core:them_don_hang' %}" class="btn-add">
                 <i class="fa-solid fa-plus"></i> Tạo Đơn Mới
             </a>
@@ -232,6 +236,11 @@
 
                     <td>
                         <div class="action-group">
+                            {% if not don.tai_xe or don.trang_thai == 'CHỜ QUÁN DUYỆT' or don.trang_thai == 'BẾP ĐANG NẤU' or don.trang_thai == 'CHỜ TÀI XẾ' %}
+                            <button type="button" onclick="dieuPhoiDon({{ don.id }}, '{{ don.ma_don }}')" class="btn-action" style="background: #fff7ed; color: #ff5722; border: 1px solid #fed7aa;" title="⚡ Thuật toán điều phối Shipper gần quán nhất">
+                                <i class="fa-solid fa-bolt"></i>
+                            </button>
+                            {% endif %}
                             <a href="{% url 'core:sua_don_hang' don.id %}" class="btn-action btn-edit" title="Sửa thông tin đơn">
                                 <i class="fa-solid fa-pen"></i>
                             </a>
@@ -273,6 +282,12 @@
             } else if (text.includes('HỦY')) {
                 badge.style.backgroundColor = '#fee2e2'; 
                 badge.style.color = '#991b1b';
+            } else if (text.includes('CHỜ QUÁN DUYỆT')) {
+                badge.style.backgroundColor = '#fee2e2'; 
+                badge.style.color = '#b91c1c';
+            } else if (text.includes('BẾP') || text.includes('NẤU')) {
+                badge.style.backgroundColor = '#fef3c7'; 
+                badge.style.color = '#b45309';
             } else if (text.includes('CHỜ')) {
                 badge.style.backgroundColor = '#fef9c3'; 
                 badge.style.color = '#854d0e';
@@ -285,5 +300,52 @@
             }
         });
     });
+
+    // ⚡ Thuật toán điều phối Shipper cho 1 đơn cụ thể
+    function dieuPhoiDon(donId, maDon) {
+        if (!confirm(`Bạn có muốn chạy thuật toán Haversine để tìm Shipper gần quán nhất cho đơn #${maDon}?`)) return;
+
+        fetch(`/api/admin/don-hang/${donId}/dieu-phoi-shipper/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                alert(`⚡ THUẬT TOÁN ĐIỀU PHỐI THÀNH CÔNG!\n${data.message}`);
+                location.reload();
+            } else {
+                alert(data.message || 'Không thể điều phối shipper!');
+            }
+        })
+        .catch(() => alert('Lỗi kết nối máy chủ!'));
+    }
+
+    // ⚡ Thuật toán điều phối Shipper cho toàn bộ đơn đang chờ
+    function dieuPhoiTatCa() {
+        if (!confirm('Bạn có chắc muốn kích hoạt thuật toán phân phối tự động cho toàn bộ các đơn hàng đang chờ trong hệ thống?')) return;
+
+        fetch('/api/admin/dieu-phoi-tat-ca/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                let detailMsg = data.details.length > 0 ? "\nChi tiết:\n- " + data.details.join("\n- ") : "";
+                alert(`⚡ KẾT QUẢ ĐIỀU PHỐI HỆ THỐNG:\n${data.message}${detailMsg}`);
+                location.reload();
+            } else {
+                alert(data.message || 'Lỗi điều phối!');
+            }
+        })
+        .catch(() => alert('Lỗi kết nối máy chủ!'));
+    }
 </script>
 {% endblock %}

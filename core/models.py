@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils.text import slugify
@@ -235,6 +236,24 @@ class DonHang(models.Model):
     ma_giao_dich_qr = models.CharField(max_length=50, blank=True, default='',
                                        verbose_name="Mã giao dịch / Mã QR thanh toán")
 
+    # NGHIỆP VỤ THU NHẬP SHIPPER VÀ THUẾ NỀN TẢNG
+    thue_phi_san = models.DecimalField(
+        max_digits=12, decimal_places=0, default=0,
+        verbose_name="Thuế TNCN và Phí sàn khấu trừ (VNĐ)"
+    )
+    tien_shipper_thuc_nhan = models.DecimalField(
+        max_digits=12, decimal_places=0, default=0,
+        verbose_name="Tiền Shipper thực nhận sau thuế (VNĐ)"
+    )
+    TT_THANH_TOAN_SHIPPER_CHOICES = [
+        ('CHO_NHAN_TIEN', 'Chờ nhận tiền hàng (Đã trừ thuế)'),
+        ('DA_NHAN_TIEN', 'Đã quyết toán vào ví'),
+    ]
+    trang_thai_thanh_toan_shipper = models.CharField(
+        max_length=30, choices=TT_THANH_TOAN_SHIPPER_CHOICES,
+        default='CHO_NHAN_TIEN', verbose_name="Trạng thái nhận tiền của Shipper"
+    )
+
     def save(self, *args, **kwargs):
         # TỰ ĐỘNG TẠO MÃ ĐƠN HÀNG (VD: DH001, DH002...)
         if not self.ma_don:
@@ -251,6 +270,13 @@ class DonHang(models.Model):
         # TỰ ĐỘNG TÍNH TỔNG TIỀN NẾU CHƯA CÓ
         if not self.tong_tien or self.tong_tien == 0:
             self.tong_tien = max(0, self.tien_mon_an + self.phi_van_chuyen + self.phu_phi_hoa_toc - self.giam_gia)
+
+        # TỰ ĐỘNG TÍNH THUẾ VÀ TIỀN THỰC NHẬN CỦA SHIPPER (10% THUẾ/PHÍ NỀN TẢNG)
+        tong_cuoc_ship = (self.phi_van_chuyen or 0) + (self.phu_phi_hoa_toc or 0)
+        if not self.thue_phi_san or self.thue_phi_san == 0:
+            self.thue_phi_san = round(Decimal(tong_cuoc_ship) * Decimal('0.10'))
+        if not self.tien_shipper_thuc_nhan or self.tien_shipper_thuc_nhan == 0:
+            self.tien_shipper_thuc_nhan = max(Decimal(0), Decimal(tong_cuoc_ship) - self.thue_phi_san)
 
         super(DonHang, self).save(*args, **kwargs)
 
@@ -332,8 +358,15 @@ class LichSuKho(models.Model):
 class DanhGiaDonHang(models.Model):
     don_hang = models.ForeignKey(DonHang, on_delete=models.CASCADE, related_name='danh_gia_list', verbose_name="Đơn hàng")
     ten_khach = models.CharField(max_length=100, blank=True, default='', verbose_name="Họ tên người đánh giá")
-    so_sao = models.IntegerField(default=5, verbose_name="Số sao (1-5)")
-    nhan_xet = models.TextField(blank=True, default='', verbose_name="Nội dung đánh giá")
+    so_sao = models.IntegerField(default=5, verbose_name="Số sao chung (1-5)")
+    nhan_xet = models.TextField(blank=True, default='', verbose_name="Nội dung đánh giá chung")
+    
+    # ĐÁNH GIÁ KÉP: SHIPPER VÀ MÓN ĂN
+    so_sao_shipper = models.IntegerField(default=5, verbose_name="Số sao Shipper (1-5)")
+    nhan_xet_shipper = models.TextField(blank=True, default='', verbose_name="Nhận xét Shipper")
+    so_sao_mon = models.IntegerField(default=5, verbose_name="Số sao Món ăn (1-5)")
+    nhan_xet_mon = models.TextField(blank=True, default='', verbose_name="Nhận xét Món ăn")
+
     mon_an = models.ForeignKey(MonAn, on_delete=models.SET_NULL, null=True, blank=True, related_name='danh_gia_mon', verbose_name="Món ăn đánh giá")
     ngay_tao = models.DateTimeField(auto_now_add=True, verbose_name="Thời gian đánh giá")
 
@@ -343,4 +376,5 @@ class DanhGiaDonHang(models.Model):
         verbose_name_plural = "Đánh giá đơn hàng"
 
     def __str__(self):
-        return f"Đánh giá {self.so_sao} sao - Đơn {self.don_hang.ma_don}"
+        return f"Đánh giá Đơn {self.don_hang.ma_don} - Shipper: {self.so_sao_shipper}★, Món: {self.so_sao_mon}★"
+

@@ -309,32 +309,32 @@
         </div>
 
         <div class="b2b-stat-card">
-            <div class="b2b-stat-icon" style="background: #e0f2fe; color: #0284c7;">
-                <i class="fa-solid fa-receipt"></i>
+            <div class="b2b-stat-icon" style="background: #fee2e2; color: #ef4444;">
+                <i class="fa-solid fa-bell"></i>
             </div>
             <div>
-                <div class="stat-val">{{ stats.tong_don }}</div>
-                <div class="stat-lbl">Tổng đơn đặt tại quán</div>
+                <div class="stat-val" style="color: #ef4444;">{{ stats.don_cho_duyet|default:0 }}</div>
+                <div class="stat-lbl">Đơn mới chờ quán duyệt</div>
             </div>
         </div>
 
         <div class="b2b-stat-card">
             <div class="b2b-stat-icon" style="background: #fef3c7; color: #d97706;">
-                <i class="fa-solid fa-kitchen-set"></i>
+                <i class="fa-solid fa-fire-burner"></i>
             </div>
             <div>
-                <div class="stat-val">{{ stats.don_cho_bep }}</div>
-                <div class="stat-lbl">Đơn cần bếp chế biến</div>
+                <div class="stat-val">{{ stats.don_dang_nau|default:0 }}</div>
+                <div class="stat-lbl">Bếp đang nấu món</div>
             </div>
         </div>
 
         <div class="b2b-stat-card">
-            <div class="b2b-stat-icon" style="background: #ecfdf5; color: #10b981;">
+            <div class="b2b-stat-icon" style="background: #e0f2fe; color: #0284c7;">
                 <i class="fa-solid fa-motorcycle"></i>
             </div>
             <div>
                 <div class="stat-val">{{ stats.don_dang_giao }}</div>
-                <div class="stat-lbl">Đơn Shipper đang giao</div>
+                <div class="stat-lbl">Đang trên đường giao</div>
             </div>
         </div>
     </div>
@@ -408,29 +408,66 @@
                             {{ dh.tien_mon_an|floatformat:0 }}đ
                         </td>
                         <td>
-                            {% if 'THÀNH CÔNG' in dh.trang_thai %}
+                            {% if dh.trang_thai == 'CHỜ QUÁN DUYỆT' %}
+                                <span class="status-badge" style="background: #fee2e2; color: #dc2626; font-weight: 800;">
+                                    <i class="fa-solid fa-clock"></i> Chờ Quán Duyệt
+                                </span>
+                            {% elif dh.trang_thai == 'BẾP ĐANG NẤU' %}
+                                <span class="status-badge" style="background: #fef3c7; color: #b45309; font-weight: 800;">
+                                    <i class="fa-solid fa-fire-burner"></i> Bếp Đang Nấu
+                                </span>
+                            {% elif dh.trang_thai == 'CHỜ SHIPPER LẤY MÓN' %}
+                                <span class="status-badge" style="background: #e0f2fe; color: #0369a1; font-weight: 800;">
+                                    <i class="fa-solid fa-motorcycle"></i> Chờ Shipper Lấy
+                                </span>
+                            {% elif 'THÀNH CÔNG' in dh.trang_thai %}
                                 <span class="status-badge status-xong">Đã Giao Xong</span>
                             {% elif 'VẬN CHUYỂN' in dh.trang_thai %}
                                 <span class="status-badge status-giao">Shipper Đang Giao</span>
+                            {% elif 'HỦY' in dh.trang_thai %}
+                                <span class="status-badge" style="background: #f1f5f9; color: #64748b;">Đã Hủy</span>
                             {% else %}
                                 <span class="status-badge status-cho">{{ dh.trang_thai }}</span>
                             {% endif %}
                         </td>
                         <td>
                             {% if dh.tai_xe %}
-                                <span style="font-weight: 700; color: #0284c7;"><i class="fa-solid fa-motorcycle"></i> {{ dh.tai_xe.ten_tai_xe }}</span>
+                                <span style="font-weight: 700; color: #0284c7;"><i class="fa-solid fa-motorcycle"></i> {{ dh.tai_xe.ten_tai_xe }}</span><br>
+                                <span style="font-size: 11px; color: #64748b;">BS: {{ dh.tai_xe.bien_so }}</span>
                             {% else %}
                                 <span style="color: #94a3b8; font-style: italic;">Chờ điều phối</span>
                             {% endif %}
                         </td>
                         <td>
                             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                                <button onclick="bepCapNhatDon({{ dh.id }}, 'BẾP ĐANG NẤU')" class="btn-action-sm btn-bep-nau" title="Cập nhật Bếp đang nấu món">
-                                    <i class="fa-solid fa-fire-burner"></i> Đang nấu
-                                </button>
-                                <button onclick="bepCapNhatDon({{ dh.id }}, 'BÀN GIAO SHIPPER')" class="btn-action-sm btn-bep-xong" title="Món xong, bàn giao Shipper">
-                                    <i class="fa-solid fa-check"></i> Sẵn sàng giao
-                                </button>
+                                {% if dh.trang_thai == 'CHỜ QUÁN DUYỆT' %}
+                                    <button onclick="bepCapNhatDon({{ dh.id }}, 'DUYET_DON')" class="btn-action-sm" style="background: #16a34a; color: white;" title="Quán duyệt đơn và bắt đầu chế biến">
+                                        <i class="fa-solid fa-check"></i> Duyệt & Nấu
+                                    </button>
+                                    <button onclick="bepCapNhatDon({{ dh.id }}, 'TU_CHOI')" class="btn-action-sm" style="background: #fee2e2; color: #b91c1c;" title="Từ chối đơn này">
+                                        <i class="fa-solid fa-xmark"></i> Từ chối
+                                    </button>
+                                {% elif dh.trang_thai == 'BẾP ĐANG NẤU' %}
+                                    <button onclick="bepCapNhatDon({{ dh.id }}, 'NAU_XONG_DIEU_PHOI')" class="btn-action-sm" style="background: linear-gradient(135deg, #ff5722, #ea580c); color: white;" title="Bếp đã nấu xong, kích hoạt thuật toán điều phối Shipper gần quán">
+                                        <i class="fa-solid fa-bell-concierge"></i> Nấu xong - Gọi Shipper
+                                    </button>
+                                {% elif dh.trang_thai == 'CHỜ SHIPPER LẤY MÓN' %}
+                                    <span style="font-size: 11.5px; color: #0284c7; font-weight: 700;">
+                                        <i class="fa-solid fa-spinner fa-spin"></i> Chờ Shipper tới quán
+                                    </span>
+                                {% elif 'VẬN CHUYỂN' in dh.trang_thai %}
+                                    <span style="font-size: 11.5px; color: #0369a1; font-weight: 700;">
+                                        <i class="fa-solid fa-route"></i> Đang giao cho khách
+                                    </span>
+                                {% elif 'THÀNH CÔNG' in dh.trang_thai %}
+                                    <span style="font-size: 11.5px; color: #16a34a; font-weight: 700;">
+                                        <i class="fa-solid fa-circle-check"></i> Hoàn tất
+                                    </span>
+                                {% else %}
+                                    <button onclick="bepCapNhatDon({{ dh.id }}, 'BẾP ĐANG NẤU')" class="btn-action-sm btn-bep-nau" title="Cập nhật Bếp đang nấu món">
+                                        <i class="fa-solid fa-fire-burner"></i> Đang nấu
+                                    </button>
+                                {% endif %}
                             </div>
                         </td>
                     </tr>

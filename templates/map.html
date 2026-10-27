@@ -423,17 +423,18 @@
         cursor: pointer;
     }
 
-    .star-btn {
-        font-size: 28px;
-        color: #cbd5e1;
+    .star-btn, .star-btn-shipper, .star-btn-mon {
+        font-size: 22px;
+        color: #f59e0b;
         transition: all 0.2s;
         background: none;
         border: none;
-        padding: 0;
+        padding: 2px;
         cursor: pointer;
     }
 
-    .star-btn.hover, .star-btn.selected {
+    .star-btn.hover, .star-btn.selected,
+    .star-btn-shipper.selected, .star-btn-mon.selected {
         color: #f59e0b;
         transform: scale(1.15);
     }
@@ -524,22 +525,32 @@
                 </div>
             </div>
 
-            <!-- DYNAMIC ETA BADGE -->
+            <!-- DYNAMIC ETA BADGE (THỜI GIAN THỰC SHIPPER ĐANG ĐẾN NHÀ KHÁCH) -->
             <div>
                 {% if current_step == 5 %}
                 <div class="eta-badge delivered">
                     <i class="fa-solid fa-circle-check"></i>
                     <span>Đã giao thành công lúc {{ dh.ngay_tao|date:"H:i" }}</span>
                 </div>
-                {% elif dh.loai_giao_hang == 'HOA_TOC' %}
-                <div class="eta-badge">
-                    <i class="fa-solid fa-bolt" style="color: #ff5722;"></i>
-                    <span id="eta-text">⚡ Hỏa tốc: Giao dự kiến trong 15 - 20 phút</span>
+                {% elif current_step == 4 %}
+                <div class="eta-badge" style="background: linear-gradient(135deg, #fff7ed, #ffedd5); border: 2px solid #ff7043; color: #c2410c; padding: 10px 22px; font-size: 14px; box-shadow: 0 4px 15px rgba(255, 87, 34, 0.2);">
+                    <i class="fa-solid fa-motorcycle fa-bounce" style="color: #ff5722; font-size: 18px;"></i>
+                    <span>Shipper đang trên đường đến: <b>còn tầm <span id="live-eta-min" style="font-size: 20px; color: #ea580c; font-weight: 900;">{{ eta_phut|default:12 }}</span> phút</b> (Cách {{ dist_shipper_khach|floatformat:1 }} km)</span>
+                </div>
+                {% elif current_step == 3 %}
+                <div class="eta-badge" style="background: #e0f2fe; border-color: #7dd3fc; color: #0369a1;">
+                    <i class="fa-solid fa-motorcycle fa-spin" style="color: #0284c7;"></i>
+                    <span>Đã điều phối Shipper {{ dh.tai_xe.ten_tai_xe }} &bull; Đang tới quán lấy món</span>
+                </div>
+                {% elif current_step == 2 %}
+                <div class="eta-badge" style="background: #fef3c7; border-color: #fde047; color: #b45309;">
+                    <i class="fa-solid fa-fire-burner fa-flip" style="color: #ea580c;"></i>
+                    <span>Quán đã duyệt đơn &bull; Bếp đang chế biến món nóng sốt</span>
                 </div>
                 {% else %}
-                <div class="eta-badge">
-                    <i class="fa-solid fa-clock" style="color: #0284c7;"></i>
-                    <span id="eta-text">Dự kiến giao: 25 - 35 phút</span>
+                <div class="eta-badge" style="background: #fee2e2; border-color: #fca5a5; color: #b91c1c;">
+                    <i class="fa-solid fa-clock"></i>
+                    <span>Đã đặt hàng &bull; Chờ đối tác B2B quán duyệt đơn</span>
                 </div>
                 {% endif %}
             </div>
@@ -564,26 +575,26 @@
                 <div class="step-circle">
                     {% if current_step > 1 %}<i class="fa-solid fa-check"></i>{% else %}<i class="fa-solid fa-receipt"></i>{% endif %}
                 </div>
-                <div class="step-label">1. Đã đặt đơn</div>
-                <div class="step-subtext">Hệ thống ghi nhận</div>
+                <div class="step-label">1. Đặt đơn hàng</div>
+                <div class="step-subtext">Chờ quán B2B duyệt</div>
             </div>
 
             <!-- Step 2 -->
             <div class="step-item {% if current_step > 2 %}completed{% elif current_step == 2 %}active{% endif %}">
                 <div class="step-circle">
-                    {% if current_step > 2 %}<i class="fa-solid fa-check"></i>{% else %}<i class="fa-solid fa-store"></i>{% endif %}
+                    {% if current_step > 2 %}<i class="fa-solid fa-check"></i>{% else %}<i class="fa-solid fa-fire-burner"></i>{% endif %}
                 </div>
-                <div class="step-label">2. Quán tiếp nhận</div>
-                <div class="step-subtext">Đã xác nhận đơn</div>
+                <div class="step-label">2. Quán duyệt & Nấu</div>
+                <div class="step-subtext">Bếp đang chế biến</div>
             </div>
 
             <!-- Step 3 -->
             <div class="step-item {% if current_step > 3 %}completed{% elif current_step == 3 %}active{% endif %}">
                 <div class="step-circle">
-                    {% if current_step > 3 %}<i class="fa-solid fa-check"></i>{% else %}<i class="fa-solid fa-fire-burner"></i>{% endif %}
+                    {% if current_step > 3 %}<i class="fa-solid fa-check"></i>{% else %}<i class="fa-solid fa-route"></i>{% endif %}
                 </div>
-                <div class="step-label">3. Đang nấu món</div>
-                <div class="step-subtext">Bếp trưởng chuẩn bị</div>
+                <div class="step-label">3. Điều phối Shipper</div>
+                <div class="step-subtext">Shipper tới quán lấy món</div>
             </div>
 
             <!-- Step 4 -->
@@ -592,16 +603,16 @@
                     {% if current_step > 4 %}<i class="fa-solid fa-check"></i>{% else %}<i class="fa-solid fa-motorcycle"></i>{% endif %}
                 </div>
                 <div class="step-label">4. Shipper đang giao</div>
-                <div class="step-subtext">Đang trên đường tới</div>
+                <div class="step-subtext">Còn tầm {{ eta_phut|default:12 }} phút</div>
             </div>
 
             <!-- Step 5 -->
             <div class="step-item {% if current_step == 5 %}completed{% endif %}">
                 <div class="step-circle">
-                    {% if current_step == 5 %}<i class="fa-solid fa-gift"></i>{% else %}<i class="fa-solid fa-box-check"></i>{% endif %}
+                    {% if current_step == 5 %}<i class="fa-solid fa-gift"></i>{% else %}<i class="fa-solid fa-star"></i>{% endif %}
                 </div>
                 <div class="step-label">5. Giao thành công</div>
-                <div class="step-subtext">Chúc bạn ngon miệng</div>
+                <div class="step-subtext">Đánh giá Shipper & Món</div>
             </div>
         </div>
     </div>
@@ -684,44 +695,60 @@
                     <h3 style="font-size: 16px; font-weight: 800; color: #92400e; margin: 0; display: flex; align-items: center; gap: 8px;">
                         <i class="fa-solid fa-star" style="color: #f59e0b;"></i> Đánh Giá Món Ăn & Dịch Vụ
                     </h3>
-                    <span style="font-size: 11.5px; background: #fef3c7; color: #b45309; padding: 4px 10px; border-radius: 999px; font-weight: 800;">
-                        {{ danh_gia_list|length }} phản hồi
-                    </span>
-                </div>
-
-                <!-- FORM ĐÁNH GIÁ NẾU CHƯA ĐÁNH GIÁ HOẶC MUỐN GỬI THÊM -->
+                    <span style="font                <!-- FORM ĐÁNH GIÁ KÉP: SHIPPER VÀ MÓN ĂN -->
                 <form id="review-form" method="POST" action="{% url 'core:gui_danh_gia' dh.ma_don %}">
                     {% csrf_token %}
                     <input type="hidden" name="ajax" value="1">
-                    <input type="hidden" name="so_sao" id="input-so-sao" value="5">
+                    <input type="hidden" name="so_sao_shipper" id="input-so-sao-shipper" value="5">
+                    <input type="hidden" name="so_sao_mon" id="input-so-sao-mon" value="5">
 
-                    <p style="font-size: 13px; color: #78350f; margin: 0 0 8px;">Bạn cảm thấy chất lượng món ăn và tốc độ giao hàng thế nào?</p>
+                    <input type="text" name="ten_khach" id="input-ten-khach" value="{{ dh.ten_nguoi_nhan }}" placeholder="Tên của bạn" style="width: 100%; border-radius: 10px; border: 1.5px solid #e2e8f0; padding: 9px 12px; font-size: 13px; outline: none; margin-bottom: 14px; font-family: inherit;">
 
-                    <!-- Star Selector -->
-                    <div class="rating-stars" id="star-container">
-                        <button type="button" class="star-btn selected" data-value="1"><i class="fa-solid fa-star"></i></button>
-                        <button type="button" class="star-btn selected" data-value="2"><i class="fa-solid fa-star"></i></button>
-                        <button type="button" class="star-btn selected" data-value="3"><i class="fa-solid fa-star"></i></button>
-                        <button type="button" class="star-btn selected" data-value="4"><i class="fa-solid fa-star"></i></button>
-                        <button type="button" class="star-btn selected" data-value="5"><i class="fa-solid fa-star"></i></button>
+                    <!-- 1. ĐÁNH GIÁ SHIPPER -->
+                    <div style="background: white; border-radius: 14px; padding: 14px; border: 1.5px solid #fed7aa; margin-bottom: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 13.5px; font-weight: 800; color: #ea580c;">
+                                <i class="fa-solid fa-motorcycle"></i> 1. Đánh giá Shipper giao hàng:
+                            </span>
+                            <div class="rating-stars" id="star-shipper-container" style="margin: 0;">
+                                <button type="button" class="star-btn-shipper selected" data-value="1"><i class="fa-solid fa-star"></i></button>
+                                <button type="button" class="star-btn-shipper selected" data-value="2"><i class="fa-solid fa-star"></i></button>
+                                <button type="button" class="star-btn-shipper selected" data-value="3"><i class="fa-solid fa-star"></i></button>
+                                <button type="button" class="star-btn-shipper selected" data-value="4"><i class="fa-solid fa-star"></i></button>
+                                <button type="button" class="star-btn-shipper selected" data-value="5"><i class="fa-solid fa-star"></i></button>
+                            </div>
+                        </div>
+                        <input type="text" name="nhan_xet_shipper" id="input-nhan-xet-shipper" placeholder="Nhận xét về thái độ, sự thân thiện, tốc độ giao của shipper..." style="width: 100%; border-radius: 8px; border: 1px solid #cbd5e1; padding: 8px 10px; font-size: 12.5px; outline: none; margin-top: 8px; font-family: inherit;">
                     </div>
 
-                    <div style="margin-bottom: 10px;">
-                        <input type="text" name="ten_khach" id="input-ten-khach" value="{{ dh.ten_nguoi_nhan }}" placeholder="Tên của bạn" style="width: 100%; border-radius: 10px; border: 1.5px solid #e2e8f0; padding: 9px 12px; font-size: 13px; outline: none; margin-bottom: 8px; font-family: inherit;">
-                        <textarea name="nhan_xet" id="input-nhan-xet" class="review-textarea" placeholder="Chia sẻ cảm nhận của bạn về món ăn, độ nóng sốt hoặc thái độ shipper..." required></textarea>
+                    <!-- 2. ĐÁNH GIÁ MÓN ĂN & QUÁN -->
+                    <div style="background: white; border-radius: 14px; padding: 14px; border: 1.5px solid #bbf7d0; margin-bottom: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 13.5px; font-weight: 800; color: #166534;">
+                                <i class="fa-solid fa-utensils"></i> 2. Đánh giá Món ăn quán nấu:
+                            </span>
+                            <div class="rating-stars" id="star-mon-container" style="margin: 0;">
+                                <button type="button" class="star-btn-mon selected" data-value="1"><i class="fa-solid fa-star"></i></button>
+                                <button type="button" class="star-btn-mon selected" data-value="2"><i class="fa-solid fa-star"></i></button>
+                                <button type="button" class="star-btn-mon selected" data-value="3"><i class="fa-solid fa-star"></i></button>
+                                <button type="button" class="star-btn-mon selected" data-value="4"><i class="fa-solid fa-star"></i></button>
+                                <button type="button" class="star-btn-mon selected" data-value="5"><i class="fa-solid fa-star"></i></button>
+                            </div>
+                        </div>
+                        <input type="text" name="nhan_xet_mon" id="input-nhan-xet-mon" placeholder="Nhận xét về độ ngon, nóng sốt, đóng gói của món ăn..." style="width: 100%; border-radius: 8px; border: 1px solid #cbd5e1; padding: 8px 10px; font-size: 12.5px; outline: none; margin-top: 8px; font-family: inherit;">
                     </div>
 
                     <div style="display: flex; justify-content: flex-end;">
-                        <button type="submit" class="btn-submit-review" id="btn-submit-review">
-                            <i class="fa-solid fa-paper-plane"></i> Gửi đánh giá ngay
+                        <button type="submit" class="btn-submit-review" id="btn-submit-review" style="background: linear-gradient(135deg, #ff5722, #ea580c); color: white; border: none; padding: 10px 20px; border-radius: 12px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+                            <i class="fa-solid fa-paper-plane"></i> Gửi đánh giá kép
                         </button>
                     </div>
                 </form>
 
                 <!-- Review list -->
-                <div id="reviews-container">
+                <div id="reviews-container" style="margin-top: 20px;">
                     {% for dg in danh_gia_list %}
-                    <div class="review-item-card">
+                    <div class="review-item-card" style="background: white; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px; margin-bottom: 10px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                             <div style="font-size: 13.5px; font-weight: 800; color: #0f172a;">
                                 {{ dg.ten_khach|default:"Khách hàng" }}
@@ -729,19 +756,20 @@
                                     <i class="fa-solid fa-badge-check"></i> Đã mua hàng
                                 </span>
                             </div>
-                            <div style="color: #f59e0b; font-size: 13px;">
-                                {% for i in "12345"|make_list %}
-                                    {% if forloop.counter <= dg.so_sao %}
-                                        <i class="fa-solid fa-star"></i>
-                                    {% else %}
-                                        <i class="fa-regular fa-star" style="color: #cbd5e1;"></i>
-                                    {% endif %}
-                                {% endfor %}
-                            </div>
+                            <span style="font-size: 11px; color: #94a3b8; font-weight: 600;">{{ dg.ngay_tao|date:"H:i - d/m/Y" }}</span>
                         </div>
-                        <p style="font-size: 13px; color: #475569; margin: 0 0 4px; line-height: 1.4;">{{ dg.nhan_xet }}</p>
-                        <span style="font-size: 11px; color: #94a3b8; font-weight: 600;">{{ dg.ngay_tao|date:"H:i - d/m/Y" }}</span>
-                    </div>
+                        <!-- Thẻ sao Shipper và Món ăn -->
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; font-size: 12px;">
+                            <span style="background: #fff7ed; color: #c2410c; padding: 3px 8px; border-radius: 6px; font-weight: 700;">
+                                🛵 Shipper: {{ dg.so_sao_shipper|default:dg.so_sao }}★ - {{ dg.nhan_xet_shipper|default:"Rất nhanh nhẹn" }}
+                            </span>
+                            <span style="background: #f0fdf4; color: #15803d; padding: 3px 8px; border-radius: 6px; font-weight: 700;">
+                                🍲 Món ăn: {{ dg.so_sao_mon|default:dg.so_sao }}★ - {{ dg.nhan_xet_mon|default:"Món ăn ngon nóng sốt" }}
+                            </span>
+                        </div>
+                        {% if dg.nhan_xet and not dg.nhan_xet_shipper and not dg.nhan_xet_mon %}
+                            <p style="font-size: 13px; color: #475569; margin: 0; line-height: 1.4;">{{ dg.nhan_xet }}</p>
+                        {% endif %}
                     {% endfor %}
                 </div>
             </div>
@@ -930,49 +958,54 @@
             }
         });
 
-        // TƯƠNG TÁC RATING CHỌN SAO (FEATURE 4)
-        const starBtns = document.querySelectorAll('#star-container .star-btn');
-        const inputSoSao = document.getElementById('input-so-sao');
+        // TƯƠNG TÁC RATING CHỌN SAO KÉP (SHIPPER VÀ MÓN ĂN)
+        function initStarSelector(containerId, inputId, btnClass) {
+            const btns = document.querySelectorAll(`#${containerId} .${btnClass}`);
+            const input = document.getElementById(inputId);
+            if (!btns.length || !input) return;
 
-        starBtns.forEach(btn => {
-            btn.addEventListener('mouseenter', function() {
-                const val = parseInt(this.getAttribute('data-value'));
-                starBtns.forEach(b => {
-                    const bVal = parseInt(b.getAttribute('data-value'));
-                    if (bVal <= val) {
-                        b.classList.add('hover');
-                    } else {
-                        b.classList.remove('hover');
-                    }
+            btns.forEach(btn => {
+                btn.addEventListener('mouseenter', function() {
+                    const val = parseInt(this.getAttribute('data-value'));
+                    btns.forEach(b => {
+                        const bVal = parseInt(b.getAttribute('data-value'));
+                        b.style.color = (bVal <= val) ? '#f59e0b' : '#cbd5e1';
+                        b.style.transform = (bVal <= val) ? 'scale(1.2)' : 'scale(1)';
+                    });
+                });
+
+                btn.addEventListener('mouseleave', function() {
+                    const currentVal = parseInt(input.value) || 5;
+                    btns.forEach(b => {
+                        const bVal = parseInt(b.getAttribute('data-value'));
+                        b.style.color = (bVal <= currentVal) ? '#f59e0b' : '#cbd5e1';
+                        b.style.transform = (bVal <= currentVal) ? 'scale(1.15)' : 'scale(1)';
+                    });
+                });
+
+                btn.addEventListener('click', function() {
+                    const val = parseInt(this.getAttribute('data-value'));
+                    input.value = val;
+                    btns.forEach(b => {
+                        const bVal = parseInt(b.getAttribute('data-value'));
+                        b.classList.toggle('selected', bVal <= val);
+                        b.style.color = (bVal <= val) ? '#f59e0b' : '#cbd5e1';
+                    });
                 });
             });
+        }
 
-            btn.addEventListener('mouseleave', function() {
-                starBtns.forEach(b => b.classList.remove('hover'));
-            });
+        initStarSelector('star-shipper-container', 'input-so-sao-shipper', 'star-btn-shipper');
+        initStarSelector('star-mon-container', 'input-so-sao-mon', 'star-btn-mon');
 
-            btn.addEventListener('click', function() {
-                const val = parseInt(this.getAttribute('data-value'));
-                inputSoSao.value = val;
-                starBtns.forEach(b => {
-                    const bVal = parseInt(b.getAttribute('data-value'));
-                    if (bVal <= val) {
-                        b.classList.add('selected');
-                    } else {
-                        b.classList.remove('selected');
-                    }
-                });
-            });
-        });
-
-        // GỬI ĐÁNH GIÁ QUA AJAX (FEATURE 4)
+        // GỬI ĐÁNH GIÁ KÉP QUA AJAX
         const reviewForm = document.getElementById('review-form');
         if (reviewForm) {
             reviewForm.addEventListener('submit', function(e) {
                 e.preventDefault();
                 const btnSubmit = document.getElementById('btn-submit-review');
                 btnSubmit.disabled = true;
-                btnSubmit.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Đang gửi...";
+                btnSubmit.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Đang lưu đánh giá...";
 
                 const formData = new FormData(reviewForm);
 
@@ -988,18 +1021,10 @@
                     if (data.status === 'success') {
                         // Thêm review mới vào danh sách
                         const reviewsContainer = document.getElementById('reviews-container');
-                        let starsHtml = '';
-                        for (let i = 1; i <= 5; i++) {
-                            if (i <= data.so_sao) {
-                                starsHtml += '<i class="fa-solid fa-star"></i> ';
-                            } else {
-                                starsHtml += '<i class="fa-regular fa-star" style="color: #cbd5e1;"></i> ';
-                            }
-                        }
 
                         const newCard = document.createElement('div');
                         newCard.className = 'review-item-card';
-                        newCard.style.animation = 'fadeIn 0.5s ease';
+                        newCard.style.cssText = 'background: white; border: 1.5px solid #86efac; border-radius: 14px; padding: 14px; margin-bottom: 10px; animation: fadeIn 0.5s ease;';
                         newCard.innerHTML = `
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                                 <div style="font-size: 13.5px; font-weight: 800; color: #0f172a;">
@@ -1008,20 +1033,27 @@
                                         <i class="fa-solid fa-badge-check"></i> Đã mua hàng
                                     </span>
                                 </div>
-                                <div style="color: #f59e0b; font-size: 13px;">${starsHtml}</div>
+                                <span style="font-size: 11px; color: #94a3b8; font-weight: 600;">${data.ngay_tao}</span>
                             </div>
-                            <p style="font-size: 13px; color: #475569; margin: 0 0 4px; line-height: 1.4;">${data.nhan_xet}</p>
-                            <span style="font-size: 11px; color: #94a3b8; font-weight: 600;">${data.ngay_tao}</span>
+                            <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; font-size: 12px;">
+                                <span style="background: #fff7ed; color: #c2410c; padding: 3px 8px; border-radius: 6px; font-weight: 700;">
+                                    🛵 Shipper: ${data.so_sao_shipper}★ - ${data.nhan_xet_shipper || "Rất nhanh nhẹn"}
+                                </span>
+                                <span style="background: #f0fdf4; color: #15803d; padding: 3px 8px; border-radius: 6px; font-weight: 700;">
+                                    🍲 Món ăn: ${data.so_sao_mon}★ - ${data.nhan_xet_mon || "Món ăn ngon nóng sốt"}
+                                </span>
+                            </div>
                         `;
 
                         reviewsContainer.prepend(newCard);
 
-                        // Reset form & hiển thị thông báo
-                        document.getElementById('input-nhan-xet').value = '';
+                        // Reset text inputs
+                        document.getElementById('input-nhan-xet-shipper').value = '';
+                        document.getElementById('input-nhan-xet-mon').value = '';
                         btnSubmit.disabled = false;
-                        btnSubmit.innerHTML = "<i class='fa-solid fa-check'></i> Đã gửi thành công!";
+                        btnSubmit.innerHTML = "<i class='fa-solid fa-check'></i> Đã lưu đánh giá!";
                         if (typeof showToast === 'function') {
-                            showToast(`Cảm ơn bạn đã gửi đánh giá ${data.so_sao} sao cho đơn hàng!`, 'success', 'Đánh giá thành công');
+                            showToast(`Cảm ơn bạn! Đã ghi nhận đánh giá Shipper & Món ăn!`, 'success', 'Đánh giá thành công');
                         }
                         setTimeout(() => {
                             btnSubmit.innerHTML = "<i class='fa-solid fa-paper-plane'></i> Gửi đánh giá khác";

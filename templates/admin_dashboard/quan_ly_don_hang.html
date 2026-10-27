@@ -95,6 +95,9 @@
             <!-- Filter Trạng thái -->
             <select name="trang_thai" onchange="this.form.submit()" style="padding: 10px 14px; border-radius: 10px; border: 1.5px solid #e2e8f0; font-size: 13px; font-weight: 600; color: #334155; background: #f8fafc; outline: none; cursor: pointer;">
                 <option value="">⚡ Tất cả trạng thái đơn</option>
+                <option value="CHỜ QUÁN DUYỆT" {% if selected_trang_thai == 'CHỜ QUÁN DUYỆT' %}selected{% endif %}>🔔 Chờ quán duyệt</option>
+                <option value="BẾP ĐANG NẤU" {% if selected_trang_thai == 'BẾP ĐANG NẤU' %}selected{% endif %}>🍳 Bếp đang nấu</option>
+                <option value="CHỜ SHIPPER LẤY MÓN" {% if selected_trang_thai == 'CHỜ SHIPPER LẤY MÓN' %}selected{% endif %}>🛵 Chờ shipper lấy món</option>
                 <option value="CHỜ TÀI XẾ" {% if selected_trang_thai == 'CHỜ TÀI XẾ' %}selected{% endif %}>⏳ Chờ tài xế</option>
                 <option value="ĐANG VẬN CHUYỂN" {% if selected_trang_thai == 'ĐANG VẬN CHUYỂN' %}selected{% endif %}>🚚 Đang vận chuyển</option>
                 <option value="ĐÃ GIAO THÀNH CÔNG" {% if selected_trang_thai == 'ĐÃ GIAO THÀNH CÔNG' %}selected{% endif %}>✅ Đã giao thành công</option>
@@ -116,10 +119,13 @@
         </form>
 
         <!-- Right actions -->
-        <div style="display: flex; gap: 10px; align-items: center;">
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
             <a href="{% url 'core:export_excel' %}" class="admin-btn-action admin-btn-action-secondary" style="padding: 10px 16px; font-size: 13px;">
                 <i class="fa-solid fa-file-excel" style="color: #10b981;"></i> Xuất Excel
             </a>
+            <button type="button" onclick="dieuPhoiTatCaAdmin()" class="admin-btn-action" style="background: linear-gradient(135deg, #ff5722 0%, #ea580c 100%); color: white; border: none; padding: 10px 16px; font-size: 13px; font-weight: 700; border-radius: 10px; box-shadow: 0 4px 12px rgba(255, 87, 34, 0.3); cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> ⚡ Phân Phối Shipper Bằng Thuật Toán
+            </button>
             <button type="button" class="admin-btn-action admin-btn-action-primary" onclick="openQuickCreateOrderModal()" style="box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35); font-size: 13.5px; padding: 10px 18px;">
                 <i class="fa-solid fa-plus-circle"></i>
                 <span>Tạo Đơn Hàng Mới</span>
@@ -230,6 +236,18 @@
                             <span class="admin-badge admin-badge-info">
                                 <i class="fa-solid fa-truck-fast"></i> Đang Giao
                             </span>
+                        {% elif dh.trang_thai == 'CHỜ SHIPPER LẤY MÓN' %}
+                            <span class="admin-badge admin-badge-info" style="background: #e0e7ff; color: #4338ca;">
+                                <i class="fa-solid fa-motorcycle"></i> Chờ Shipper Lấy
+                            </span>
+                        {% elif dh.trang_thai == 'BẾP ĐANG NẤU' %}
+                            <span class="admin-badge admin-badge-warning" style="background: #fef3c7; color: #b45309;">
+                                <i class="fa-solid fa-fire-burner"></i> Bếp Đang Nấu
+                            </span>
+                        {% elif dh.trang_thai == 'CHỜ QUÁN DUYỆT' %}
+                            <span class="admin-badge admin-badge-danger" style="background: #fee2e2; color: #b91c1c;">
+                                <i class="fa-solid fa-bell"></i> Chờ Quán Duyệt
+                            </span>
                         {% elif dh.trang_thai == 'CHỜ TÀI XẾ' %}
                             <span class="admin-badge admin-badge-warning">
                                 <i class="fa-solid fa-user-clock"></i> Chờ Tài Xế
@@ -266,9 +284,14 @@
                     <!-- 10. Thao tác -->
                     <td style="text-align: right;">
                         <div class="admin-row-actions" style="justify-content: flex-end;">
+                            {% if not dh.tai_xe or dh.trang_thai == 'CHỜ QUÁN DUYỆT' or dh.trang_thai == 'BẾP ĐANG NẤU' or dh.trang_thai == 'CHỜ TÀI XẾ' %}
+                            <button type="button" class="admin-btn-icon-sm" style="background: #fff7ed; color: #ea580c; border-color: #fed7aa;" title="⚡ Kích hoạt thuật toán gán Shipper gần quán nhất" onclick="dieuPhoiDonAdmin('{{ dh.id }}', '{{ dh.ma_don }}')">
+                                <i class="fa-solid fa-bolt"></i>
+                            </button>
+                            {% endif %}
                             <!-- 1-Click Dispatch Modal Trigger -->
                             <button type="button" class="admin-btn-icon-sm" style="background: #eef2ff; color: #4f46e5; border-color: #c7d2fe;" title="Điều phối & Đổi trạng thái 1-Click" onclick="openQuickDispatchModal('{{ dh.id }}', '{{ dh.ma_don }}', '{{ dh.trang_thai|escapejs }}', '{{ dh.tai_xe.id|default:'' }}', '{{ dh.trang_thai_thanh_toan }}', '{{ dh.ten_nguoi_nhan|escapejs }}', '{{ dh.tong_tien|currency_vn }}')">
-                                <i class="fa-solid fa-bolt"></i>
+                                <i class="fa-solid fa-sliders"></i>
                             </button>
                             <!-- Xem nhanh đơn hàng -->
                             <button type="button" class="admin-btn-icon-sm" title="Xem nhanh chi tiết đơn hàng" onclick="openQuickOrderDetail('{{ dh.ma_don }}')">
@@ -333,7 +356,10 @@
                     <i class="fa-solid fa-signal" style="color: #6366f1;"></i> Trạng Thái Đơn Hàng
                 </label>
                 <select id="qd-trang-thai" name="trang_thai" style="width: 100%; padding: 10px 14px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-size: 13.5px; font-weight: 700; color: #1e293b; background: #f8fafc; outline: none;">
-                    <option value="CHỜ TÀI XẾ">⏳ CHỜ TÀI XẾ (Đơn mới chờ nhận)</option>
+                    <option value="CHỜ QUÁN DUYỆT">🔔 CHỜ QUÁN DUYỆT (Đơn mới đặt)</option>
+                    <option value="BẾP ĐANG NẤU">🍳 BẾP ĐANG NẤU (B2B đang chuẩn bị món)</option>
+                    <option value="CHỜ SHIPPER LẤY MÓN">🛵 CHỜ SHIPPER LẤY MÓN (Đã điều phối shipper)</option>
+                    <option value="CHỜ TÀI XẾ">⏳ CHỜ TÀI XẾ (Chờ phân công)</option>
                     <option value="ĐANG VẬN CHUYỂN">🚚 ĐANG VẬN CHUYỂN (Tài xế đang giao)</option>
                     <option value="ĐÃ GIAO THÀNH CÔNG">✅ ĐÃ GIAO THÀNH CÔNG (Hoàn tất đơn)</option>
                     <option value="ĐÃ HỦY">❌ ĐÃ HỦY (Hủy đơn hàng)</option>
@@ -637,6 +663,12 @@ function submitQuickDispatch(e) {
                     statusCell.innerHTML = `<span class="admin-badge admin-badge-success"><i class="fa-solid fa-check"></i> Đã Giao</span>`;
                 } else if (data.trang_thai === 'ĐANG VẬN CHUYỂN') {
                     statusCell.innerHTML = `<span class="admin-badge admin-badge-info"><i class="fa-solid fa-truck-fast"></i> Đang Giao</span>`;
+                } else if (data.trang_thai === 'CHỜ SHIPPER LẤY MÓN') {
+                    statusCell.innerHTML = `<span class="admin-badge admin-badge-info" style="background: #e0e7ff; color: #4338ca;"><i class="fa-solid fa-motorcycle"></i> Chờ Shipper Lấy</span>`;
+                } else if (data.trang_thai === 'BẾP ĐANG NẤU') {
+                    statusCell.innerHTML = `<span class="admin-badge admin-badge-warning" style="background: #fef3c7; color: #b45309;"><i class="fa-solid fa-fire-burner"></i> Bếp Đang Nấu</span>`;
+                } else if (data.trang_thai === 'CHỜ QUÁN DUYỆT') {
+                    statusCell.innerHTML = `<span class="admin-badge admin-badge-danger" style="background: #fee2e2; color: #b91c1c;"><i class="fa-solid fa-bell"></i> Chờ Quán Duyệt</span>`;
                 } else if (data.trang_thai === 'CHỜ TÀI XẾ') {
                     statusCell.innerHTML = `<span class="admin-badge admin-badge-warning"><i class="fa-solid fa-user-clock"></i> Chờ Tài Xế</span>`;
                 } else if (data.trang_thai === 'ĐÃ HỦY') {
@@ -818,5 +850,54 @@ window.addEventListener('keydown', function(e) {
         });
     }
 });
+// 5. ⚡ Thuật toán điều phối Shipper gần quán nhất
+function dieuPhoiDonAdmin(donId, maDon) {
+    if (!confirm(`Bạn có muốn chạy thuật toán Haversine để tìm Shipper gần quán nhất cho đơn #${maDon}?`)) return;
+
+    fetch(`/api/admin/don-hang/${donId}/dieu-phoi-shipper/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('#quickDispatchForm [name=csrfmiddlewaretoken]').value,
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            if (window.AdminToasts) {
+                window.AdminToasts.show(data.message, 'success');
+            } else {
+                alert(`⚡ THUẬT TOÁN ĐIỀU PHỐI THÀNH CÔNG!\n${data.message}`);
+            }
+            setTimeout(() => { location.reload(); }, 600);
+        } else {
+            alert(data.message || 'Không thể điều phối shipper!');
+        }
+    })
+    .catch(() => alert('Lỗi kết nối máy chủ!'));
+}
+
+function dieuPhoiTatCaAdmin() {
+    if (!confirm('Bạn có chắc muốn kích hoạt thuật toán phân phối tự động cho toàn bộ các đơn hàng đang chờ trong hệ thống?')) return;
+
+    fetch('/api/admin/dieu-phoi-tat-ca/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('#quickDispatchForm [name=csrfmiddlewaretoken]').value,
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            let detailMsg = data.details.length > 0 ? "\nChi tiết:\n- " + data.details.join("\n- ") : "";
+            alert(`⚡ KẾT QUẢ ĐIỀU PHỐI HỆ THỐNG:\n${data.message}${detailMsg}`);
+            location.reload();
+        } else {
+            alert(data.message || 'Lỗi điều phối!');
+        }
+    })
+    .catch(() => alert('Lỗi kết nối máy chủ!'));
+}
 </script>
 {% endblock %}

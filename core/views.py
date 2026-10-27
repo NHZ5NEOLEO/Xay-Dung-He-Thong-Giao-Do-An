@@ -178,6 +178,87 @@ def tim_quan_an_gan_nhat(lat_khach, lng_khach, max_km=30.0, mon_ids=None):
         return KhoHang.objects.first(), 2.5
 
 
+def dieu_phoi_shipper_gan_quan(don):
+    """
+    Thuật toán phân phối Shipper gần quán nhất (Nearest Shipper Haversine Dispatching Algorithm):
+    1. Xác định vị trí GPS của quán/bếp xuất phát (kho.lat, kho.lng).
+    2. Lọc danh sách tài xế đang trực tuyến (dang_lam_viec=True) và không nghỉ việc.
+       Nếu không có ai trực tuyến, quét toàn bộ tài xế khả dụng để tránh tắc nghẽn luồng.
+    3. Tính khoảng cách Haversine từ GPS hiện tại của từng Shipper đến vị trí Quán.
+    4. Lựa chọn Shipper có khoảng cách gần nhất (min distance).
+    5. Gán don.tai_xe = best_tx, cập nhật trạng thái don.trang_thai = 'CHỜ SHIPPER LẤY MÓN'.
+    6. Tính toán thuế TNCN/phí sàn (10%) và tiền thực nhận của shipper (90%).
+    7. Tạo bản ghi LichSuKho và gửi email Mailbox lộ trình.
+    """
+    kho = don.kho_xuat_phat
+    if not kho:
+        kho = KhoHang.objects.first()
+    if not kho:
+        return None, None, "Không tìm thấy thông tin Quán/Bếp xuất phát!"
+
+    # 1. Tìm tài xế đang bật trực tuyến (chấm công)
+    ds_tx = TaiXe.objects.filter(dang_lam_viec=True).exclude(trang_thai='Nghỉ việc')
+    if not ds_tx.exists():
+        # Fallback danh sách tài xế sẵn sàng
+        ds_tx = TaiXe.objects.exclude(trang_thai='Nghỉ việc')
+    if not ds_tx.exists():
+        ds_tx = TaiXe.objects.all()
+
+    if not ds_tx.exists():
+        return None, None, "Hệ thống chưa có tài xế nào!"
+
+    best_tx = None
+    min_dist = float('inf')
+    for tx in ds_tx:
+        dist = tinh_khoang_cach_haversine(kho.lat, kho.lng, tx.lat_hien_tai, tx.lng_hien_tai)
+        if dist < min_dist:
+            min_dist = dist
+            best_tx = tx
+
+    if best_tx:
+        don.tai_xe = best_tx
+        don.trang_thai = 'CHỜ SHIPPER LẤY MÓN'
+
+        # Tính thuế 10% và tiền shipper thực nhận 90%
+        tong_cuoc = (don.phi_van_chuyen or 0) + (don.phu_phi_hoa_toc or 0)
+        if not don.thue_phi_san or don.thue_phi_san == 0:
+            don.thue_phi_san = round(Decimal(tong_cuoc) * Decimal('0.10'))
+        if not don.tien_shipper_thuc_nhan or don.tien_shipper_thuc_nhan == 0:
+            don.tien_shipper_thuc_nhan = max(Decimal(0), Decimal(tong_cuoc) - don.thue_phi_san)
+        don.trang_thai_thanh_toan_shipper = 'CHO_NHAN_TIEN'
+        don.save()
+
+        # Ghi nhật ký
+        LichSuKho.objects.create(
+            don_hang=don,
+            kho=kho,
+            trang_thai_buoc='BÀN GIAO SHIPPER',
+            ghi_chu=(
+                f"Thuật toán Dispatch đã phân phối Shipper {best_tx.ten_tai_xe} ({best_tx.bien_so}) "
+                f"ở khoảng cách gần quán nhất ({min_dist:.1f} km) tới lấy đơn #{don.ma_don}."
+            )
+        )
+
+        # Gửi email Mailbox
+        mail_subj = f"🛵 [Phân Phối Shipper] Đơn #{don.ma_don} đã được chỉ định cho {best_tx.ten_tai_xe}"
+        mail_body = (
+            f"Chào {don.ten_nguoi_nhan},\n\n"
+            f"Hệ thống đã phân phối Shipper gần quán nhất cho đơn hàng #{don.ma_don}:\n"
+            f"- Shipper: {best_tx.ten_tai_xe}\n"
+            f"- Biển số xe: {best_tx.bien_so}\n"
+            f"- Số điện thoại: {best_tx.sdt}\n"
+            f"- Khoảng cách tới quán: {min_dist:.1f} km\n"
+            f"Shipper đang di chuyển đến quán '{kho.ten_kho}' để lấy đơn theo mã #{don.ma_don}!\n\n"
+            f"Theo dõi tiến trình tại: http://127.0.0.1:8000/chi-tiet/{don.ma_don}/\n\n"
+            f"Trân trọng,\nĐội ngũ FoodDelivery."
+        )
+        gui_email_mailbox(mail_subj, mail_body, don.email_nguoi_nhan)
+
+        return best_tx, min_dist, f"Đã phân phối Shipper {best_tx.ten_tai_xe} (cách quán {min_dist:.1f} km)"
+
+    return None, None, "Không tìm thấy Shipper khả dụng!"
+
+
 # ==============================================================================
 # 1. HỆ THỐNG XÁC THỰC và ĐIỀU HƯỚNG PHÂN QUYỀN 4 ĐỐI TƯỢNG (AUTHENTICATION)
 # ==============================================================================
@@ -670,6 +751,55 @@ def api_admin_quick_create_don_hang(request):
 
 
 @login_required(login_url='core:login')
+@require_POST
+def api_admin_dieu_phoi_shipper(request, don_id):
+    """Admin dùng thuật toán Haversine phân phối Shipper gần quán nhất cho đơn"""
+    if not (request.user.is_staff or request.user.is_superuser):
+        return JsonResponse({'success': False, 'message': 'Bạn không có quyền quản trị!'}, status=403)
+    don = get_object_or_404(DonHang, id=don_id)
+    tx, dist, msg = dieu_phoi_shipper_gan_quan(don)
+    if tx:
+        return JsonResponse({
+            'success': True,
+            'message': f"Thuật toán Haversine đã điều phối Shipper {tx.ten_tai_xe} (cách quán {dist:.1f} km, Biển số: {tx.bien_so})!",
+            'shipper_ten': tx.ten_tai_xe,
+            'shipper_id': tx.id,
+            'khoang_cach': dist,
+            'trang_thai': don.trang_thai,
+            'thue_phi': float(don.thue_phi_san),
+            'thuc_nhan': float(don.tien_shipper_thuc_nhan)
+        })
+    return JsonResponse({'success': False, 'message': msg or 'Không thể điều phối shipper!'}, status=400)
+
+
+@login_required(login_url='core:login')
+@require_POST
+def api_admin_dieu_phoi_tat_ca(request):
+    """Admin kích hoạt thuật toán điều phối tự động cho toàn bộ đơn hàng đang chờ"""
+    if not (request.user.is_staff or request.user.is_superuser):
+        return JsonResponse({'success': False, 'message': 'Bạn không có quyền quản trị!'}, status=403)
+    
+    ds_don_cho = DonHang.objects.filter(
+        Q(tai_xe__isnull=True) | Q(trang_thai__in=['CHỜ TÀI XẾ', 'BẾP ĐANG NẤU', 'CHỜ QUÁN DUYỆT'])
+    ).exclude(trang_thai__in=['ĐÃ GIAO THÀNH CÔNG', 'ĐÃ HỦY', 'HỦY'])
+
+    count = 0
+    details = []
+    for don in ds_don_cho:
+        tx, dist, msg = dieu_phoi_shipper_gan_quan(don)
+        if tx:
+            count += 1
+            details.append(f"Đơn #{don.ma_don} -> {tx.ten_tai_xe} ({dist:.1f}km)")
+
+    return JsonResponse({
+        'success': True,
+        'message': f"Thuật toán đã điều phối thành công {count} đơn hàng!",
+        'count': count,
+        'details': details
+    })
+
+
+@login_required(login_url='core:login')
 def admin_quan_ly_mon_an(request):
     """Trang Quản lý Thực đơn Món Ăn chuẩn Enterprise SaaS trong Admin Dashboard"""
     if not (request.user.is_staff or request.user.is_superuser):
@@ -1110,19 +1240,13 @@ def tao_don_hang_mon_an(request):
 
     tong_tien = max(Decimal(0), tien_mon_an + Decimal(phi_ship) + Decimal(phu_phi_hoa_toc) - giam_gia)
 
-    # ĐIỀU PHỐI SHIPPER TỰ ĐỘNG CHO ĐƠN HỎA TỐC
-    # Tìm tài xế đang online gần quán xuất phát nhất (thuật toán đường đi nhanh nhất)
-    tai_xe_phu_trach = None
-    if is_hoa_toc:
-        ds_tx_online = TaiXe.objects.filter(dang_lam_viec=True)
-        min_dist = float('inf')
-        for tx in ds_tx_online:
-            dist = tinh_khoang_cach_haversine(kho_xuat_phat.lat, kho_xuat_phat.lng, tx.lat_hien_tai, tx.lng_hien_tai)
-            if dist < min_dist:
-                min_dist = dist
-                tai_xe_phu_trach = tx
+    # Tính toán trước thuế TNCN/phí sàn (10%) và tiền shipper thực nhận (90%)
+    tong_cuoc_ship = Decimal(phi_ship) + Decimal(phu_phi_hoa_toc)
+    thue_phi_san = round(tong_cuoc_ship * Decimal('0.10'))
+    tien_shipper_thuc_nhan = max(Decimal(0), tong_cuoc_ship - thue_phi_san)
 
-    # Lưu đơn hàng (gắn liên kết với tài khoản khách hàng nếu đã đăng nhập)
+    # LƯU ĐƠN HÀNG: Ban đầu ở trạng thái "CHỜ QUÁN DUYỆT", chưa gán shipper ngay
+    # Đối tác B2B sẽ duyệt đơn trước, sau đó Admin/hệ thống dùng thuật toán điều phối Shipper gần quán nhất
     don = DonHang.objects.create(
         khach_hang=request.user if request.user.is_authenticated else None,
         ten_nguoi_nhan=ten_nguoi_nhan,
@@ -1132,15 +1256,18 @@ def tao_don_hang_mon_an(request):
         lat_khach=lat_khach,
         lng_khach=lng_khach,
         kho_xuat_phat=kho_xuat_phat,
-        tai_xe=tai_xe_phu_trach,
+        tai_xe=None,  # Chờ đối tác B2B duyệt xong mới điều phối shipper
         loai_giao_hang=loai_giao_hang,
-        trang_thai='ĐANG VẬN CHUYỂN' if tai_xe_phu_trach else 'CHỜ TÀI XẾ',
+        trang_thai='CHỜ QUÁN DUYỆT',
         tien_mon_an=tien_mon_an,
         phi_van_chuyen=Decimal(phi_ship),
         phu_phi_hoa_toc=Decimal(phu_phi_hoa_toc),
         khoang_cach_km=km,
         giam_gia=giam_gia,
         tong_tien=tong_tien,
+        thue_phi_san=thue_phi_san,
+        tien_shipper_thuc_nhan=tien_shipper_thuc_nhan,
+        trang_thai_thanh_toan_shipper='CHO_NHAN_TIEN',
         phuong_thuc_thanh_toan=phuong_thuc_thanh_toan,
         trang_thai_thanh_toan='DA_THANH_TOAN' if phuong_thuc_thanh_toan == 'QR_VIETQR' else 'CHUA_THANH_TOAN',
         ghi_chu=ghi_chu,
@@ -1165,15 +1292,8 @@ def tao_don_hang_mon_an(request):
         don_hang=don,
         kho=kho_xuat_phat,
         trang_thai_buoc='BẾP TIẾP NHẬN',
-        ghi_chu=f"Bếp {kho_xuat_phat.ten_kho} đã tiếp nhận đơn đặt món #{don.ma_don} qua cổng trực tuyến."
+        ghi_chu=f"Quán {kho_xuat_phat.ten_kho} đã nhận đơn đặt món #{don.ma_don} qua cổng trực tuyến ({don.get_phuong_thuc_thanh_toan_display()}). Đang chờ quán duyệt món."
     )
-    if tai_xe_phu_trach:
-        LichSuKho.objects.create(
-            don_hang=don,
-            kho=kho_xuat_phat,
-            trang_thai_buoc='BÀN GIAO SHIPPER',
-            ghi_chu=f"Điều phối Hỏa Tốc cho Shipper: {tai_xe_phu_trach.ten_tai_xe} ({tai_xe_phu_trach.bien_so})."
-        )
 
     # GỬI EMAIL THÔNG BÁO TỰ ĐỘNG QUA MAILBOX (MAILTRAP)
     email_subject = f"🎉 [FoodDelivery] Xác nhận đơn hàng #{don.ma_don} - {loai_giao_hang}"
@@ -1198,7 +1318,7 @@ def tao_don_hang_mon_an(request):
         f"- TỔNG THANH TOÁN: {fmt_tong}đ\n"
         f"- Phương thức thanh toán: {don.get_phuong_thuc_thanh_toan_display()}\n"
         f"- Trạng thái thanh toán: {don.get_trang_thai_thanh_toan_display()}\n\n"
-        f"Tài xế giao hàng: {tai_xe_phu_trach.ten_tai_xe if tai_xe_phu_trach else 'Đang điều phối'}\n"
+        f"Tài xế giao hàng: {don.tai_xe.ten_tai_xe if don.tai_xe else 'Chờ Quán duyệt & Điều phối'}\n"
         f"Bạn có thể theo dõi hành trình đơn hàng tại: http://127.0.0.1:8000/chi-tiet/{don.ma_don}/\n\n"
         f"Trân trọng,\nĐội ngũ FoodDelivery."
     )
@@ -1216,24 +1336,40 @@ def tao_don_hang_mon_an(request):
 # ==============================================================================
 
 def chi_tiet(request, ma_don):
-    """Chi tiết lộ trình đơn hàng: Leaflet Map + GPS Shipper thực tế + Tiến độ + Đánh giá"""
+    """Chi tiết lộ trình đơn hàng: Leaflet Map + GPS Shipper thực tế + ETA Số Phút + Đánh giá kép"""
     don_hang = get_object_or_404(DonHang, ma_don=ma_don)
     lich_su = don_hang.lich_su_kho.all().order_by('-thoi_gian')
     chi_tiet_mon = don_hang.chi_tiet_mon.all()
     danh_gia_list = don_hang.danh_gia_list.all()
 
-    # Xác định bước tiến độ trong 5 bước
-    # Bước 1: Đã đặt hàng -> Bước 2: Quán nhận đơn -> Bước 3: Đang chế biến -> Bước 4: Shipper đang giao -> Bước 5: Giao thành công
+    # Tính khoảng cách GPS thực tế từ Shipper tới nhà Khách và ước tính số phút (ETA)
+    dist_shipper_khach = None
+    eta_phut = None
+    if don_hang.tai_xe:
+        dist_shipper_khach = tinh_khoang_cach_haversine(
+            don_hang.tai_xe.lat_hien_tai, don_hang.tai_xe.lng_hien_tai,
+            don_hang.lat_khach, don_hang.lng_khach
+        )
+        # Vận tốc trung bình xe máy đô thị 25 km/h: (km / 25) * 60 + 2 phút trừ hao đèn đỏ
+        eta_phut = max(3, round((dist_shipper_khach / 25.0) * 60) + 2)
+    elif don_hang.khoang_cach_km:
+        dist_shipper_khach = don_hang.khoang_cach_km
+        eta_phut = max(5, round((dist_shipper_khach / 25.0) * 60) + 5)
+
+    # Xác định bước tiến độ trong 5 bước:
+    # 1: Đã đặt (Chờ quán duyệt) -> 2: Bếp đang nấu -> 3: Chờ Shipper lấy món -> 4: Đang giao (ETA) -> 5: Đã giao thành công
     status_str = don_hang.trang_thai.upper()
     current_step = 1
     if 'THÀNH CÔNG' in status_str or 'ĐÃ GIAO' in status_str:
         current_step = 5
-    elif 'ĐANG VẬN CHUYỂN' in status_str or 'GIAO' in status_str or don_hang.tai_xe:
+    elif 'ĐANG VẬN CHUYỂN' in status_str or 'GIAO HỎA TỐC' in status_str:
         current_step = 4
-    elif lich_su.filter(trang_thai_buoc__in=['ĐANG PHÂN LOẠI', 'XUẤT KHO']).exists():
+    elif 'CHỜ SHIPPER' in status_str or 'BÀN GIAO SHIPPER' in status_str or (don_hang.tai_xe and 'NẤU' not in status_str):
         current_step = 3
-    elif 'CHỜ TÀI XẾ' in status_str or lich_su.filter(trang_thai_buoc='NHẬP KHO').exists():
+    elif 'BẾP ĐANG NẤU' in status_str or 'ĐANG NẤU' in status_str or lich_su.filter(trang_thai_buoc='BẾP ĐANG NẤU').exists():
         current_step = 2
+    else:
+        current_step = 1
 
     return render(request, 'map.html', {
         'dh': don_hang,
@@ -1243,40 +1379,68 @@ def chi_tiet(request, ma_don):
         'danh_gia_list': danh_gia_list,
         'current_step': current_step,
         'da_danh_gia': danh_gia_list.exists(),
+        'dist_shipper_khach': dist_shipper_khach,
+        'eta_phut': eta_phut,
     })
 
 
 @require_POST
 def gui_danh_gia(request, ma_don):
-    """API gửi đánh giá & phản hồi chất lượng đơn hàng (sao + nhận xét)"""
+    """API gửi đánh giá kép chất lượng đơn hàng (Đánh giá Shipper và Đánh giá Món ăn)"""
     don_hang = get_object_or_404(DonHang, ma_don=ma_don)
+
     try:
-        so_sao = int(request.POST.get('so_sao', 5))
-        so_sao = max(1, min(5, so_sao))
+        so_sao_shipper = int(request.POST.get('so_sao_shipper', request.POST.get('so_sao', 5)))
+        so_sao_shipper = max(1, min(5, so_sao_shipper))
     except (ValueError, TypeError):
-        so_sao = 5
+        so_sao_shipper = 5
+
+    try:
+        so_sao_mon = int(request.POST.get('so_sao_mon', request.POST.get('so_sao', 5)))
+        so_sao_mon = max(1, min(5, so_sao_mon))
+    except (ValueError, TypeError):
+        so_sao_mon = 5
+
+    so_sao_chung = round((so_sao_shipper + so_sao_mon) / 2)
 
     ten_khach = request.POST.get('ten_khach', '').strip() or don_hang.ten_nguoi_nhan
-    nhan_xet = request.POST.get('nhan_xet', '').strip()
+    nhan_xet_shipper = request.POST.get('nhan_xet_shipper', '').strip()
+    nhan_xet_mon = request.POST.get('nhan_xet_mon', '').strip()
+    nhan_xet_chung = request.POST.get('nhan_xet', '').strip()
+
+    if not nhan_xet_chung:
+        parts = []
+        if nhan_xet_shipper:
+            parts.append(f"Shipper ({so_sao_shipper}★): {nhan_xet_shipper}")
+        if nhan_xet_mon:
+            parts.append(f"Món ăn ({so_sao_mon}★): {nhan_xet_mon}")
+        nhan_xet_chung = " | ".join(parts) if parts else "Đơn hàng rất tuyệt vời!"
 
     danh_gia = DanhGiaDonHang.objects.create(
         don_hang=don_hang,
         ten_khach=ten_khach,
-        so_sao=so_sao,
-        nhan_xet=nhan_xet
+        so_sao=so_sao_chung,
+        nhan_xet=nhan_xet_chung,
+        so_sao_shipper=so_sao_shipper,
+        nhan_xet_shipper=nhan_xet_shipper,
+        so_sao_mon=so_sao_mon,
+        nhan_xet_mon=nhan_xet_mon,
     )
 
     if request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.POST.get('ajax') == '1':
         return JsonResponse({
             'status': 'success',
-            'message': 'Đánh giá của bạn đã được ghi nhận thành công!',
-            'so_sao': danh_gia.so_sao,
+            'message': 'Cảm ơn bạn! Đánh giá Shipper và Món ăn đã được ghi nhận thành công!',
+            'so_sao_chung': danh_gia.so_sao,
+            'so_sao_shipper': danh_gia.so_sao_shipper,
+            'nhan_xet_shipper': danh_gia.nhan_xet_shipper,
+            'so_sao_mon': danh_gia.so_sao_mon,
+            'nhan_xet_mon': danh_gia.nhan_xet_mon,
             'ten_khach': danh_gia.ten_khach,
-            'nhan_xet': danh_gia.nhan_xet,
             'ngay_tao': danh_gia.ngay_tao.strftime('%d/%m/%Y %H:%M')
         })
 
-    messages.success(request, 'Cảm ơn bạn đã đánh giá đơn hàng!')
+    messages.success(request, 'Cảm ơn bạn đã đánh giá Shipper và Món ăn!')
     return redirect('core:chi_tiet', ma_don=don_hang.ma_don)
 
 
@@ -1384,7 +1548,12 @@ def toi_uu_lo_trinh(request):
 
 @login_required(login_url='core:login')
 def app_shipper(request):
-    """App dành cho Shipper với danh sách đơn giao thức ăn, nút GPS và định vị"""
+    """
+    App Shipper Chuyên Nghiệp:
+    - Hiển thị danh sách đơn được phân phối với mã đơn #DH... rõ ràng
+    - Địa chỉ quán cần đến lấy món và địa chỉ nhà khách
+    - Bảng kê tài chính ví thu nhập: Cước ship, Thuế TNCN (10%), Thực nhận (90%), Chờ nhận tiền hàng
+    """
     if hasattr(request.user, 'taixe'):
         tai_xe = request.user.taixe
     elif request.user.is_staff:
@@ -1397,71 +1566,116 @@ def app_shipper(request):
         return redirect('core:home')
 
     don_hangs = DonHang.objects.filter(tai_xe=tai_xe).order_by('-id')
+    don_can_giao = don_hangs.filter(trang_thai__in=['CHỜ SHIPPER LẤY MÓN', 'ĐANG VẬN CHUYỂN', 'CHỜ TÀI XẾ'])
+    don_da_giao = don_hangs.filter(trang_thai='ĐÃ GIAO THÀNH CÔNG')
+
+    # Thống kê ví thu nhập sau thuế
+    tong_cuoc_giao = sum((d.phi_van_chuyen or 0) + (d.phu_phi_hoa_toc or 0) for d in don_da_giao)
+    tong_thue = sum(d.thue_phi_san or 0 for d in don_da_giao)
+    tong_thuc_nhan = sum(d.tien_shipper_thuc_nhan or 0 for d in don_da_giao)
+    tien_cho_nhan = sum(d.tien_shipper_thuc_nhan or 0 for d in don_da_giao if d.trang_thai_thanh_toan_shipper == 'CHO_NHAN_TIEN')
 
     return render(request, 'shipper_dashboard.html', {
         'tai_xe': tai_xe,
-        'don_hangs': don_hangs
+        'don_hangs': don_hangs,
+        'don_can_giao': don_can_giao,
+        'don_da_giao': don_da_giao,
+        'vi_thu_nhap': {
+            'tong_cuoc': tong_cuoc_giao,
+            'tong_thue': tong_thue,
+            'tong_thuc_nhan': tong_thuc_nhan,
+            'tien_cho_nhan': tien_cho_nhan,
+        }
     })
 
 
 @login_required(login_url='core:login')
 def shipper_cap_nhat(request, don_id):
-    """Shipper cập nhật trạng thái đơn (chờ nhận, đang giao, đã giao) + Tích lũy doanh thu + Cập nhật Mailbox"""
+    """
+    Shipper cập nhật trạng thái đơn:
+    1. Đã lấy hàng theo mã đơn tại quán -> ĐANG VẬN CHUYỂN
+    2. Giao thành công -> ĐÃ GIAO THÀNH CÔNG, tính thuế 10%, ghi nhận tiền thực nhận 90% (chờ nhận tiền hàng)
+    """
     if request.method == 'POST':
         don = get_object_or_404(DonHang, id=don_id)
         if hasattr(request.user, 'taixe') and don.tai_xe != request.user.taixe:
             return redirect('core:app_shipper')
 
         trang_thai_moi = request.POST.get('trang_thai')
+        tai_xe_ten = request.user.taixe.ten_tai_xe if hasattr(request.user, 'taixe') else (don.tai_xe.ten_tai_xe if don.tai_xe else "Shipper")
+
+        # Đảm bảo thuế và tiền thực nhận được tính chuẩn xác
+        tong_cuoc = (don.phi_van_chuyen or 0) + (don.phu_phi_hoa_toc or 0)
+        don.thue_phi_san = round(Decimal(tong_cuoc) * Decimal('0.10'))
+        don.tien_shipper_thuc_nhan = max(Decimal(0), Decimal(tong_cuoc) - don.thue_phi_san)
+
         don.trang_thai = trang_thai_moi
-        don.save()
 
-        tai_xe_ten = request.user.taixe.ten_tai_xe if hasattr(request.user, 'taixe') else "Shipper"
+        if trang_thai_moi == 'ĐANG VẬN CHUYỂN':
+            # Ghi nhật ký: Shipper đã tới quán lấy món theo mã đơn
+            LichSuKho.objects.create(
+                don_hang=don,
+                kho=don.kho_xuat_phat,
+                trang_thai_buoc="SHIPPER ĐÃ LẤY MÓN",
+                ghi_chu=f"Shipper {tai_xe_ten} đã đến quán '{don.kho_xuat_phat.ten_kho}' kiểm tra mã đơn #{don.ma_don}, đã nhận món và bắt đầu vận chuyển giao đến nhà khách."
+            )
 
-        # Ghi nhật ký tiến trình vận chuyển
-        LichSuKho.objects.create(
-            don_hang=don,
-            kho=don.kho_xuat_phat,
-            trang_thai_buoc=f"SHIPPER CẬP NHẬT: {trang_thai_moi}",
-            ghi_chu=f"Cập nhật bởi tài xế: {tai_xe_ten}"
-        )
+            # Gửi mail thông báo khách hàng
+            subject = f"🛵 [Đang Giao Hàng] Shipper {tai_xe_ten} đang trên đường giao đơn #{don.ma_don}"
+            body = (
+                f"Chào {don.ten_nguoi_nhan},\n\n"
+                f"Tài xế Shipper {tai_xe_ten} đã lấy món ăn từ quán '{don.kho_xuat_phat.ten_kho}' theo mã đơn #{don.ma_don} "
+                f"và đang trên đường giao đến bạn tại: {don.dia_chi_nguoi_nhan}.\n\n"
+                f"Thời gian dự kiến: 10 - 20 phút.\n"
+                f"Bạn có thể theo dõi vị trí Shipper và số phút dự kiến tại: http://127.0.0.1:8000/chi-tiet/{don.ma_don}/\n\n"
+                f"Trân trọng,\nĐội ngũ FoodDelivery."
+            )
+            gui_email_mailbox(subject, body, don.email_nguoi_nhan)
 
-        fmt_tong_don = f"{don.tong_tien:,.0f}".replace(",", ".")
-
-        # Nếu giao thành công -> Cộng doanh thu tích lũy cho tài xế và gửi mail
-        if trang_thai_moi == 'ĐÃ GIAO THÀNH CÔNG':
-            if hasattr(request.user, 'taixe'):
-                tai_xe = request.user.taixe
-                tai_xe.doanh_thu_tich_luy += (don.phi_van_chuyen + don.phu_phi_hoa_toc)
-                tai_xe.tong_don_thang_nay += 1
-                tai_xe.save()
-
+        elif trang_thai_moi == 'ĐÃ GIAO THÀNH CÔNG':
             don.trang_thai_thanh_toan = 'DA_THANH_TOAN'
-            don.save()
+            don.trang_thai_thanh_toan_shipper = 'CHO_NHAN_TIEN'  # Chờ nhận tiền hàng đã trừ thuế
 
-            # Gửi mail thông báo giao thành công qua Mailbox
+            # Tích lũy doanh thu thực nhận sau thuế cho shipper
+            current_tx = getattr(request.user, 'taixe', None) or don.tai_xe
+            if current_tx:
+                current_tx.doanh_thu_tich_luy += don.tien_shipper_thuc_nhan
+                current_tx.tong_don_thang_nay += 1
+                current_tx.save()
+
+            LichSuKho.objects.create(
+                don_hang=don,
+                kho=don.kho_xuat_phat,
+                trang_thai_buoc="GIAO THÀNH CÔNG",
+                ghi_chu=(
+                    f"Shipper {tai_xe_ten} đã giao thành công đơn #{don.ma_don}. "
+                    f"Cước ship: {tong_cuoc:,.0f}đ, Khấu trừ thuế TNCN & Phí sàn (10%): -{don.thue_phi_san:,.0f}đ, "
+                    f"Shipper thực nhận: +{don.tien_shipper_thuc_nhan:,.0f}đ (Trạng thái: Chờ nhận tiền hàng)."
+                )
+            )
+
+            fmt_tong_don = f"{don.tong_tien:,.0f}".replace(",", ".")
             subject = f"🎉 Giao hàng thành công - Đơn hàng #{don.ma_don}"
             body = (
                 f"Chào {don.ten_nguoi_nhan},\n\n"
                 f"Đơn hàng #{don.ma_don} đã được Shipper {tai_xe_ten} giao thành công đến bạn tại địa chỉ:\n"
                 f"{don.dia_chi_nguoi_nhan}.\n\n"
-                f"Tổng tiền thanh toán: {fmt_tong_don}đ ({don.get_phuong_thuc_thanh_toan_display()}).\n"
+                f"Tổng tiền thanh toán: {fmt_tong_don}đ ({don.get_phuong_thuc_thanh_toan_display()}).\n\n"
+                f"👉 Xin vui lòng dành 30 giây để đánh giá Shipper và Món ăn tại: http://127.0.0.1:8000/chi-tiet/{don.ma_don}/\n\n"
                 f"Chúc bạn thưởng thức bữa ăn ngon miệng!\n\n"
                 f"Đội ngũ FoodDelivery."
             )
             gui_email_mailbox(subject, body, don.email_nguoi_nhan)
+
         else:
-            # Gửi mail thông báo tiến độ hành trình qua Mailbox
-            subject = f"🛵 [Shipper Cập Nhật] Đơn #{don.ma_don}: {trang_thai_moi}"
-            body = (
-                f"Chào {don.ten_nguoi_nhan},\n\n"
-                f"Tài xế Shipper {tai_xe_ten} vừa cập nhật trạng thái đơn hàng #{don.ma_don}:\n"
-                f"👉 TRẠNG THÁI HIỆN TẠI: {trang_thai_moi}\n"
-                f"Quán chế biến: {don.kho_xuat_phat.ten_kho}\n\n"
-                f"Theo dõi vị trí Shipper trên bản đồ tại: http://127.0.0.1:8000/chi-tiet/{don.ma_don}/\n\n"
-                f"Trân trọng,\nĐội ngũ FoodDelivery."
+            LichSuKho.objects.create(
+                don_hang=don,
+                kho=don.kho_xuat_phat,
+                trang_thai_buoc=f"SHIPPER CẬP NHẬT: {trang_thai_moi}",
+                ghi_chu=f"Cập nhật bởi tài xế: {tai_xe_ten}"
             )
-            gui_email_mailbox(subject, body, don.email_nguoi_nhan)
+
+        don.save()
 
     return redirect('core:app_shipper')
 
@@ -1528,7 +1742,8 @@ def api_tao_don_hang(request):
             phu_phi_hoa_toc=Decimal(phu_phi),
             khoang_cach_km=km,
             ghi_chu=data.get('ghi_chu', 'Đơn hàng từ cổng API trực tuyến'),
-            trang_thai='CHỜ TÀI XẾ'
+            trang_thai='CHỜ QUÁN DUYỆT',
+            tai_xe=None
         )
 
         # Gắn danh sách món nếu có
@@ -1556,6 +1771,11 @@ def api_tao_don_hang(request):
         don.tien_mon_an = tien_mon
         don.giam_gia = giam_gia_tong
         don.tong_tien = max(Decimal(0), tien_mon + Decimal(phi_ship) + Decimal(phu_phi) - giam_gia_tong)
+
+        tong_cuoc_ship = Decimal(phi_ship) + Decimal(phu_phi)
+        don.thue_phi_san = round(tong_cuoc_ship * Decimal('0.10'))
+        don.tien_shipper_thuc_nhan = max(Decimal(0), tong_cuoc_ship - don.thue_phi_san)
+        don.trang_thai_thanh_toan_shipper = 'CHO_NHAN_TIEN'
         don.save()
 
         # Tạo lịch sử tiếp nhận
@@ -1788,7 +2008,9 @@ def partner_dashboard(request):
     ds_mon = MonAn.objects.filter(kho_hang=current_shop).order_by('-id')
 
     tong_don = ds_don.count()
-    don_cho_bep = ds_don.filter(trang_thai='CHỜ TÀI XẾ').count()
+    don_cho_duyet = ds_don.filter(trang_thai='CHỜ QUÁN DUYỆT').count()
+    don_dang_nau = ds_don.filter(trang_thai='BẾP ĐANG NẤU').count()
+    don_cho_shipper = ds_don.filter(trang_thai__in=['CHỜ SHIPPER LẤY MÓN', 'CHỜ TÀI XẾ']).count()
     don_dang_giao = ds_don.filter(trang_thai='ĐANG VẬN CHUYỂN').count()
     don_hoan_thanh = ds_don.filter(trang_thai='ĐÃ GIAO THÀNH CÔNG').count()
     doanh_thu_mon = ds_don.filter(trang_thai='ĐÃ GIAO THÀNH CÔNG').aggregate(Sum('tien_mon_an'))['tien_mon_an__sum'] or Decimal(0)
@@ -1796,12 +2018,14 @@ def partner_dashboard(request):
     return render(request, 'partner_dashboard.html', {
         'my_shops': my_shops,
         'current_shop': current_shop,
-        'ds_don': ds_don[:25],
+        'ds_don': ds_don[:35],
         'ds_mon': ds_mon,
         'danh_mucs': DanhMucMonAn.objects.all(),
         'stats': {
             'tong_don': tong_don,
-            'don_cho_bep': don_cho_bep,
+            'don_cho_duyet': don_cho_duyet,
+            'don_dang_nau': don_dang_nau,
+            'don_cho_shipper': don_cho_shipper,
             'don_dang_giao': don_dang_giao,
             'don_hoan_thanh': don_hoan_thanh,
             'doanh_thu_mon': doanh_thu_mon,
@@ -1812,30 +2036,74 @@ def partner_dashboard(request):
 @login_required(login_url='core:login')
 @require_POST
 def api_b2b_bep_cap_nhat_don(request, don_id):
-    """Đối tác B2B cập nhật tiến độ chế biến món tại bếp và đồng thời kích hoạt Mailbox"""
+    """
+    Đối tác B2B duyệt đơn, cập nhật tiến độ bếp hoặc kích hoạt điều phối Shipper:
+    - DUYET_DON / BẾP ĐANG NẤU: Quán duyệt đơn và bắt đầu chế biến món
+    - NAU_XONG_DIEU_PHOI / BÀN GIAO SHIPPER: Bếp nấu xong -> Kích hoạt thuật toán điều phối Shipper gần quán
+    - TU_CHOI: Từ chối đơn hàng
+    """
     don = get_object_or_404(DonHang, id=don_id)
 
     # Kiểm tra quyền sở hữu
     if not (request.user.is_staff or (don.kho_xuat_phat and don.kho_xuat_phat.chu_so_huu == request.user)):
         return JsonResponse({'success': False, 'message': 'Bạn không có quyền quản lý đơn của quán này!'}, status=403)
 
-    hanh_dong = request.POST.get('hanh_dong', 'BẾP ĐANG NẤU')
-    ghi_chu = request.POST.get('ghi_chu', '') or f"Quán {don.kho_xuat_phat.ten_kho} đã cập nhật tiến độ."
+    hanh_dong = request.POST.get('hanh_dong', 'BẾP ĐANG NẤU').strip()
+    ghi_chu = request.POST.get('ghi_chu', '').strip()
+
+    thong_bao = ""
+    buoc_log = hanh_dong
+
+    if hanh_dong in ['DUYET_DON', 'BẾP ĐANG NẤU']:
+        don.trang_thai = 'BẾP ĐANG NẤU'
+        buoc_log = 'BẾP ĐANG NẤU'
+        thong_bao = f"Quán {don.kho_xuat_phat.ten_kho} đã duyệt đơn #{don.ma_don} & Bếp đang chế biến món!"
+        if not ghi_chu:
+            ghi_chu = "Bếp đối tác B2B đã duyệt đơn và đang chế biến món ăn nóng hổi."
+
+    elif hanh_dong in ['NAU_XONG_DIEU_PHOI', 'BÀN GIAO SHIPPER']:
+        # Kích hoạt thuật toán điều phối Shipper gần quán nhất
+        tx, dist, msg_tx = dieu_phoi_shipper_gan_quan(don)
+        buoc_log = 'CHẾ BIẾN HOÀN TẤT'
+        if tx:
+            thong_bao = f"Bếp đã nấu xong! Thuật toán đã điều phối Shipper {tx.ten_tai_xe} ({dist:.1f} km) tới lấy món!"
+            if not ghi_chu:
+                ghi_chu = f"Món ăn đã đóng gói xong. Đã điều phối Shipper {tx.ten_tai_xe} ({tx.bien_so}) tới lấy hàng theo mã đơn #{don.ma_don}."
+        else:
+            don.trang_thai = 'CHỜ SHIPPER LẤY MÓN'
+            thong_bao = "Món ăn đã nấu xong! Đang chờ hệ thống tìm Shipper gần quán."
+            if not ghi_chu:
+                ghi_chu = "Món ăn đã nấu xong và sẵn sàng giao. Đang chờ Shipper nhận đơn."
+
+    elif hanh_dong in ['TU_CHOI', 'HUY_DON']:
+        don.trang_thai = 'ĐÃ HỦY'
+        buoc_log = 'GIAO THẤT BẠI'
+        thong_bao = f"Quán {don.kho_xuat_phat.ten_kho} đã từ chối đơn hàng #{don.ma_don}."
+        if not ghi_chu:
+            ghi_chu = "Quán tạm hết nguyên liệu hoặc không thể phục vụ đơn này."
+
+    else:
+        buoc_log = hanh_dong
+        thong_bao = f"Đã cập nhật tiến trình: {hanh_dong}"
+        if not ghi_chu:
+            ghi_chu = f"Cập nhật bởi quán {don.kho_xuat_phat.ten_kho}"
+
+    don.save()
 
     LichSuKho.objects.create(
         don_hang=don,
         kho=don.kho_xuat_phat,
-        trang_thai_buoc=hanh_dong,
+        trang_thai_buoc=buoc_log,
         ghi_chu=ghi_chu
     )
 
     # Gửi email Mailbox thông báo tiến trình cho khách hàng
-    mail_subject = f"🍲 [Quán Cập Nhật] Đơn #{don.ma_don}: {hanh_dong}"
+    mail_subject = f"🍲 [Quán Cập Nhật] Đơn #{don.ma_don}: {don.trang_thai}"
     mail_body = (
         f"Xin chào {don.ten_nguoi_nhan},\n\n"
-        f"Quán '{don.kho_xuat_phat.ten_kho}' vừa cập nhật tiến độ món ăn đơn hàng #{don.ma_don}:\n"
-        f"👉 TIẾN TRÌNH: {hanh_dong}\n"
-        f"Ghi chú bếp: {ghi_chu}\n\n"
+        f"Quán '{don.kho_xuat_phat.ten_kho}' vừa cập nhật tiến độ đơn hàng #{don.ma_don}:\n"
+        f"👉 TRẠNG THÁI HIỆN TẠI: {don.trang_thai}\n"
+        f"Ghi chú: {ghi_chu}\n\n"
         f"Theo dõi đơn hàng tại: http://127.0.0.1:8000/chi-tiet/{don.ma_don}/\n\n"
         f"Trân trọng,\nĐội ngũ FoodDelivery."
     )
@@ -1843,8 +2111,10 @@ def api_b2b_bep_cap_nhat_don(request, don_id):
 
     return JsonResponse({
         'success': True,
-        'message': f'Đã cập nhật tiến độ món sang: {hanh_dong}!',
-        'trang_thai_buoc': hanh_dong
+        'message': thong_bao,
+        'trang_thai': don.trang_thai,
+        'trang_thai_buoc': buoc_log,
+        'shipper_ten': don.tai_xe.ten_tai_xe if don.tai_xe else 'Chờ điều phối',
     })
 
 
