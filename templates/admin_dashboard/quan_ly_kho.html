@@ -481,9 +481,10 @@ function initAddMap() {
 
     if (!addMap) {
         addMap = L.map('add-warehouse-map').setView([lat, lng], 14);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '&copy; OpenStreetMap'
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+            maxZoom: 20,
+            subdomains: 'abcd',
+            attribution: '&copy; OpenStreetMap &copy; CARTO'
         }).addTo(addMap);
 
         addMarker = L.marker([lat, lng], { draggable: true }).addTo(addMap);
@@ -510,9 +511,10 @@ function initAddMap() {
 function initEditMap(lat, lng) {
     if (!editMap) {
         editMap = L.map('edit-warehouse-map').setView([lat, lng], 15);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '&copy; OpenStreetMap'
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+            maxZoom: 20,
+            subdomains: 'abcd',
+            attribution: '&copy; OpenStreetMap &copy; CARTO'
         }).addTo(editMap);
 
         editMarker = L.marker([lat, lng], { draggable: true }).addTo(editMap);

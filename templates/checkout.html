@@ -558,9 +558,10 @@
 
         map = L.map('leaflet-checkout-map').setView([currentLat, currentLng], 14);
 
-        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '© OpenStreetMap contributors'
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+            maxZoom: 20,
+            subdomains: 'abcd',
+            attribution: '© OpenStreetMap contributors © CARTO'
         }).addTo(map);
 
         // Marker quán ăn
